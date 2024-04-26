@@ -109,6 +109,9 @@ int xlnx_ams_read_temp(int *chan, int n, float *res){
 			fclose(raw);
 			fclose(offset);
 			fclose(scale);
+			free(offset_string);
+			free(raw_string);
+			free(scale_string);
 			res[i] = Temperature;
 			//return 0;
 			}
@@ -173,6 +176,8 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
 			float Voltage = (atof(scale_string) * atof(raw_string)) / 1024; //Apply ADC conversion to Voltage, Xilinx Specs
 			fclose(raw);
 			fclose(scale);
+			free(scale_string);
+			free(raw_string);
 			res[i] = Voltage;
 			//return 0;
 			}
@@ -259,6 +264,8 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 
 				fclose(scale);
 				fclose(offset);
+				free(scale_string);
+				free(offset_string);
 				aux = (1024*val)/atof(scale_string);
 
 			    adc_code =  (int) aux - atof(offset_string);
@@ -277,7 +284,7 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 				aux = (1024*val)/atof(scale_string);
 
 				adc_code = (int) aux;
-
+				free(scale_string);
 				fclose(scale);
 
 				//return 0;
@@ -1792,21 +1799,22 @@ int ina3221_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
  */
 int parsing_mon_sensor_data_into_array (json_object *jarray,float val, char *magnitude, int chan)
 {
-	json_object * jobj = json_object_new_object();
+	struct json_object *jobj,*jstring,*jint,*jdouble = NULL;
+	jobj = json_object_new_object();
 	char buffer[8];
 
 	sprintf(buffer, "%3.4f", val);
-	json_object *jdouble = json_object_new_double_s((double) val,buffer);
-	json_object *jstring = json_object_new_string(magnitude);
-	json_object *jint = json_object_new_int(chan);
+	jdouble = json_object_new_double_s((double) val,buffer);
+	jstring = json_object_new_string(magnitude);
 
 	json_object_object_add(jobj,"magnitudename", jstring);
-	if (chan != 99)
+	if (chan != 99){
+		jint = json_object_new_int(chan);
 		json_object_object_add(jobj,"channel", jint);
+	}
 	json_object_object_add(jobj,"value", jdouble);
 
 	json_object_array_add(jarray,jobj);
-
 	return 0;
 }
 /**
@@ -1821,23 +1829,23 @@ int parsing_mon_sensor_data_into_array (json_object *jarray,float val, char *mag
  */
 int parsing_mon_status_data_into_array(json_object *jarray, int status, char *magnitude, int chan)
 {
-	json_object * jobj = json_object_new_object();
-	json_object *jstatus ;
+	struct json_object *jobj,*jstring,*jint,*jstatus = NULL;
+	jobj = json_object_new_object();
 
-	json_object *jstring = json_object_new_string(magnitude);
-	json_object *jint = json_object_new_int(chan);
+	jstring = json_object_new_string(magnitude);
 	if(status == 1)
 		jstatus = json_object_new_string("ON");
 	else if (status == 0)
 		jstatus = json_object_new_string("OFF");
 
 	json_object_object_add(jobj,"magnitudename", jstring);
-	if (chan != 99)
+	if (chan != 99){
+		jint = json_object_new_int(chan);
 		json_object_object_add(jobj,"channel", jint);
+	}
 	json_object_object_add(jobj,"value", jstatus);
 
 	json_object_array_add(jarray,jobj);
-
 	return 0;
 }
 /**
@@ -1857,7 +1865,8 @@ int parsing_mon_status_data_into_array(json_object *jarray, int status, char *ma
  */
 int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64_t timestamp,char *info_type)
 {
-	json_object *jalarm_data = json_object_new_object();
+	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type = NULL;
+	jalarm_data = json_object_new_object();
 	char buffer[8];
 	uint8_t level = 1;
 
@@ -1866,7 +1875,7 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
 	sprintf(buffer, "%3.4f", val);
 
 	char *device = "ID DPB";
-	json_object *jboard = json_object_new_string(board);
+	jboard = json_object_new_string(board);
 	if(!strcmp(info_type,"critical")){
 		level = 0;
 	}
@@ -1879,17 +1888,18 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
 
 	json_object_object_add(jalarm_data,"board", jboard);
 
-	json_object *jdouble = json_object_new_double_s((double) val,buffer);
-	json_object *jchip = json_object_new_string(chip);
-	json_object *jev_type = json_object_new_string(ev_type);
-	json_object *jchan = json_object_new_int(chan);
-	json_object *jtimestamp = json_object_new_int64(timestamp*1000);
+	jdouble = json_object_new_double_s((double) val,buffer);
+	jchip = json_object_new_string(chip);
+	jev_type = json_object_new_string(ev_type);
+	jtimestamp = json_object_new_int64(timestamp*1000);
 
 	json_object_object_add(jalarm_data,"magnitudename", jchip);
 	json_object_object_add(jalarm_data,"eventtype", jev_type);
 	json_object_object_add(jalarm_data,"eventtimestamp", jtimestamp);
-	if (chan != 99)
+	if (chan != 99){
+		jchan = json_object_new_int(chan);
 		json_object_object_add(jalarm_data,"channel", jchan);
+	}
 
 	json_object_object_add(jalarm_data,"value", jdouble);
 
@@ -1898,12 +1908,12 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
 	int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
 	if (rc) {
 		printf("Error validating JSON Schema\r\n");
-		printf("%s",serialized_json);
 		return rc;
 	}
 	else{
-		zmq_send(alarm_publisher, strdup(serialized_json), strlen(serialized_json), 0);
+		zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
 	}
+	json_object_put(jalarm_data);
 	return 0;
 }
 
@@ -1921,14 +1931,14 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
  */
 int status_alarm_json (char *board,char *chip, int chan,uint64_t timestamp,char *info_type)
 {
-	json_object *jalarm_data = json_object_new_object();
+	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus = NULL;
+	jalarm_data = json_object_new_object();
 
 	uint64_t timestamp_msg = (time(NULL))*1000;
 	uint8_t level = 1;
-
 	char *device = "ID DPB";
 
-	json_object *jboard = json_object_new_string(board);
+	jboard = json_object_new_string(board);
 
 	json_object_object_add(jalarm_data,"board", jboard);
 	if(!strcmp(info_type,"critical")){
@@ -1938,15 +1948,13 @@ int status_alarm_json (char *board,char *chip, int chan,uint64_t timestamp,char 
 		return -EINVAL;
 	}
 
-
-	json_object *jchip = json_object_new_string(chip);
-	json_object *jchan = json_object_new_int(chan);
-	json_object *jtimestamp = json_object_new_int64(timestamp*1000);
-	json_object *jstatus ;
+	jchip = json_object_new_string(chip);
+	jtimestamp = json_object_new_int64(timestamp_msg);
 
 	json_object_object_add(jalarm_data,"magnitudename", jchip);
 	json_object_object_add(jalarm_data,"eventtimestamp", jtimestamp);
 	if (chan != 99){
+		jchan = json_object_new_int(chan);
 		json_object_object_add(jalarm_data,"channel", jchan);
 		if((strcmp(chip,"SFP RX_LOS Status")==0)|(strcmp(chip,"SFP TX_FAULT Status")==0)){
 			jstatus = json_object_new_string("ON");
@@ -1968,8 +1976,9 @@ int status_alarm_json (char *board,char *chip, int chan,uint64_t timestamp,char 
 		return rc;
 	}
 	else{
-		zmq_send(alarm_publisher, strdup(serialized_json), strlen(serialized_json), 0);
+		zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
 	}
+	json_object_put(jalarm_data);
 	return 0;
 }
 /**
@@ -2024,8 +2033,8 @@ int command_response_json (int msg_id, float val)
 		printf("Error\r\n");
 		return rc;
 	}*/
-	zmq_send(cmd_router, strdup(serialized_json), strlen(serialized_json), 0);
-
+	zmq_send(cmd_router, serialized_json, strlen(serialized_json), 0);
+	json_object_put(jcmd_data);
 	return 0;
 }
 
@@ -2089,8 +2098,8 @@ int command_status_response_json (int msg_id,int val)
 		printf("Error\r\n");
 		return rc;
 	}*/
-	zmq_send(cmd_router, strdup(serialized_json), strlen(serialized_json), 0);
-
+	zmq_send(cmd_router, serialized_json, strlen(serialized_json), 0);
+	json_object_put(jcmd_data);
 	return 0;
 }
 /**
@@ -2139,6 +2148,8 @@ int json_schema_validate (char *schema,const char *json_string, char *temp_file)
 	fp = popen(command, "r");
 	if (fp == NULL) {
 		remove(file_path);
+		free(command);
+		regfree(&r1);
 		close(pipefd[1]);
 		printf("Failed to run command\n" );
 		return -1;
@@ -2149,12 +2160,16 @@ int json_schema_validate (char *schema,const char *json_string, char *temp_file)
 	read(pipefd[0], path, 64);
 	remove(file_path);
 	pclose(fp);
+	close(pipefd[0]);
+	free(command);
 
 	data = regexec(&r1, path, 0, NULL, 0);
 	if(data){
 		printf("Error: JSON schema not valid\n" );
+		regfree(&r1);
 		return -EINVAL;
 	}
+	regfree(&r1);
 	return 0;
 }
 
@@ -2214,11 +2229,15 @@ int get_GPIO_base_address(int *address){
 		    	char *add_string = malloc(fsize + 1);
 		    	fread(add_string, fsize, 1, GPIO);
 		    	address[0] = (int) atof(add_string) + 78 ;
+		    	free(add_string);
 				fclose(GPIO);
 				break;
 			}
 		fclose(GPIO);
 	}
+	closedir(dp);
+	regfree(&r1);
+	regfree(&r2);
 	return 0;
 }
 
@@ -2319,6 +2338,7 @@ int read_GPIO(int address,int *value){
 	fread(value_string, fsize, 1, GPIO_val);
 	value[0] = (int) atof(value_string);
 	fclose(GPIO_val);
+	free(value_string);
 
     // Building second command
     snprintf(cmd2, sizeof(cmd2), "echo %d > /sys/class/gpio/unexport", add);
@@ -2370,6 +2390,8 @@ void unexport_GPIO(){
 			}
 		}
 	}
+	closedir(dp);
+	regfree(&r1);
 	return;
 }
 /************************** External monitoring (via GPIO) functions ******************************/
@@ -2385,7 +2407,7 @@ int eth_link_status (char *eth_interface, int *status)
 {
 	char eth_link[64];
 	FILE *link_file;
-	char *str;
+	char str[64];
 
 	char cmd[64] = "ethtool ";
 
@@ -2398,14 +2420,15 @@ int eth_link_status (char *eth_interface, int *status)
 
 	strtok(eth_link," ");
 	strtok(NULL," ");
-	str = strtok(NULL,"\n");
+	strcpy(str,strtok(NULL,"\n"));
 	strcat(str,"");
 	if((strcmp(str,"yes")) == 0)
 		status[0] = 1;
 	else if((strcmp(str,"no")) == 0)
 		status[0] = 0;
-	else
+	else{
 		return -EINVAL;
+	}
 	return 0;
 
 }
@@ -2565,19 +2588,24 @@ int aurora_down_alarm(int aurora_link,int *flag){
 int zmq_socket_init (){
 
 	int rc = 0;
+	int linger = 1000;
+	size_t linger_size = sizeof(linger);
     zmq_context = zmq_ctx_new();
     mon_publisher = zmq_socket(zmq_context, ZMQ_PUB);
+    zmq_setsockopt (mon_publisher, ZMQ_LINGER, &linger, &linger_size);
     rc = zmq_bind(mon_publisher, "tcp://*:5555");
 	if (rc) {
 		return rc;
 	}
     alarm_publisher = zmq_socket(zmq_context, ZMQ_PUB);
+    zmq_setsockopt (alarm_publisher, ZMQ_LINGER, &linger, &linger_size);
     rc = zmq_bind(alarm_publisher, "tcp://*:5556");
 	if (rc) {
 		return rc;
 	}
     cmd_router = zmq_socket(zmq_context, ZMQ_REP);
     rc = zmq_bind(cmd_router, "tcp://*:5557");
+    zmq_setsockopt (cmd_router, ZMQ_LINGER, &linger, &linger_size);
 	if (rc) {
 		return rc;
 	}
@@ -2865,7 +2893,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 			}
 		}
 	}
-
+	regfree(&r1);
 	return rc;
 }
 
@@ -2882,7 +2910,7 @@ void lv_command_handling(char **cmd){
 }
 /************************** Exit function declaration ******************************/
 /**
- * Closes ZMQ sockets and destroy context when exiting.
+ * Closes ZMQ sockets and GPIOs when exiting.
  */
 void atexit_function() {
 	unexport_GPIO();
@@ -2900,14 +2928,22 @@ void atexit_function() {
  */
 void sighandler(int signum) {
    kill(child_pid,SIGKILL);
-  /* pthread_cancel(t_1); //End threads
+   unexport_GPIO();
+   zmq_close(mon_publisher);
+   zmq_close(alarm_publisher);
+   zmq_close(cmd_router);
+   /*pthread_cancel(t_1); //End threads
    pthread_cancel(t_2); //End threads
 
    pthread_cancel(t_4); //End threads
    pthread_cancel(t_3); //End threads*/
+   zmq_ctx_shutdown(zmq_context);
+   /*pthread_join(t_1,NULL);
+   pthread_join(t_2,NULL);
+   pthread_join(t_3,NULL);
+   pthread_join(t_4,NULL);*/
 
    break_flag = 1;
-
    return ;
 }
 
@@ -2940,3 +2976,4 @@ int gen_uuid(char *uuid) {
 
     return 0;
 }
+
