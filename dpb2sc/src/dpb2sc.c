@@ -26,6 +26,31 @@ int iio_event_monitor_up(char *app_route) {
             perror("Error executing the .elf file");
             return -1;
         }
+    	key_t sharedMemoryKey = MEMORY_KEY;
+    	memoryID = shmget(sharedMemoryKey, sizeof(struct wrapper), IPC_CREAT | 0600);
+    	if (memoryID == -1) {
+    	     perror("shmget():");
+    	     exit(1);
+    	}
+
+    	memory = shmat(memoryID, NULL, 0);
+    	if (memory == (void *) -1) {
+    	    perror("shmat():");
+    	    exit(1);
+    	}
+
+    	strcpy(memory->ev_type,"");
+    	strcpy(memory->ch_type,"");
+    	sem_init(&memory->ams_sync, 1, 0);
+    	sem_init(&memory->empty, 1, 1);
+    	sem_init(&memory->full, 1, 0);
+    	memory->chn = 0;
+    	memory->tmpstmp = 0;
+
+    	if (memoryID == -1) {
+    	    perror("shmget(): ");
+    	    exit(1);
+    	 }
     } else if (child_pid > 0) {
         // Parent process
     } else {
@@ -473,7 +498,6 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 		printf("Failed to set MCP9844 Critical Limit\r\n");
 		return rc;
 	}
-
 	return 0;
 }
 /**
@@ -2151,6 +2175,8 @@ int json_schema_validate (char *schema,const char *json_string, char *temp_file)
 		free(command);
 		regfree(&r1);
 		close(pipefd[1]);
+		close(pipefd[0]);
+		close(stderr_bk);
 		printf("Failed to run command\n" );
 		return -1;
 	}
@@ -2161,6 +2187,7 @@ int json_schema_validate (char *schema,const char *json_string, char *temp_file)
 	remove(file_path);
 	pclose(fp);
 	close(pipefd[0]);
+	close(stderr_bk);
 	free(command);
 
 	data = regexec(&r1, path, 0, NULL, 0);
@@ -2588,24 +2615,36 @@ int aurora_down_alarm(int aurora_link,int *flag){
 int zmq_socket_init (){
 
 	int rc = 0;
-	int linger = 1000;
+	int linger = 0;
+	int sndhwm = 1;
+	size_t sndhwm_size = sizeof(sndhwm);
 	size_t linger_size = sizeof(linger);
+
     zmq_context = zmq_ctx_new();
     mon_publisher = zmq_socket(zmq_context, ZMQ_PUB);
-    zmq_setsockopt (mon_publisher, ZMQ_LINGER, &linger, &linger_size);
+
+    zmq_setsockopt(mon_publisher, ZMQ_SNDHWM, &sndhwm, sndhwm_size);
+    zmq_setsockopt(mon_publisher, ZMQ_RCVHWM, &sndhwm, sndhwm_size);
+    zmq_setsockopt (mon_publisher, ZMQ_LINGER, &linger, linger_size);
     rc = zmq_bind(mon_publisher, "tcp://*:5555");
 	if (rc) {
 		return rc;
 	}
+
     alarm_publisher = zmq_socket(zmq_context, ZMQ_PUB);
-    zmq_setsockopt (alarm_publisher, ZMQ_LINGER, &linger, &linger_size);
+    zmq_setsockopt(alarm_publisher, ZMQ_SNDHWM, &sndhwm, sndhwm_size);
+    zmq_setsockopt(alarm_publisher, ZMQ_RCVHWM, &sndhwm, sndhwm_size);
+    zmq_setsockopt (alarm_publisher, ZMQ_LINGER, &linger, linger_size);
     rc = zmq_bind(alarm_publisher, "tcp://*:5556");
 	if (rc) {
 		return rc;
 	}
+
     cmd_router = zmq_socket(zmq_context, ZMQ_REP);
     rc = zmq_bind(cmd_router, "tcp://*:5557");
-    zmq_setsockopt (cmd_router, ZMQ_LINGER, &linger, &linger_size);
+    zmq_setsockopt(cmd_router, ZMQ_SNDHWM, &sndhwm, sndhwm_size);
+    zmq_setsockopt(cmd_router, ZMQ_RCVHWM, &sndhwm, sndhwm_size);
+    zmq_setsockopt (cmd_router, ZMQ_LINGER, &linger, linger_size);
 	if (rc) {
 		return rc;
 	}
