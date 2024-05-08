@@ -2658,6 +2658,7 @@ int zmq_socket_init (){
 *
 * @param DPB_I2cSensors *data: Struct that contains I2C devices
 * @param char **cmd: Segmented command
+* @param int msg_id: Unique identifier of the received JSON command request message
 *
 * @return 0 if parameters OK and reports the event, if not returns negative integer.
 */
@@ -2687,6 +2688,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					return rc;
 				}
 				rc = command_status_response_json (msg_id,bool_read[0]);
+				goto replied;
 			}
 			else{
 				bool_set=((strcmp(cmd[4],"ON") == 0)?(0):(1));
@@ -2696,6 +2698,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					return rc;
 				}
 				rc = command_status_response_json (msg_id,99);
+				goto replied;
 			}
 		}
 		if(strcmp(cmd[2],"VOLT") == 0){
@@ -2706,6 +2709,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					return rc;
 				}
 				rc = command_response_json (msg_id,val_read[0]);
+				goto replied;
 			}
 		}
 		if(strcmp(cmd[2],"CURR") == 0){
@@ -2717,6 +2721,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 				}
 				val_read[0] = ina3221_read[sfp_num%3];
 				rc = command_response_json (msg_id,val_read[0]);
+				goto replied;
 			}
 			else{
 				rc = ina3221_set_limits(data,(sfp_num/3),sfp_num%3,1,atof(cmd[4]));
@@ -2725,6 +2730,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					return rc;
 				}
 				rc = command_status_response_json (msg_id,99);
+				goto replied;
 			}
 		}
 		if(strcmp(cmd[2],"TEMP") == 0){
@@ -2735,6 +2741,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					return rc;
 				}
 				rc = command_response_json (msg_id,val_read[0]);
+				goto replied;
 			}
 		}
 		if(strcmp(cmd[2],"RXPWR") == 0){
@@ -2745,6 +2752,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					return rc;
 				}
 				rc = command_response_json (msg_id,val_read[0]);
+				goto replied;
 			}
 		}
 		if(strcmp(cmd[2],"TXPWR") == 0){
@@ -2768,6 +2776,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_status_response_json (msg_id,bool_read[0]);
+					goto replied;
 				}
 				else{
 					rc = eth_link_status("eth1",bool_read);
@@ -2776,6 +2785,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_status_response_json (msg_id,bool_read[0]);
+					goto replied;
 				}
 			}
 			else{
@@ -2786,6 +2796,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					return rc;
 				}
 				rc = command_status_response_json (msg_id,99);
+				goto replied;
 			}
 		}
 		if(strcmp(cmd[2],"VOLT") == 0){
@@ -2798,6 +2809,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_response_json (msg_id,val_read[0]);
+					goto replied;
 				}
 				else if(strcmp(cmd[3],"LPDCPU") == 0){
 					ams_chan[0] = 9;
@@ -2807,6 +2819,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_response_json (msg_id,val_read[0]);
+					goto replied;
 				}
 				else{
 					chan = ((strcmp(cmd[3],"12V") == 0)) ? 0 : ((strcmp(cmd[3],"3V3") == 0)) ? 1 : 2;
@@ -2817,6 +2830,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					}
 					val_read[0] = ((strcmp(cmd[3],"12V") == 0))? ina3221_read[0] :((strcmp(cmd[3],"3V3") == 0))? ina3221_read[1] :ina3221_read[2];
 					rc = command_response_json (msg_id,val_read[0]);
+					goto replied;
 				}
 			}
 			else{
@@ -2827,6 +2841,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_status_response_json (msg_id,99);
+					goto replied;
 				}
 				else if(strcmp(cmd[3],"LPDCPU") == 0){
 					rc = xlnx_ams_set_limits(9,"rising","voltage",atof(cmd[4]));
@@ -2835,6 +2850,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_status_response_json (msg_id,99);
+					goto replied;
 				}
 			}
 		}
@@ -2847,6 +2863,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 				}
 				val_read[0] = ((strcmp(cmd[3],"12V") == 0))? ina3221_read[0] :((strcmp(cmd[3],"3V3") == 0))? ina3221_read[1] :ina3221_read[2];
 				rc = command_response_json (msg_id,val_read[0]);
+				goto replied;
 			}
 			else{
 				chan = ((strcmp(cmd[3],"12V") == 0)) ? 0 : ((strcmp(cmd[3],"3V3") == 0)) ? 1 : 2;
@@ -2856,6 +2873,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					return rc;
 				}
 				rc = command_status_response_json (msg_id,99);
+				goto replied;
 			}
 		}
 		if(strcmp(cmd[2],"TEMP") == 0){
@@ -2868,6 +2886,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_response_json (msg_id,val_read[0]);
+					goto replied;
 				}
 				else if(strcmp(cmd[3],"LPDCPU") == 0){
 					ams_chan[0] = 7;
@@ -2877,6 +2896,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_response_json (msg_id,val_read[0]);
+					goto replied;
 				}
 				else if(strcmp(cmd[3],"FPGA") == 0){
 					ams_chan[0] = 20;
@@ -2886,6 +2906,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_response_json (msg_id,val_read[0]);
+					goto replied;
 				}
 				else{
 					rc = mcp9844_read_temperature(data,val_read);
@@ -2894,6 +2915,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_response_json (msg_id,val_read[0]);
+					goto replied;
 				}
 			}
 			else{
@@ -2904,6 +2926,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_status_response_json (msg_id,99);
+					goto replied;
 				}
 				else if(strcmp(cmd[3],"LPDCPU") == 0){
 					rc = xlnx_ams_set_limits(7,"rising","temp",atof(cmd[4]));
@@ -2920,6 +2943,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_status_response_json (msg_id,99);
+					goto replied;
 				}
 				else{
 					rc = mcp9844_set_limits(data,0,atof(cmd[4]));
@@ -2928,10 +2952,13 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 						return rc;
 					}
 					rc = command_status_response_json (msg_id,99);
+					goto replied;
 				}
 			}
 		}
 	}
+	command_status_response_json (msg_id,-EINCMD);
+replied:
 	regfree(&r1);
 	return rc;
 }
