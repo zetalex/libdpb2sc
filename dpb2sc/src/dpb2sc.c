@@ -1220,7 +1220,7 @@ int sfp_avago_read_status(struct DPB_I2cSensors *data,int n,uint8_t *res) {
 		res[1] = 1;
 	else
 		res[1] = 0;
-	return status_buf[0];
+	return (int)status_buf[0];
 
 }
 /**
