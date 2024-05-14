@@ -89,7 +89,7 @@ int init_SFP_A0(struct I2cDevice *);
 int init_SFP_A2(struct I2cDevice *);
 int init_I2cSensors(struct DPB_I2cSensors *);
 int stop_I2cSensors(struct DPB_I2cSensors *);
-int iio_event_monitor_up(char *);
+int iio_event_monitor_up();
 int xlnx_ams_read_temp(int *, int, float *);
 int xlnx_ams_read_volt(int *, int, float *);
 int xlnx_ams_set_limits(int, char *, char *, float);

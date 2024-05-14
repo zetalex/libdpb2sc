@@ -7,19 +7,48 @@
 /**
  * Start IIO EVENT MONITOR to enable Xilinx-AMS events
  *
- * @param char *app_route: Path of the binary file of the application to be executed
  *
  * @return Negative integer if start fails.If not, returns 0 and enables Xilinx-AMS events.
  */
-int iio_event_monitor_up(char *app_route) {
+int iio_event_monitor_up() {
 
+	int rc = 0;
+	char path[64];
+	FILE *temp_file;
+	char str[64];
+	regex_t r1;
+	int data = regcomp(&r1, "*.IIO_MONITOR.*", 0);
+
+	char cmd[64];
+	strcpy(cmd,"which IIO_MONITOR >> /home/petalinux/path_temp.txt");
+
+	rc = system(cmd);
+	temp_file = fopen("/home/petalinux/path_temp.txt","r");
+	if((rc == -1) | (temp_file == NULL)){
+		return -EINVAL;
+	}
+	fread(path, 64, 1, temp_file);
+	fclose(temp_file);
+
+	strcpy(str,strtok(path,"\n"));
+	strcat(str,"");
+	data = regexec(&r1, str, 0, NULL, 0);
+	if(data){
+		remove("/home/petalinux/path_temp.txt");
+		regfree(&r1);
+	}
+	else{
+		remove("/home/petalinux/path_temp.txt");
+		regfree(&r1);
+		return -EINVAL;
+	}
 
     child_pid = fork(); // Create a child process
 
     if (child_pid == 0) {
         // Child process
         // Path of the .elf file and arguments
-        char *args[] = {app_route, "-a", "/dev/iio:device0", NULL};
+        char *args[] = {str, "-a", "/dev/iio:device0", NULL};
 
         // Execute the .elf file
         if (execvp(args[0], args) == -1) {
