@@ -17,7 +17,7 @@ int iio_event_monitor_up() {
 	FILE *temp_file;
 	char str[64];
 	regex_t r1;
-	int data = regcomp(&r1, "*.IIO_MONITOR.*", 0);
+	int data = regcomp(&r1, "[:IIO_MONITOR:]", 0);
 
 	char cmd[64];
 	strcpy(cmd,"which IIO_MONITOR >> /home/petalinux/path_temp.txt");
@@ -36,11 +36,11 @@ int iio_event_monitor_up() {
 	if(data){
 		remove("/home/petalinux/path_temp.txt");
 		regfree(&r1);
+		return -EINVAL;
 	}
 	else{
 		remove("/home/petalinux/path_temp.txt");
 		regfree(&r1);
-		return -EINVAL;
 	}
 
     child_pid = fork(); // Create a child process
