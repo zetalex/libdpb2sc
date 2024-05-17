@@ -352,7 +352,21 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 			}
 	return 0;
 	}
-
+/**
+ * Initialize every I2C sensor available
+ *
+ * @param int channel: Channel that triggered the alarm
+ * @param char *ev_type: Direction of event triggered
+ * @param char *ch_type: Type of channel that triggered the event
+ *
+ * @return 0
+ */
+int read_shm(int *channel, char *ev_type, char *ch_type){
+	channel[0] = memory->chn;
+	strcpy(ev_type,memory->ev_type);
+	strcpy(ch_type,memory->ch_type);
+	return 0;
+}
 /************************** I2C Devices Functions ******************************/
 /**
  * Initialize every I2C sensor available

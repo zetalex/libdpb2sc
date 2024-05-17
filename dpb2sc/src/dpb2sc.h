@@ -93,6 +93,7 @@ int iio_event_monitor_up();
 int xlnx_ams_read_temp(int *, int, float *);
 int xlnx_ams_read_volt(int *, int, float *);
 int xlnx_ams_set_limits(int, char *, char *, float);
+int read_shm(int *, char *, char *);
 int mcp9844_read_temperature(struct DPB_I2cSensors *,float *);
 int mcp9844_set_limits(struct DPB_I2cSensors *,int, float);
 int mcp9844_set_config(struct DPB_I2cSensors *,uint8_t *,uint8_t *);
