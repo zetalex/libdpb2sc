@@ -2039,10 +2039,11 @@ int status_alarm_json (char *board,char *chip, int chan,uint64_t timestamp,char 
  *
  * @param int msg_id: Message ID
  * @param float val: read value
+ * @param char* cmd_reply: Stores CMD JSON reply to send it
  *
  * @return 0 or negative integer if validation fails
  */
-int command_response_json (int msg_id, float val)
+int command_response_json (int msg_id, float val, char* cmd_reply)
 {
 	json_object *jcmd_data = json_object_new_object();
 
@@ -2081,12 +2082,13 @@ int command_response_json (int msg_id, float val)
 	json_object_object_add(jcmd_data,"uuid", juuid);
 
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
-	/*int rc = json_schema_validate("JSONSchemaCommand.json",serialized_json, "cmd_temp.json");
+	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
 		printf("Error\r\n");
 		return rc;
-	}*/
-	zmq_send(cmd_router, serialized_json, strlen(serialized_json), 0);
+	}
+	strcpy(cmd_reply,serialized_json);
+	//zmq_send(cmd_router, serialized_json, strlen(serialized_json), 0);
 	json_object_put(jcmd_data);
 	return 0;
 }
@@ -2096,10 +2098,11 @@ int command_response_json (int msg_id, float val)
  *
  * @param int msg_id: Message ID
  * @param int val: read value (1 is ON and 0 is OFF), if operation is set val = 99, JSON value field = OK , else is error, JSON value = ERROR
+ * @param char* cmd_reply: Stores CMD JSON reply to send it
  *
  * @return 0 or negative integer if validation fails
  */
-int command_status_response_json (int msg_id,int val)
+int command_status_response_json (int msg_id,int val,char* cmd_reply)
 {
 	json_object *jcmd_data = json_object_new_object();
 	char msg_date[64];
@@ -2146,12 +2149,13 @@ int command_status_response_json (int msg_id,int val)
 	json_object_object_add(jcmd_data,"uuid", juuid);
 
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
-	/*int rc = json_schema_validate("JSONSchemaCommand.json",serialized_json, "cmd_temp.json");
+	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
 		printf("Error\r\n");
 		return rc;
-	}*/
-	zmq_send(cmd_router, serialized_json, strlen(serialized_json), 0);
+	}
+	strcpy(cmd_reply,serialized_json);
+	//zmq_send(cmd_router, serialized_json, strlen(serialized_json), 0);
 	json_object_put(jcmd_data);
 	return 0;
 }
@@ -2688,10 +2692,11 @@ int zmq_socket_init (){
 * @param DPB_I2cSensors *data: Struct that contains I2C devices
 * @param char **cmd: Segmented command
 * @param int msg_id: Unique identifier of the received JSON command request message
+* @param char *cmd_reply: Stores command JSON reply to send it
 *
 * @return 0 if parameters OK and reports the event, if not returns negative integer.
 */
-int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
+int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,char *cmd_reply){
 
 	regex_t r1;
 	int reg_exp;
@@ -2713,85 +2718,78 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 			if(strcmp(cmd[0],"READ") == 0){
 				rc = read_GPIO(SFP0_RX_LOS+(sfp_num*4),bool_read);
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRREAD);
+					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 					return rc;
 				}
-				rc = command_status_response_json (msg_id,bool_read[0]);
-				goto replied;
+				rc = command_status_response_json (msg_id,bool_read[0],cmd_reply);
 			}
 			else{
 				bool_set=((strcmp(cmd[4],"ON") == 0)?(0):(1));
 				rc = write_GPIO(SFP0_TX_DIS+sfp_num,bool_set);
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRSET);
+					rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 					return rc;
 				}
-				rc = command_status_response_json (msg_id,99);
-				goto replied;
+				rc = command_status_response_json (msg_id,99,cmd_reply);
 			}
 		}
 		if(strcmp(cmd[2],"VOLT") == 0){
 			if(strcmp(cmd[0],"READ") == 0){
 				rc = sfp_avago_read_voltage(data,sfp_num,val_read);
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRREAD);
+					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 					return rc;
 				}
-				rc = command_response_json (msg_id,val_read[0]);
-				goto replied;
+				rc = command_response_json (msg_id,val_read[0],cmd_reply);
 			}
 		}
 		if(strcmp(cmd[2],"CURR") == 0){
 			if(strcmp(cmd[0],"READ") == 0){
 				rc = ina3221_get_current(data,(sfp_num/3),ina3221_read);
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRREAD);
+					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 					return rc;
 				}
 				val_read[0] = ina3221_read[sfp_num%3];
-				rc = command_response_json (msg_id,val_read[0]);
-				goto replied;
+				rc = command_response_json (msg_id,val_read[0],cmd_reply);
 			}
 			else{
 				rc = ina3221_set_limits(data,(sfp_num/3),sfp_num%3,1,atof(cmd[4]));
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRSET);
+					rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 					return rc;
 				}
-				rc = command_status_response_json (msg_id,99);
-				goto replied;
+				rc = command_status_response_json (msg_id,99,cmd_reply);
 			}
 		}
 		if(strcmp(cmd[2],"TEMP") == 0){
 			if(strcmp(cmd[0],"READ") == 0){
 				rc = sfp_avago_read_temperature(data,sfp_num,val_read);
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRREAD);
+					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 					return rc;
 				}
-				rc = command_response_json (msg_id,val_read[0]);
-				goto replied;
+				rc = command_response_json (msg_id,val_read[0],cmd_reply);
 			}
 		}
 		if(strcmp(cmd[2],"RXPWR") == 0){
 			if(strcmp(cmd[0],"READ") == 0){
 				rc = sfp_avago_read_rx_av_optical_pwr(data,sfp_num,val_read);
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRREAD);
+					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 					return rc;
 				}
-				rc = command_response_json (msg_id,val_read[0]);
-				goto replied;
+				rc = command_response_json (msg_id,val_read[0],cmd_reply);
 			}
 		}
 		if(strcmp(cmd[2],"TXPWR") == 0){
 			if(strcmp(cmd[0],"READ") == 0){
 				rc = sfp_avago_read_tx_av_optical_pwr(data,sfp_num,val_read);
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRREAD);
+					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 					return rc;
 				}
-				rc = command_response_json (msg_id,val_read[0]);
+				rc = command_response_json (msg_id,val_read[0],cmd_reply);
 			}
 		}
 	}
@@ -2801,31 +2799,28 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 				if(strcmp(cmd[3],"ETH0") == 0){
 					rc = eth_link_status("eth0",bool_read);
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRREAD);
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						return rc;
 					}
-					rc = command_status_response_json (msg_id,bool_read[0]);
-					goto replied;
+					rc = command_status_response_json (msg_id,bool_read[0],cmd_reply);
 				}
 				else{
 					rc = eth_link_status("eth1",bool_read);
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRREAD);
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						return rc;
 					}
-					rc = command_status_response_json (msg_id,bool_read[0]);
-					goto replied;
+					rc = command_status_response_json (msg_id,bool_read[0],cmd_reply);
 				}
 			}
 			else{
 				bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
 				rc = eth_link_status_config(cmd[3], bool_set);
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRSET);
+					rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 					return rc;
 				}
-				rc = command_status_response_json (msg_id,99);
-				goto replied;
+				rc = command_status_response_json (msg_id,99,cmd_reply);
 			}
 		}
 		if(strcmp(cmd[2],"VOLT") == 0){
@@ -2834,52 +2829,47 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					ams_chan[0] = 10;
 					rc = xlnx_ams_read_volt(ams_chan,1,val_read);
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRREAD);
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						return rc;
 					}
-					rc = command_response_json (msg_id,val_read[0]);
-					goto replied;
+					rc = command_response_json (msg_id,val_read[0],cmd_reply);
 				}
 				else if(strcmp(cmd[3],"LPDCPU") == 0){
 					ams_chan[0] = 9;
 					rc = xlnx_ams_read_volt(ams_chan,1,val_read);
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRREAD);
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						return rc;
 					}
-					rc = command_response_json (msg_id,val_read[0]);
-					goto replied;
+					rc = command_response_json (msg_id,val_read[0],cmd_reply);
 				}
 				else{
 					chan = ((strcmp(cmd[3],"12V") == 0)) ? 0 : ((strcmp(cmd[3],"3V3") == 0)) ? 1 : 2;
 					rc = ina3221_get_voltage(data,2,ina3221_read);
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRREAD);
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						return rc;
 					}
 					val_read[0] = ((strcmp(cmd[3],"12V") == 0))? ina3221_read[0] :((strcmp(cmd[3],"3V3") == 0))? ina3221_read[1] :ina3221_read[2];
-					rc = command_response_json (msg_id,val_read[0]);
-					goto replied;
+					rc = command_response_json (msg_id,val_read[0],cmd_reply);
 				}
 			}
 			else{
 				if(strcmp(cmd[3],"FPDCPU") == 0){
 					rc = xlnx_ams_set_limits(10,"rising","voltage",atof(cmd[4]));
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRSET);
+						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 						return rc;
 					}
-					rc = command_status_response_json (msg_id,99);
-					goto replied;
+					rc = command_status_response_json (msg_id,99,cmd_reply);
 				}
 				else if(strcmp(cmd[3],"LPDCPU") == 0){
 					rc = xlnx_ams_set_limits(9,"rising","voltage",atof(cmd[4]));
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRSET);
+						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 						return rc;
 					}
-					rc = command_status_response_json (msg_id,99);
-					goto replied;
+					rc = command_status_response_json (msg_id,99,cmd_reply);
 				}
 			}
 		}
@@ -2887,22 +2877,20 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 			if(strcmp(cmd[0],"READ") == 0){
 				rc = ina3221_get_current(data,2,ina3221_read);
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRREAD);
+					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 					return rc;
 				}
 				val_read[0] = ((strcmp(cmd[3],"12V") == 0))? ina3221_read[0] :((strcmp(cmd[3],"3V3") == 0))? ina3221_read[1] :ina3221_read[2];
-				rc = command_response_json (msg_id,val_read[0]);
-				goto replied;
+				rc = command_response_json (msg_id,val_read[0],cmd_reply);
 			}
 			else{
 				chan = ((strcmp(cmd[3],"12V") == 0)) ? 0 : ((strcmp(cmd[3],"3V3") == 0)) ? 1 : 2;
 				rc = ina3221_set_limits(data,2,chan,1,atof(cmd[4]));
 				if(rc){
-					rc = command_status_response_json (msg_id,-ERRSET);
+					rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 					return rc;
 				}
-				rc = command_status_response_json (msg_id,99);
-				goto replied;
+				rc = command_status_response_json (msg_id,99,cmd_reply);
 			}
 		}
 		if(strcmp(cmd[2],"TEMP") == 0){
@@ -2911,83 +2899,74 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id){
 					ams_chan[0] = 8;
 					rc = xlnx_ams_read_temp(ams_chan,1,val_read);
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRREAD);
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						return rc;
 					}
-					rc = command_response_json (msg_id,val_read[0]);
-					goto replied;
+					rc = command_response_json (msg_id,val_read[0],cmd_reply);
 				}
 				else if(strcmp(cmd[3],"LPDCPU") == 0){
 					ams_chan[0] = 7;
 					rc = xlnx_ams_read_temp(ams_chan,1,val_read);
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRREAD);
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						return rc;
 					}
-					rc = command_response_json (msg_id,val_read[0]);
-					goto replied;
+					rc = command_response_json (msg_id,val_read[0],cmd_reply);
 				}
 				else if(strcmp(cmd[3],"FPGA") == 0){
 					ams_chan[0] = 20;
 					rc = xlnx_ams_read_temp(ams_chan,1,val_read);
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRREAD);
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						return rc;
 					}
-					rc = command_response_json (msg_id,val_read[0]);
-					goto replied;
+					rc = command_response_json (msg_id,val_read[0],cmd_reply);
 				}
 				else{
 					rc = mcp9844_read_temperature(data,val_read);
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRREAD);
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						return rc;
 					}
-					rc = command_response_json (msg_id,val_read[0]);
-					goto replied;
+					rc = command_response_json (msg_id,val_read[0],cmd_reply);
 				}
 			}
 			else{
 				if(strcmp(cmd[3],"FPDCPU") == 0){
 					rc = xlnx_ams_set_limits(8,"rising","temp",atof(cmd[4]));
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRSET);
+						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 						return rc;
 					}
-					rc = command_status_response_json (msg_id,99);
-					goto replied;
+					rc = command_status_response_json (msg_id,99,cmd_reply);
 				}
 				else if(strcmp(cmd[3],"LPDCPU") == 0){
 					rc = xlnx_ams_set_limits(7,"rising","temp",atof(cmd[4]));
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRSET);
+						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 						return rc;
 					}
-					rc = command_status_response_json (msg_id,99);
+					rc = command_status_response_json (msg_id,99,cmd_reply);
 				}
 				else if(strcmp(cmd[3],"FPGA") == 0){
 					rc = xlnx_ams_set_limits(20,"rising","temp",atof(cmd[4]));
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRSET);
+						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 						return rc;
 					}
-					rc = command_status_response_json (msg_id,99);
-					goto replied;
+					rc = command_status_response_json (msg_id,99,cmd_reply);
 				}
 				else{
 					rc = mcp9844_set_limits(data,0,atof(cmd[4]));
 					if(rc){
-						rc = command_status_response_json (msg_id,-ERRSET);
+						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 						return rc;
 					}
-					rc = command_status_response_json (msg_id,99);
-					goto replied;
+					rc = command_status_response_json (msg_id,99,cmd_reply);
 				}
 			}
 		}
 	}
-	command_status_response_json (msg_id,-EINCMD);
-replied:
 	regfree(&r1);
 	return rc;
 }
