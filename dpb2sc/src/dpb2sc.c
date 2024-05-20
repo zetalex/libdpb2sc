@@ -948,22 +948,52 @@ int sfp_avago_read_temperature(struct DPB_I2cSensors *data,int n, float *res) {
 
 	switch(n){
 		case DEV_SFP0:
-			dev = data->dev_sfp0_A2;
+			if(sfp0_connected){
+				dev = data->dev_sfp0_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP1:
-			dev = data->dev_sfp1_A2;
+			if(sfp1_connected){
+				dev = data->dev_sfp1_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP2:
-			dev = data->dev_sfp2_A2;
+			if(sfp2_connected){
+				dev = data->dev_sfp2_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP3:
+				if(sfp3_connected){
 				dev = data->dev_sfp3_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP4:
+			if(sfp4_connected){
 				dev = data->dev_sfp4_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP5:
+			if(sfp5_connected){
 				dev = data->dev_sfp5_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		default:
 			return -EINVAL;
@@ -1004,22 +1034,52 @@ int sfp_avago_read_voltage(struct DPB_I2cSensors *data,int n, float *res) {
 
 	switch(n){
 		case DEV_SFP0:
-			dev = data->dev_sfp0_A2;
+			if(sfp0_connected){
+				dev = data->dev_sfp0_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP1:
-			dev = data->dev_sfp1_A2;
+			if(sfp1_connected){
+				dev = data->dev_sfp1_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP2:
-			dev = data->dev_sfp2_A2;
+			if(sfp2_connected){
+				dev = data->dev_sfp2_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP3:
+				if(sfp3_connected){
 				dev = data->dev_sfp3_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP4:
+			if(sfp4_connected){
 				dev = data->dev_sfp4_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP5:
+			if(sfp5_connected){
 				dev = data->dev_sfp5_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		default:
 			return -EINVAL;
@@ -1060,22 +1120,52 @@ int sfp_avago_read_lbias_current(struct DPB_I2cSensors *data,int n, float *res) 
 
 	switch(n){
 		case DEV_SFP0:
-			dev = data->dev_sfp0_A2;
+			if(sfp0_connected){
+				dev = data->dev_sfp0_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP1:
-			dev = data->dev_sfp1_A2;
+			if(sfp1_connected){
+				dev = data->dev_sfp1_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP2:
-			dev = data->dev_sfp2_A2;
+			if(sfp2_connected){
+				dev = data->dev_sfp2_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP3:
+				if(sfp3_connected){
 				dev = data->dev_sfp3_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP4:
+			if(sfp4_connected){
 				dev = data->dev_sfp4_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP5:
+			if(sfp5_connected){
 				dev = data->dev_sfp5_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		default:
 			return -EINVAL;
@@ -1116,22 +1206,52 @@ int sfp_avago_read_tx_av_optical_pwr(struct DPB_I2cSensors *data,int n, float *r
 
 	switch(n){
 		case DEV_SFP0:
-			dev = data->dev_sfp0_A2;
+			if(sfp0_connected){
+				dev = data->dev_sfp0_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP1:
-			dev = data->dev_sfp1_A2;
+			if(sfp1_connected){
+				dev = data->dev_sfp1_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP2:
-			dev = data->dev_sfp2_A2;
+			if(sfp2_connected){
+				dev = data->dev_sfp2_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP3:
+				if(sfp3_connected){
 				dev = data->dev_sfp3_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP4:
+			if(sfp4_connected){
 				dev = data->dev_sfp4_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP5:
+			if(sfp5_connected){
 				dev = data->dev_sfp5_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		default:
 			return -EINVAL;
@@ -1172,22 +1292,52 @@ int sfp_avago_read_rx_av_optical_pwr(struct DPB_I2cSensors *data,int n, float *r
 
 	switch(n){
 		case DEV_SFP0:
-			dev = data->dev_sfp0_A2;
+			if(sfp0_connected){
+				dev = data->dev_sfp0_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP1:
-			dev = data->dev_sfp1_A2;
+			if(sfp1_connected){
+				dev = data->dev_sfp1_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP2:
-			dev = data->dev_sfp2_A2;
+			if(sfp2_connected){
+				dev = data->dev_sfp2_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP3:
+				if(sfp3_connected){
 				dev = data->dev_sfp3_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP4:
+			if(sfp4_connected){
 				dev = data->dev_sfp4_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP5:
+			if(sfp5_connected){
 				dev = data->dev_sfp5_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		default:
 			return -EINVAL;
@@ -1227,22 +1377,52 @@ int sfp_avago_read_status(struct DPB_I2cSensors *data,int n,uint8_t *res) {
 
 	switch(n){
 		case DEV_SFP0:
-			dev = data->dev_sfp0_A2;
+			if(sfp0_connected){
+				dev = data->dev_sfp0_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP1:
-			dev = data->dev_sfp1_A2;
+			if(sfp1_connected){
+				dev = data->dev_sfp1_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP2:
-			dev = data->dev_sfp2_A2;
+			if(sfp2_connected){
+				dev = data->dev_sfp2_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP3:
+				if(sfp3_connected){
 				dev = data->dev_sfp3_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP4:
+			if(sfp4_connected){
 				dev = data->dev_sfp4_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP5:
+			if(sfp5_connected){
 				dev = data->dev_sfp5_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		default:
 			return -EINVAL;
@@ -1263,7 +1443,7 @@ int sfp_avago_read_status(struct DPB_I2cSensors *data,int n,uint8_t *res) {
 		res[1] = 1;
 	else
 		res[1] = 0;
-	return (int)status_buf[0];
+	return 0;
 
 }
 /**
@@ -1385,22 +1565,52 @@ int sfp_avago_read_alarms(struct DPB_I2cSensors *data,int n) {
 
 	switch(n){
 		case DEV_SFP0:
-			dev = data->dev_sfp0_A2;
+			if(sfp0_connected){
+				dev = data->dev_sfp0_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP1:
-			dev = data->dev_sfp1_A2;
+			if(sfp1_connected){
+				dev = data->dev_sfp1_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP2:
-			dev = data->dev_sfp2_A2;
+			if(sfp2_connected){
+				dev = data->dev_sfp2_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 		break;
 		case DEV_SFP3:
+				if(sfp3_connected){
 				dev = data->dev_sfp3_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP4:
+			if(sfp4_connected){
 				dev = data->dev_sfp4_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		case DEV_SFP5:
+			if(sfp5_connected){
 				dev = data->dev_sfp5_A2;
+			}
+			else{
+				return -EINVAL;
+			}
 			break;
 		default:
 			return -EINVAL;
