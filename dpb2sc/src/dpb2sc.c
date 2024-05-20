@@ -50,11 +50,7 @@ int iio_event_monitor_up() {
         // Path of the .elf file and arguments
         char *args[] = {str, "-a", "/dev/iio:device0", NULL};
 
-        // Execute the .elf file
-        if (execvp(args[0], args) == -1) {
-            perror("Error executing the .elf file");
-            return -1;
-        }
+
     	key_t sharedMemoryKey = MEMORY_KEY;
     	memoryID = shmget(sharedMemoryKey, sizeof(struct wrapper), IPC_CREAT | 0600);
     	if (memoryID == -1) {
@@ -80,6 +76,12 @@ int iio_event_monitor_up() {
     	    perror("shmget(): ");
     	    exit(1);
     	 }
+    	// Execute the .elf file
+    	else if (execvp(args[0], args) == -1) {
+			perror("Error executing the .elf file");
+			return -1;
+		}
+    	sem_wait(&memory->ams_sync);
     } else if (child_pid > 0) {
         // Parent process
     } else {
