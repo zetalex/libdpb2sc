@@ -434,7 +434,7 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 			sfp1_connected = 1;
 		}
 	}
-	rc = init_SFP_A0(&data->dev_sfp0_A2);
+	rc = init_SFP_A0(&data->dev_sfp2_A0);
 	if (rc) {
 		timestamp = time(NULL);
 		rc = status_alarm_json("DPB","SFP I2C Bus Status",2,timestamp,"critical");
