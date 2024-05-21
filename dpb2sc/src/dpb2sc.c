@@ -3,93 +3,70 @@
 #include "dpb2sc.h"
 
 
-/************************** IIO_EVENT_MONITOR Functions ******************************/
+/************************** Shared Memory Functions ******************************/
 /**
- * Start IIO EVENT MONITOR to enable Xilinx-AMS events
+ * Start Shared Memory needed for library functions
  *
  *
- * @return Negative integer if start fails.If not, returns 0 and enables Xilinx-AMS events.
+ * @return Negative integer if start fails.If not, returns 0 and enables shared memory
  */
-int iio_event_monitor_up() {
+int init_shared_memory() {
 
 	int rc = 0;
-	char path[64];
-	FILE *temp_file;
-	char str[64];
-	regex_t r1;
-	int data = regcomp(&r1, "[:IIO_MONITOR:]", 0);
+	key_t sharedMemoryKey = MEMORY_KEY;
 
-	char cmd[64];
-	strcpy(cmd,"which IIO_MONITOR >> /home/petalinux/path_temp.txt");
-
-	rc = system(cmd);
-	temp_file = fopen("/home/petalinux/path_temp.txt","r");
-	if((rc == -1) | (temp_file == NULL)){
-		return -EINVAL;
-	}
-	fread(path, 64, 1, temp_file);
-	fclose(temp_file);
-
-	strcpy(str,strtok(path,"\n"));
-	strcat(str,"");
-	data = regexec(&r1, str, 0, NULL, 0);
-	if(data){
-		remove("/home/petalinux/path_temp.txt");
-		regfree(&r1);
-		return -EINVAL;
-	}
-	else{
-		remove("/home/petalinux/path_temp.txt");
-		regfree(&r1);
+	memoryID = shmget(sharedMemoryKey, sizeof(struct wrapper), IPC_CREAT | 0600);
+	if (memoryID == -1) {
+		 perror("shmget(): Could not get shared memory segment");
+		 return -1;
 	}
 
-    child_pid = fork(); // Create a child process
+	memory = shmat(memoryID, NULL, 0);
+	if (memory == (void *) -1) {
+		perror("shmat(): Could not map shared memory segment");
+		return -1;
+	}
 
-    if (child_pid == 0) {
-        // Child process
-        // Path of the .elf file and arguments
-        char *args[] = {str, "-a", "/dev/iio:device0", NULL};
+	strcpy(memory->ev_type,"");
+	strcpy(memory->ch_type,"");
+	sem_init(&memory->ams_sync, 1, 0);
+	sem_init(&memory->empty, 1, 1);
+	sem_init(&memory->full, 1, 0);
+	memory->chn = 0;
+	memory->tmpstmp = 0;
 
+	if (memoryID == -1) {
+		perror("shmget(): ");
+		return -1;
+	 }
+    return rc;
+}
 
-    	key_t sharedMemoryKey = MEMORY_KEY;
-    	memoryID = shmget(sharedMemoryKey, sizeof(struct wrapper), IPC_CREAT | 0600);
-    	if (memoryID == -1) {
-    	     perror("shmget():");
-    	     exit(1);
-    	}
+/**
+ * Read from Shared memory to get IIO_EVENT_MONITOR Events
+ *
+ * @param int channel: Channel that triggered the alarm
+ * @param char *ev_type: Direction of event triggered
+ * @param char *ch_type: Type of channel that triggered the event
+ *
+ * @return 0
+ */
+int read_shm(int *channel, char *ev_type, char *ch_type){
+	memoryID = shmget(MEMORY_KEY, sizeof(struct wrapper), 0);
+	if (memoryID == -1) {
+	      perror("Shared memory");
+	      return 1;
+	   }
 
-    	memory = shmat(memoryID, NULL, 0);
-    	if (memory == (void *) -1) {
-    	    perror("shmat():");
-    	    exit(1);
-    	}
-
-    	strcpy(memory->ev_type,"");
-    	strcpy(memory->ch_type,"");
-    	sem_init(&memory->ams_sync, 1, 0);
-    	sem_init(&memory->empty, 1, 1);
-    	sem_init(&memory->full, 1, 0);
-    	memory->chn = 0;
-    	memory->tmpstmp = 0;
-
-    	if (memoryID == -1) {
-    	    perror("shmget(): ");
-    	    exit(1);
-    	 }
-    	// Execute the .elf file
-    	else if (execvp(args[0], args) == -1) {
-			perror("Error executing the .elf file");
-			return -1;
-		}
-    	sem_wait(&memory->ams_sync);
-    } else if (child_pid > 0) {
-        // Parent process
-    } else {
-        // Error creating the child process
-        perror("Error creating the child process");
-        return -1;
-    }
-    return 0;
+	memory = shmat(memoryID, NULL, 0);
+	channel[0] = memory->chn;
+	strcpy(ev_type,memory->ev_type);
+	strcpy(ch_type,memory->ch_type);
+	 if (shmdt(memory) == -1) {
+	      perror("shmdt");
+	      return 1;
+	   }
+	return 0;
 }
 /************************** AMS Functions ******************************/
 
@@ -354,21 +331,6 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 			}
 	return 0;
 	}
-/**
- * Initialize every I2C sensor available
- *
- * @param int channel: Channel that triggered the alarm
- * @param char *ev_type: Direction of event triggered
- * @param char *ch_type: Type of channel that triggered the event
- *
- * @return 0
- */
-int read_shm(int *channel, char *ev_type, char *ch_type){
-	channel[0] = memory->chn;
-	strcpy(ev_type,memory->ev_type);
-	strcpy(ch_type,memory->ch_type);
-	return 0;
-}
 /************************** I2C Devices Functions ******************************/
 /**
  * Initialize every I2C sensor available
@@ -3255,7 +3217,7 @@ void atexit_function() {
  * @return NULL
  */
 void sighandler(int signum) {
-   kill(child_pid,SIGKILL);
+   //kill(child_pid,SIGKILL);
    unexport_GPIO();
    zmq_close(mon_publisher);
    zmq_close(alarm_publisher);
