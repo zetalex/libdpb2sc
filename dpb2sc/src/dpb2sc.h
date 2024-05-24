@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include "timer.h"
@@ -41,8 +40,6 @@ struct DPB_I2cSensors{
 	struct I2cDevice dev_sfp3_A2;
 	struct I2cDevice dev_sfp4_A2;
 	struct I2cDevice dev_sfp5_A2;
-	//struct I2cDevice dev_mux0;
-	//struct I2cDevice dev_mux1;
 };
 /******************************************************************************
 *Local Semaphores.
@@ -379,13 +376,6 @@ const int GPIO_PINS[GPIO_PINS_SIZE] = {
 #define DEV_SFP0_2_VOLT 0x0
 #define DEV_SFP3_5_VOLT 0x1
 #define DEV_SOM_VOLT 0x2
-/******************************************************************************
-*Threads timers (ms).
-****************************************************************************/
-#define MONIT_THREAD_PERIOD 5000000
-#define ALARMS_THREAD_PERIOD 100
-#define AMS_ALARMS_THREAD_PERIOD 100
-#define COMMAND_THREAD_PERIOD 50
 /******************************************************************************
 *GPIO base address
 ****************************************************************************/
