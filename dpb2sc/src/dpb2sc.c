@@ -2,6 +2,37 @@
 
 #include "dpb2sc.h"
 
+/************************** Semaphore Functions ******************************/
+/**
+ * Start Semaphores needed for library functions
+ *
+ *
+ * @return Negative integer if start fails.If not, returns 0 and enables semaphores
+ */
+int init_semaphores(){
+	int rc = 0;
+
+	rc = sem_init(&sem_valid,1,1);
+	if(rc){
+		printf("Error initialising semaphore valid\n");
+		return rc;
+	}
+	rc = sem_init(&file_sync,1,1);
+	if(rc){
+		printf("Error initialising semaphore for GPIO files\n");
+		return rc;
+	}
+	sem_init(&i2c_sync,1,1);
+	if(rc){
+		printf("Error initialising semaphore for I2C Devices\n");
+		return rc;
+	}
+	sem_init(&alarm_sync,1,1);
+	if(rc){
+		printf("Error initialising semaphore for Alarm files\n");
+		return rc;
+	}
+}
 
 /************************** Shared Memory Functions ******************************/
 /**
@@ -87,9 +118,9 @@ int xlnx_ams_read_temp(int *chan, int n, float *res){
 
 		char buffer [sizeof(chan[i])*8+1];
 		snprintf(buffer, sizeof(buffer), "%d",chan[i]);
-		char raw_str[80];
-		char offset_str[80];
-		char scale_str[80];
+		char raw_str[128];
+		char offset_str[128];
+		char scale_str[128];
 
 		strcpy(raw_str, "/sys/bus/iio/devices/iio:device0/in_temp");
 		strcpy(offset_str, "/sys/bus/iio/devices/iio:device0/in_temp");
@@ -108,15 +139,10 @@ int xlnx_ams_read_temp(int *chan, int n, float *res){
 		scale = fopen(scale_str,"r");
 
 		if((raw==NULL)|(offset==NULL)|(scale==NULL)){
-
-			fclose(raw);
-			fclose(offset);
-			fclose(scale);
 			printf("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
 			return -1;
 			}
 		else{
-
 			fseek(raw, 0, SEEK_END);
 			long fsize = ftell(raw);
 			fseek(raw, 0, SEEK_SET);  /* same as rewind(f); */
@@ -139,12 +165,12 @@ int xlnx_ams_read_temp(int *chan, int n, float *res){
 			fread(scale_string, fsize, 1, scale);
 
 			float Temperature = (atof(scale_string) * (atof(raw_string) + atof(offset_string))) / 1024; //Apply ADC conversion to Temperature, Xilinx Specs
-			fclose(raw);
-			fclose(offset);
-			fclose(scale);
 			free(offset_string);
 			free(raw_string);
 			free(scale_string);
+			fclose(raw);
+			fclose(offset);
+			fclose(scale);
 			res[i] = Temperature;
 			//return 0;
 			}
@@ -168,8 +194,8 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
 
 		char buffer [sizeof(chan[i])*8+1];
 		snprintf(buffer, sizeof(buffer), "%d",chan[i]);
-		char raw_str[80];
-		char scale_str[80];
+		char raw_str[128];
+		char scale_str[128];
 
 		strcpy(raw_str, "/sys/bus/iio/devices/iio:device0/in_voltage");
 		strcpy(scale_str, "/sys/bus/iio/devices/iio:device0/in_voltage");
@@ -184,9 +210,6 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
 		scale = fopen(scale_str,"r");
 
 		if((raw==NULL)|(scale==NULL)){
-
-			fclose(raw);
-			fclose(scale);
 			printf("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
 			return -1;
 			}
@@ -262,7 +285,6 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 		thres = open(thres_str, O_WRONLY);
 
 		if((scale==NULL)|(thres < 0)){
-			fclose(scale);
 			printf("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
 			return -1;
 			}
@@ -274,7 +296,7 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 				strcat(offset_str, "_offset");
 				offset = fopen(offset_str,"r");
 				if(offset==NULL){
-					fclose(offset);
+					fclose(scale);
 					printf("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
 					return -1;
 				}
@@ -322,8 +344,9 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 
 				//return 0;
 			}
-			else
-				return -EINVAL;
+			else{
+				close(thres);
+				return -EINVAL;}
 
 			snprintf(adc_buff, sizeof(adc_buff), "%d",adc_code);
 			write (thres, &adc_buff, sizeof(adc_buff));
@@ -331,13 +354,14 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 			}
 	return 0;
 	}
+
 /************************** I2C Devices Functions ******************************/
 /**
  * Initialize every I2C sensor available
  *
  * @param DPB_I2cSensors *data; struct which contains every I2C sensor available
  *
- * @return Negative integer if initialization fails.If not, returns 0 every I2C sensor initialized.
+ * @return 0 and every I2C sensor initialized.
  */
 int init_I2cSensors(struct DPB_I2cSensors *data){
 
@@ -379,7 +403,7 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 	data->dev_sfp5_A2.filename = "/dev/i2c-13";
 	data->dev_sfp5_A2.addr = 0x51;
 
-
+	sem_post(&alarm_sync);
 	rc = init_tempSensor(&data->dev_pcb_temp);
 	if (rc) {
 		timestamp = time(NULL);
@@ -497,13 +521,11 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 	rc = mcp9844_set_limits(data,0,60);
 	if (rc) {
 		printf("Failed to set MCP9844 Upper Limit\r\n");
-		return rc;
 	}
 
 	rc = mcp9844_set_limits(data,2,80);
 	if (rc) {
 		printf("Failed to set MCP9844 Critical Limit\r\n");
-		return rc;
 	}
 	return 0;
 }
@@ -1772,8 +1794,8 @@ int ina3221_get_current(struct DPB_I2cSensors *data,int n, float *res){
  * Handles INA3221 Voltage and Current Sensor critical alarm interruptions
  *
  * @param struct DPB_I2cSensors *data: being the corresponding I2C device INA3221 Voltage and Current Sensor
- * @param uint16_t mask contains critical alarm flags
- * @param int n indicate from which of the 3 INA3221 is dealing with
+ * @param uint16_t mask: contains critical alarm flags
+ * @param int n: indicate from which of the 3 INA3221 is dealing with
  *
  * @return 0 and handles interruption depending on the active alarms flags
  */
@@ -2106,6 +2128,7 @@ int parsing_mon_status_data_into_array(json_object *jarray, int status, char *ma
  */
 int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64_t timestamp,char *info_type)
 {
+	sem_wait(&alarm_sync);
 	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type = NULL;
 	jalarm_data = json_object_new_object();
 	char buffer[8];
@@ -2154,6 +2177,7 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
 	else{
 		zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
 	}
+	sem_post(&alarm_sync);
 	json_object_put(jalarm_data);
 	return 0;
 }
@@ -2172,6 +2196,7 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
  */
 int status_alarm_json (char *board,char *chip, int chan,uint64_t timestamp,char *info_type)
 {
+	sem_wait(&alarm_sync);
 	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus = NULL;
 	jalarm_data = json_object_new_object();
 
@@ -2219,6 +2244,7 @@ int status_alarm_json (char *board,char *chip, int chan,uint64_t timestamp,char 
 	else{
 		zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
 	}
+	sem_post(&alarm_sync);
 	json_object_put(jalarm_data);
 	return 0;
 }
@@ -2358,6 +2384,7 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
  */
 int json_schema_validate (char *schema,const char *json_string, char *temp_file)
 {
+	sem_wait(&sem_valid);
 	FILE* fptr;
 	regex_t r1;
 	int data =regcomp(&r1, "document is valid.*", 0);
@@ -2369,11 +2396,14 @@ int json_schema_validate (char *schema,const char *json_string, char *temp_file)
 	strcat(file_path,temp_file);
 	strcat(schema_path,schema);
 	fptr =  fopen(file_path, "a");
+	if(fptr == NULL){
+		regfree(&r1);
+		return -EINVAL;
+	}
 	fwrite(json_string,sizeof(char),strlen(json_string),fptr);
 	fclose(fptr);
 
-	FILE *fp;
-	char *command = malloc(128);
+	char command[128];
 	char path[64];
 	strcpy(command,"/usr/bin/json-schema-validate ");
 	strcat(command,schema_path);
@@ -2384,40 +2414,40 @@ int json_schema_validate (char *schema,const char *json_string, char *temp_file)
 	stderr_bk = dup(fileno(stderr));
 
 	int pipefd[2];
-	pipe2(pipefd, 0); // O_NONBLOCK);
+	pipe2(pipefd, 0); // (O_NONBLOCK);
 
 	// What used to be stderr will now go to the pipe.
 	dup2(pipefd[1], fileno(stderr));
 	fflush(stderr);//flushall();
 	/* Open the command for reading. */
-	fp = popen(command, "r");
-	if (fp == NULL) {
+	if (system(command) == -1) {
 		remove(file_path);
-		free(command);
 		regfree(&r1);
-		close(pipefd[1]);
-		close(pipefd[0]);
+		dup2(stderr_bk, fileno(stderr));//restore
 		close(stderr_bk);
+		close(pipefd[0]);
+		close(pipefd[1]);
+		sem_post(&sem_valid);
 		printf("Failed to run command\n" );
 		return -1;
 	}
 	close(pipefd[1]);
 	dup2(stderr_bk, fileno(stderr));//restore
+	close(stderr_bk);
 
 	read(pipefd[0], path, 64);
 	remove(file_path);
-	pclose(fp);
 	close(pipefd[0]);
-	close(stderr_bk);
-	free(command);
 
 	data = regexec(&r1, path, 0, NULL, 0);
 	if(data){
 		printf("Error: JSON schema not valid\n" );
 		regfree(&r1);
+		sem_post(&sem_valid);
 		return -EINVAL;
 	}
 	regfree(&r1);
+	sem_post(&sem_valid);
 	return 0;
 }
 
@@ -2499,6 +2529,7 @@ int get_GPIO_base_address(int *address){
  */
 int write_GPIO(int address, int value){
 
+	sem_wait(&file_sync);
 	char cmd1[64];
 	char cmd2[64];
 	char dir_add[64];
@@ -2506,23 +2537,26 @@ int write_GPIO(int address, int value){
     FILE *fd1;
     FILE *fd2;
     char val[1];
-    char *dir = "out";
+    static char *dir = "out";
 
-    if((value != 0) && (value != 1) )
+    if((value != 0) && (value != 1) ){
+		sem_post(&file_sync);
     	return -EINVAL;
+	}
 
     val[0] = value + '0';
 	int add = address + GPIO_BASE_ADDRESS;
 
     // Building first command
-    snprintf(cmd1, sizeof(cmd1), "echo %d > /sys/class/gpio/export", add);
+    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
 
     // Building GPIO sysfs file
     if (system(cmd1) == -1) {
+		sem_post(&file_sync);
         return -EINVAL;
     }
-    snprintf(dir_add, sizeof(dir_add), "/sys/class/gpio/gpio%d/direction", add);
-    snprintf(val_add, sizeof(val_add), "/sys/class/gpio/gpio%d/value", add);
+    snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/direction", add);
+    snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
 
     fd1 = fopen(dir_add,"w");
     fwrite(dir, sizeof(dir), 1,fd1);
@@ -2533,12 +2567,14 @@ int write_GPIO(int address, int value){
     fclose(fd2);
 
     // Building second command
-    snprintf(cmd2, sizeof(cmd2), "echo %d > /sys/class/gpio/unexport", add);
+    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
 
     //Removing GPIO sysfs file
     if (system(cmd2) == -1) {
+		sem_post(&file_sync);
         return -EINVAL;
     }
+	sem_post(&file_sync);
 	return 0;
 }
 
@@ -2552,32 +2588,42 @@ int write_GPIO(int address, int value){
  */
 int read_GPIO(int address,int *value){
 
+	sem_wait(&file_sync);
 	char cmd1[64];
 	char cmd2[64];
 	char dir_add[64];
 	char val_add[64];
     FILE *fd1;
-    char *dir = "in";
+    static char *dir = "in";
     FILE *GPIO_val;
 
 	int add = address + GPIO_BASE_ADDRESS;
     // Building first command
-    snprintf(cmd1, sizeof(cmd1), "echo %d > /sys/class/gpio/export", add);
+    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
 
 
     // Building GPIO sysfs file
     if (system(cmd1) == -1) {
+		sem_post(&file_sync);
         return -EINVAL;
     }
-    snprintf(dir_add, sizeof(dir_add), "/sys/class/gpio/gpio%d/direction", add);
-    snprintf(val_add, sizeof(val_add), "/sys/class/gpio/gpio%d/value", add);
+    snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/direction", add);
+    snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
 
 
     fd1 = fopen(dir_add,"w");
+	if(fd1 == NULL){
+        sem_post(&file_sync);
+        return -EINVAL;
+    }
     fwrite(dir, sizeof(dir), 1,fd1);
     fclose(fd1);
 
     GPIO_val = fopen(val_add,"r");
+	if(GPIO_val == NULL){
+        sem_post(&file_sync);
+        return -EINVAL;
+    }
 	fseek(GPIO_val, 0, SEEK_END);
 	long fsize = ftell(GPIO_val);
 	fseek(GPIO_val, 0, SEEK_SET);  /* same as rewind(f); */
@@ -2589,19 +2635,21 @@ int read_GPIO(int address,int *value){
 	free(value_string);
 
     // Building second command
-    snprintf(cmd2, sizeof(cmd2), "echo %d > /sys/class/gpio/unexport", add);
+    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
 
     //Removing GPIO sysfs file
     if (system(cmd2) == -1) {
+		sem_post(&file_sync);
         return -EINVAL;
     }
+	sem_post(&file_sync);
 	return 0;
 }
 
 /**
  * Unexport possible remaining GPIO files when terminating app
  *
- * @return
+ * @return NULL
  */
 void unexport_GPIO(){
 
@@ -2653,6 +2701,7 @@ void unexport_GPIO(){
  */
 int eth_link_status (char *eth_interface, int *status)
 {
+	int rc = 0;
 	char eth_link[64];
 	FILE *link_file;
 	char str[64];
@@ -3202,39 +3251,30 @@ void lv_command_handling(char **cmd){
 /**
  * Closes ZMQ sockets and GPIOs when exiting.
  */
-void atexit_function() {
+/*void atexit_function() {
 	unexport_GPIO();
     zmq_close(mon_publisher);
     zmq_close(alarm_publisher);
     zmq_close(cmd_router);
-}
+}*/
 /************************** Signal Handling function declaration ******************************/
 /**
  * Handles termination signals, kills every subprocess
  *
- * @param int signum: Signal ID
+ * @param void
  *
- * @return NULL
+ * @return void
  */
-void sighandler(int signum) {
-   //kill(child_pid,SIGKILL);
+void lib_close() {
    unexport_GPIO();
    zmq_close(mon_publisher);
    zmq_close(alarm_publisher);
    zmq_close(cmd_router);
-   /*pthread_cancel(t_1); //End threads
-   pthread_cancel(t_2); //End threads
-
-   pthread_cancel(t_4); //End threads
-   pthread_cancel(t_3); //End threads*/
    zmq_ctx_shutdown(zmq_context);
-   /*pthread_join(t_1,NULL);
-   pthread_join(t_2,NULL);
-   pthread_join(t_3,NULL);
-   pthread_join(t_4,NULL);*/
+   zmq_ctx_destroy(zmq_context);
 
    break_flag = 1;
-   return ;
+   return;
 }
 
 /************************** UUID generator function declaration ******************************/

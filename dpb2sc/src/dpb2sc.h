@@ -55,11 +55,14 @@ struct DPB_I2cSensors{
 /** @brief Semaphore to synchronize I2C Bus usage */
 sem_t i2c_sync;
 
-/** @brief Semaphore to synchronize thread creation */
-sem_t thread_sync;
-
 /** @brief Semaphore to synchronize GPIO file accesses */
 sem_t file_sync;
+
+/** @brief Semaphore to synchronize GPIO AND Ethernet file accesses */
+sem_t alarm_sync;
+
+/** @brief Semaphore to avoid race conditions when JSON validating */
+sem_t sem_valid;
 
 /** @} */
 /******************************************************************************
@@ -89,6 +92,7 @@ int init_SFP_A0(struct I2cDevice *);
 int init_SFP_A2(struct I2cDevice *);
 int init_I2cSensors(struct DPB_I2cSensors *);
 int stop_I2cSensors(struct DPB_I2cSensors *);
+int init_semaphores();
 int init_shared_memory();
 int read_shm(int *, char *, char *);
 int xlnx_ams_read_temp(int *, int, float *);
@@ -136,7 +140,7 @@ void dig_command_handling(char **);
 void hv_command_handling(char **);
 void lv_command_handling(char **);
 void atexit_function();
-void sighandler(int );
+void lib_close();
 int gen_uuid(char *);
 
 /******************************************************************************/
