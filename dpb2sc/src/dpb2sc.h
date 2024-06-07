@@ -18,6 +18,7 @@
 #include <signal.h>
 #include <regex.h>
 #include <termios.h>
+#include "uthash.h"
 
 #include "i2c.h"
 #include "linux/errno.h"
@@ -135,7 +136,13 @@ int aurora_down_alarm(int ,int *);
 int zmq_socket_init ();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_command_handling(char **);
-int hv_lv_command_handling(char **, char **);
+int hv_lv_command_handling(char *, char *);
+int hv_lv_command_translation(char *, char **, int);
+int setup_serial_port(int);
+int populate_hv_hash_table(int, char **, char **);
+int populate_lv_hash_table(int, char **, char **);
+int get_hv_hash_table_command(char *, char *);
+int get_lv_hash_table_command(char *, char *);
 void atexit_function();
 void lib_close();
 int gen_uuid(char *);
@@ -449,6 +456,8 @@ char *ams_channels[] = {
 /******************************************************************************
 LV Command Data.
 ****************************************************************************/
+#define LV_CMD_TABLE_SIZE 9
+
 char *lv_daq_words[] = {
     "STATUS",
     "VOLT",
@@ -469,12 +478,16 @@ char *lv_board_words[] = {
     "BCMTEMP",
     "RELHUM",
     "PRESS",
-    "WLEAK"
+    "WLEAK",
+    "CPU"
 };
 
 /******************************************************************************
 HV Command Data.
 ****************************************************************************/
+
+#define HV_CMD_TABLE_SIZE 8
+
 char *hv_daq_words[] = {
     "STATUS",
     "VOLT",
@@ -494,7 +507,21 @@ char *hv_board_words[] = {
     "BCMTEMP",
     "RELHUM",
     "PRESS",
-    "WLEAK"
+    "WLEAK",
+    "CPU"
 };
+
+/******************************************************************************
+Hash Tables.
+****************************************************************************/
+
+struct cmd_uthash {
+    char daq_word[10];                    /* key */
+    char board_word[10];
+    UT_hash_handle hh;         /* makes this structure hashable */
+};
+
+struct cmd_uthash *lv_cmd_table = NULL;   
+struct cmd_uthash *hv_cmd_table = NULL;  
 
 #endif

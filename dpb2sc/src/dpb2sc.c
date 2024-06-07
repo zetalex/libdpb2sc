@@ -2921,6 +2921,47 @@ int zmq_socket_init (){
 	return 0;
 }
 
+/************************** Hash Tables Functions ******************************/
+int populate_hv_hash_table(int table_size, char **keys, char **values) {
+	struct cmd_uthash *s;
+	s = malloc(sizeof *s * table_size);
+
+	for(int i = 0 ; i < table_size ; i++){
+		strcpy(s->daq_word, keys[i]);
+    	strcpy(s->board_word, values[i]);
+	}
+	HASH_ADD_STR(hv_cmd_table, daq_word, s);  /* id: name of key field */
+	free(s);
+	return 0;
+}
+
+int populate_lv_hash_table(int table_size, char **keys, char **values) {
+	struct cmd_uthash *s;
+	s = malloc(sizeof *s * table_size);
+
+	for(int i = 0 ; i < table_size ; i++){
+		strcpy(s->daq_word, keys[i]);
+    	strcpy(s->board_word, values[i]);
+	}
+	HASH_ADD_STR(lv_cmd_table, daq_word, s);  /* id: name of key field */
+	free(s);
+	return 0;
+}
+
+int get_hv_hash_table_command(char *key, char *value) {
+	struct cmd_uthash *s;
+	HASH_FIND_STR(hv_cmd_table,key,s);
+	strcpy(value,s->board_word);
+	return 0;
+}
+
+int get_lv_hash_table_command(char *key, char *value) {
+	struct cmd_uthash *s;
+	HASH_FIND_STR(lv_cmd_table,key,s);
+	strcpy(value,s->board_word);
+	return 0;
+}
+
 /************************** Command handling Functions******************************/
 
 /**
@@ -3241,12 +3282,46 @@ int dig_command_handling(char **cmd){
 	return rc;
 }
 
-int hv_lv_command_handling(char **cmd, char ** result){
+int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
+
+	char *chancode = "CH:";
+	if(!strcmp(cmd[0],"READ")){
+		strcat(hvlvcmd,"MON,");
+	}
+	else{
+		strcat(hvlvcmd,"SET,");
+	}
+	if(words_n >=4){
+		strcat(chancode,cmd[3]);
+		strcat(hvlvcmd,chancode);
+		strcat(hvlvcmd,",");
+	}
+	else{
+		strcat(hvlvcmd,"PAR:");
+	}
+	char opcode[8];
+	if(!strcmp(cmd[1],"LV")){
+		get_lv_hash_table_command(cmd[2],opcode);
+	}
+	else{
+		get_hv_hash_table_command(cmd[2],opcode);
+	}
+	strcat(hvlvcmd,opcode);
+	if(words_n==5){
+		strcat(hvlvcmd,",VAL:");
+		strcat(hvlvcmd,cmd[4]);
+	}
+	strcat(hvlvcmd,"\r\n");
+	return 0;
+
+}
+
+int hv_lv_command_handling(char *cmd, char *result){
 	int serial_port_UL3, serial_port_UL4;
 	int n;
 	struct termios tty;
 	char *read_buf[32];
-	char *temp_buf[32] = "";
+	char *temp_buf[32];
 
 	// Wait until acquiring non-blocking exclusive lock
     while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
@@ -3327,6 +3402,8 @@ success:
 
 int setup_serial_port(int serial_port){
 
+	struct termios tty;
+
 	if(tcgetattr(serial_port, &tty) != 0) {
     	printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
 		return -1;
@@ -3348,6 +3425,7 @@ int setup_serial_port(int serial_port){
 	}
 	return 0;
 }
+
 /************************** Exit function declaration ******************************/
 /**
  * Closes ZMQ sockets and GPIOs when exiting.
