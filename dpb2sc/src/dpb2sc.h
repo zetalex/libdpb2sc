@@ -17,6 +17,7 @@
 #include <dirent.h>
 #include <signal.h>
 #include <regex.h>
+#include <termios.h>
 
 #include "i2c.h"
 #include "linux/errno.h"
@@ -133,9 +134,8 @@ int eth_down_alarm(char *,int *);
 int aurora_down_alarm(int ,int *);
 int zmq_socket_init ();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
-void dig_command_handling(char **);
-void hv_command_handling(char **);
-void lv_command_handling(char **);
+int dig_command_handling(char **);
+int hv_lv_command_handling(char **, char **);
 void atexit_function();
 void lib_close();
 int gen_uuid(char *);
@@ -145,6 +145,8 @@ int gen_uuid(char *);
 #define INA3221_NUM_CHAN 3
 #define AMS_TEMP_NUM_CHAN 3
 #define AMS_VOLT_NUM_CHAN 21
+#define SERIAL_PORT_TIMEOUT 20 //20 deciseconds
+#define SERIAL_PORT_RETRIES 5
 /************************** Custom Errors Definitions *****************************/
 /** @defgroup err Custom Error Flags
  *  Shared Memory content
@@ -171,6 +173,8 @@ int sfp2_connected = 0;
 int sfp3_connected = 0;
 int sfp4_connected = 0;
 int sfp5_connected = 0;
+int count_fails_until_success = 0;
+int count_since_reset = 0;
 /************************** SFP Alarms Masks Definitions *****************************/
 /** @defgroup SFP_Masks SFP Alarms Masks
  *  SFP Alarms Masks Definitions
@@ -442,6 +446,55 @@ char *ams_channels[] = {
         "PS Auxiliary voltage",
         "PL VCCADC voltage"
     };
+/******************************************************************************
+LV Command Data.
+****************************************************************************/
+char *lv_daq_words[] = {
+    "STATUS",
+    "VOLT",
+    "CURR",
+    "TEMP",
+    "BCMTEMP",
+    "RELHUM",
+    "PRESS",
+    "WLEAK",
+    "CPU"
+};
 
+char *lv_board_words[] = {
+    "STATUS",
+    "VOLT",
+    "CURR",
+    "TEMP",
+    "BCMTEMP",
+    "RELHUM",
+    "PRESS",
+    "WLEAK"
+};
+
+/******************************************************************************
+HV Command Data.
+****************************************************************************/
+char *hv_daq_words[] = {
+    "STATUS",
+    "VOLT",
+    "CURR",
+    "TEMP",
+    "RAMPUP",
+    "RAMPDOWN",
+    "CHANERR",
+    "CPU"
+};
+
+char *hv_board_words[] = {
+    "STATUS",
+    "VOLT",
+    "CURR",
+    "TEMP",
+    "BCMTEMP",
+    "RELHUM",
+    "PRESS",
+    "WLEAK"
+};
 
 #endif

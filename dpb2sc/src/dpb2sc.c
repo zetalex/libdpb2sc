@@ -2189,7 +2189,7 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
  * @param char *chip: Name of the chip that triggered the alarm
  * @param char *board: Name of the board where the alarm is asserted
  * @param uint64_t timestamp: Time when the event occurred
- * @param char *info_type: Determines the reported event type (inof,warning or critical)
+ * @param char *info_type: Determines the reported event type (info,warning or critical)
  *
  *
  * @return 0 or negative integer if validation fails
@@ -2810,7 +2810,7 @@ int eth_down_alarm(char *str,int *flag){
 	return 0;
 }
 /**
-* Checks from GPIO if Ethernet Links status has changed from up to down and reports it if necessary
+* Checks from GPIO if Aurora Links status has changed from up to down and reports it if necessary
  *
  * @param int aurora_link: Choose main or backup link of Dig0 or Dig1 (O: Dig0 Main, 1:Dig0 Backup, 2:Dig1 Main, 3:Dig1 Backup)
  * @param int flags: indicates current status of the link
@@ -3236,16 +3236,117 @@ end:
 	return rc;
 }
 
-void dig_command_handling(char **cmd){
-	return;
+int dig_command_handling(char **cmd){
+	int rc = 0;
+	return rc;
 }
 
-void hv_command_handling(char **cmd){
-	return;
+int hv_lv_command_handling(char **cmd, char ** result){
+	int serial_port_UL3, serial_port_UL4;
+	int n;
+	struct termios tty;
+	char *read_buf[32];
+	char *temp_buf[32] = "";
+
+	// Wait until acquiring non-blocking exclusive lock
+    while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
+		sleep(1);
+    }
+	
+
+	while(flock(serial_port_UL4, LOCK_EX | LOCK_NB) == -1) {
+		sleep(1);
+    }
+
+	// Try with UL3
+	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
+		//Open one device (UL3)
+		serial_port_UL3 = open("/dev/ttyUL3",O_RDWR);
+		setup_serial_port(serial_port_UL3);
+		if (serial_port_UL3 < 0) {
+			//Send alarm
+			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
+			return -EACCES;
+		}
+		write(serial_port_UL3, cmd, sizeof(cmd));
+		// Keep reading until timeout (VTIME)
+		n = read(serial_port_UL3, temp_buf, sizeof(temp_buf));
+		strcat(read_buf,temp_buf);
+		close(serial_port_UL3);
+		if(temp_buf[n-1] != 0xA){	//Check for LF
+			//Send Warning
+			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
+			count_fails_until_success++;
+			count_since_reset++;
+		}
+		else{
+			count_fails_until_success = 0;
+			strcpy(result,read_buf);
+			goto success;
+		}
+	}
+	//Send Critical error
+	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
+
+	// Try with the other UART Lite  (UL4)
+	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
+		serial_port_UL4 = open("/dev/ttyUL4",O_RDWR);
+		setup_serial_port(serial_port_UL4);
+		if (serial_port_UL4 < 0) {
+			//Send alarm
+			status_alarm_json("HV/LV","UART Lite 4", 99,0,"warning");
+			return -EACCES;
+		}
+		write(serial_port_UL4, cmd, sizeof(cmd));
+		// Keep reading until timeout
+		n = read(serial_port_UL4, temp_buf, sizeof(temp_buf));
+		strcat(read_buf,temp_buf);
+		close(serial_port_UL4);
+		if(temp_buf[n-1] != 0xA){	//Check for LF
+			//Send Warning
+			status_alarm_json("HV/LV","UART Lite 4", 99,0,"warning");
+			count_fails_until_success++;
+			count_since_reset++;
+		}
+		else{
+			count_fails_until_success = 0;
+			strcpy(result,read_buf);
+			goto success;
+		}
+	}
+	//Send Critical error
+	status_alarm_json("HV/LV","UART Lite 4", 99,0,"critical");
+	flock(serial_port_UL3, LOCK_UN); 
+	flock(serial_port_UL4, LOCK_UN);
+	return -ETIMEDOUT;
+success:	
+	flock(serial_port_UL3, LOCK_UN); 
+	flock(serial_port_UL4, LOCK_UN);
+	return 0;
 }
 
-void lv_command_handling(char **cmd){
-	return;
+int setup_serial_port(int serial_port){
+
+	if(tcgetattr(serial_port, &tty) != 0) {
+    	printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
+		return -1;
+	}
+	tty.c_cflag &= ~PARENB; // Clear parity bit, disabling parity
+	tty.c_cflag &= ~CSTOPB; // Clear stop field, only one stop bit
+	tty.c_cflag |= CS8; // 8 bits per byte
+	tty.c_cflag &= ~CRTSCTS; // Disable RTS/CTS hardware flow control (most common)
+	tty.c_iflag &= ~(IXON | IXOFF | IXANY); // Turn off s/w flow ctrl
+
+	tty.c_cc[VTIME] = SERIAL_PORT_TIMEOUT; // Set VTIME to the read timeout specified in the macro
+	tty.c_cc[VMIN] = 0;
+	cfsetispeed(&tty, B115200);
+	cfsetospeed(&tty, B115200);
+
+	if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
+    	printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+		return -1;
+	}
+	return 0;
 }
 /************************** Exit function declaration ******************************/
 /**
@@ -3259,7 +3360,7 @@ void lv_command_handling(char **cmd){
 }*/
 /************************** Signal Handling function declaration ******************************/
 /**
- * Handles termination signals, kills every subprocess
+ * Handles library closing, closing zmq context and removing sysfs GPIO folders
  *
  * @param void
  *
