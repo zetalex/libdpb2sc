@@ -1526,6 +1526,7 @@ int sfp_avago_alarms_interruptions(struct DPB_I2cSensors *data,uint16_t flags, i
 	if(((flags & 0x4000) == 0x4000)&((alarms_mask[n]&0x4000)==0)){
 		timestamp = time(NULL);
 		sfp_avago_read_temperature(data,n,res);
+		// FIXME: DAQ Function Here. Replace alarm_json function by the function of DAQ library
 		rc = alarm_json("DPB","SFP Temperature","falling", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x4000;
 	}
