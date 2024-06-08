@@ -3327,25 +3327,43 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 		strcat(hvlvcmd,chancode);
 		strcat(hvlvcmd,",");
 	}
-	else{
-		strcat(hvlvcmd,"PAR:");
-	}
+	strcat(hvlvcmd,"PAR:");
 	char opcode[8];
 	if(!strcmp(cmd[1],"LV")){
 		get_lv_hash_table_command(cmd[2],opcode);
 	}
 	else{
-		get_hv_hash_table_command(cmd[2],opcode);
+		if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"VOLT") ){
+			strcpy(opcode, "VSET");
+		}
+		else if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"CURR") ){
+			strcpy(opcode, "ISET");
+		}
+		else {
+			get_hv_hash_table_command(cmd[2],opcode);
+		}
 	}
 	strcat(hvlvcmd,opcode);
 	if(words_n==5){
 		strcat(hvlvcmd,",VAL:");
 		strcat(hvlvcmd,cmd[4]);
 	}
+	printf("COMMAND THREAD: %s",hvlvcmd);
 	strcat(hvlvcmd,"\r\n");
 	return 0;
 
 }
+
+/**
+ * Takes a CAEN formatted command for HV/LV and sends it through serial ports
+ * Then it awaits for an answer, with a given timeout.
+ *
+ * @param char *schema: Name of validation schema file
+ * @param const char *json_string: JSON string to be validated
+ * @param char *temp_file: Name of Temporal File
+ *
+ * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
+ */
 
 int hv_lv_command_handling(char *cmd, char *result){
 	int serial_port_UL3, serial_port_UL4;
