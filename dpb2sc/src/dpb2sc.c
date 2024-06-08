@@ -2080,6 +2080,37 @@ int parsing_mon_sensor_data_into_array (json_object *jarray,float val, char *mag
 	json_object_array_add(jarray,jobj);
 	return 0;
 }
+
+/**
+ * Parses monitoring string data into a JSON array so as to include it in a JSON object
+ *
+ * @param json_object *jarray: JSON array in which the data will be stored
+ * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
+ * @param char val: Measured magnitude value in string format
+ * @param char *magnitude: Name of the measured magnitude
+ *
+ * @return 0
+ */
+int parsing_mon_sensor_string_into_array(json_object *jarray,char *val, char *magnitude, int chan)
+{
+	struct json_object *jobj,*jstring,*jint,*jstring_val = NULL;
+	jobj = json_object_new_object();
+	char buffer[8];
+
+	jstring_val = json_object_new_string(val);
+	jstring = json_object_new_string(magnitude);
+
+	json_object_object_add(jobj,"magnitudename", jstring);
+	if (chan != 99){
+		jint = json_object_new_int(chan);
+		json_object_object_add(jobj,"channel", jint);
+	}
+	json_object_object_add(jobj,"value", jstring_val);
+
+	json_object_array_add(jarray,jobj);
+	return 0;
+}
+
 /**
  * Parses monitoring status data into a JSON array so as to include it in a JSON object
  *
@@ -3320,8 +3351,8 @@ int hv_lv_command_handling(char *cmd, char *result){
 	int serial_port_UL3, serial_port_UL4;
 	int n;
 	struct termios tty;
-	char *read_buf[32];
-	char *temp_buf[32];
+	char read_buf[32];
+	char temp_buf[32];
 
 	// Wait until acquiring non-blocking exclusive lock
     while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {

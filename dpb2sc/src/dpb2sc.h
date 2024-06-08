@@ -120,6 +120,7 @@ int ina3221_set_limits(struct DPB_I2cSensors *,int ,int ,int  ,float );
 int ina3221_set_config(struct DPB_I2cSensors *,uint8_t *,uint8_t *, int );
 int parsing_mon_sensor_data_into_array (json_object *,float , char *, int );
 int parsing_mon_status_data_into_array(json_object *, int , char *,int );
+int parsing_mon_sensor_string_into_array (json_object *,char *, char *, int);
 int alarm_json (char*,char *,char *, int , float ,uint64_t ,char *);
 int status_alarm_json (char *,char *, int ,uint64_t ,char *);
 int command_response_json (int ,float,char *);
@@ -456,37 +457,49 @@ char *ams_channels[] = {
 /******************************************************************************
 LV Command Data.
 ****************************************************************************/
-#define LV_CMD_TABLE_SIZE 9
+#define LV_CMD_TABLE_SIZE 8
 
 char *lv_daq_words[] = {
-    "STATUS",
-    "VOLT",
-    "CURR",
     "TEMP",
     "BCMTEMP",
     "RELHUM",
     "PRESS",
     "WLEAK",
+    "STATUS",
+    "VOLT",
+    "CURR",
     "CPU"
 };
 
 char *lv_board_words[] = {
-    "STATUS",
-    "VOLT",
-    "CURR",
-    "TEMP",
-    "BCMTEMP",
-    "RELHUM",
-    "PRESS",
-    "WLEAK",
+    "BDTEMP",
+    "BCTEMP",
+    "RH",
+    "PRESSURE",
+    "H2OALARM",
+    "SDEN",
+    "VMON",
+    "IMON",
     "CPU"
+};
+
+char *lv_mag_names[] = {
+    "Board Temperature",
+    "BCM Temperature",
+    "Relative Humidity",
+    "Pressure",
+    "Water Leak",
+    "Output Status",
+    "Voltage Monitor",
+    "Current Monitor",
+    "CPU Status"
 };
 
 /******************************************************************************
 HV Command Data.
 ****************************************************************************/
 
-#define HV_CMD_TABLE_SIZE 8
+#define HV_CMD_TABLE_SIZE 7
 
 char *hv_daq_words[] = {
     "STATUS",
@@ -495,21 +508,29 @@ char *hv_daq_words[] = {
     "TEMP",
     "RAMPUP",
     "RAMPDOWN",
-    "CHANERR",
-    "CPU"
+    "CHANERR"
 };
 
 char *hv_board_words[] = {
     "STATUS",
-    "VOLT",
-    "CURR",
+    "VMON",
+    "IMON",
     "TEMP",
-    "BCMTEMP",
-    "RELHUM",
-    "PRESS",
-    "WLEAK",
-    "CPU"
+    "RUP",
+    "RDWN",
+    "STATUS"
 };
+
+char *hv_mag_names[] = {
+    "Output Status",
+    "Voltage Monitor", 
+    "Current Monitor" , 
+    "Temperature",
+    "Rampup Speed" , 
+    "Rampdown Speed" , 
+    "Channel Error Status"
+};
+
 
 /******************************************************************************
 Hash Tables.
