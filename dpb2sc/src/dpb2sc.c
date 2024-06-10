@@ -3359,94 +3359,67 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
  * Takes a CAEN formatted command for HV/LV and sends it through serial ports
  * Then it awaits for an answer, with a given timeout.
  *
- * @param char *schema: Name of validation schema file
- * @param const char *json_string: JSON string to be validated
- * @param char *temp_file: Name of Temporal File
+ * @param char *board_dev: file location of the serial port connected to HV/LV 
+ * @param const char *cmd: valid DPB formatted command
+ * @param char *result: result of the command
  *
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
 
-int hv_lv_command_handling(char *cmd, char *result){
-	int serial_port_UL3, serial_port_UL4;
+int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
+	int serial_port_UL3;
 	int n;
 	struct termios tty;
-	char read_buf[32];
-	char temp_buf[32];
-
-	// Wait until acquiring non-blocking exclusive lock
-    while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
-		sleep(1);
-    }
-	
-
-	while(flock(serial_port_UL4, LOCK_EX | LOCK_NB) == -1) {
-		sleep(1);
-    }
-
+	char read_buf[128];
+	char temp_buf[128];
+	printf("MONITORING: EMPEZANDO COMMAND HANDLING");
 	// Try with UL3
 	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
 		//Open one device (UL3)
-		serial_port_UL3 = open("/dev/ttyUL3",O_RDWR);
+		serial_port_UL3 = open(board_dev,O_RDWR);
+		// Wait until acquiring non-blocking exclusive lock
+    	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
+			sleep(1);
+    	}
+		printf("Bloqueo cogido con éxito \n");
 		setup_serial_port(serial_port_UL3);
 		if (serial_port_UL3 < 0) {
 			//Send alarm
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
 			return -EACCES;
 		}
-		write(serial_port_UL3, cmd, sizeof(cmd));
+		printf("Enviando comando \n");
+		write(serial_port_UL3, cmd, strlen(cmd));
+		usleep(10000);
+		printf("Pregunta enviada\n");
 		// Keep reading until timeout (VTIME)
 		n = read(serial_port_UL3, temp_buf, sizeof(temp_buf));
+		printf("Respuesta recibida: %s\n",temp_buf);
+		printf("%d\n",n);
 		strcat(read_buf,temp_buf);
 		close(serial_port_UL3);
-		if(temp_buf[n-1] != 0xA){	//Check for LF
+		if(temp_buf[n-1] != '\n'){	//Check for LF
 			//Send Warning
+			printf("Alarma de HV/LV");
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
 			count_fails_until_success++;
 			count_since_reset++;
 		}
 		else{
+			printf("Todo bien");
 			count_fails_until_success = 0;
 			strcpy(result,read_buf);
 			goto success;
 		}
 	}
+	printf("MONITORING: ACABANDO MAL COMMAND HANDLING");
 	//Send Critical error
 	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
-
-	// Try with the other UART Lite  (UL4)
-	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
-		serial_port_UL4 = open("/dev/ttyUL4",O_RDWR);
-		setup_serial_port(serial_port_UL4);
-		if (serial_port_UL4 < 0) {
-			//Send alarm
-			status_alarm_json("HV/LV","UART Lite 4", 99,0,"warning");
-			return -EACCES;
-		}
-		write(serial_port_UL4, cmd, sizeof(cmd));
-		// Keep reading until timeout
-		n = read(serial_port_UL4, temp_buf, sizeof(temp_buf));
-		strcat(read_buf,temp_buf);
-		close(serial_port_UL4);
-		if(temp_buf[n-1] != 0xA){	//Check for LF
-			//Send Warning
-			status_alarm_json("HV/LV","UART Lite 4", 99,0,"warning");
-			count_fails_until_success++;
-			count_since_reset++;
-		}
-		else{
-			count_fails_until_success = 0;
-			strcpy(result,read_buf);
-			goto success;
-		}
-	}
-	//Send Critical error
-	status_alarm_json("HV/LV","UART Lite 4", 99,0,"critical");
 	flock(serial_port_UL3, LOCK_UN); 
-	flock(serial_port_UL4, LOCK_UN);
 	return -ETIMEDOUT;
-success:	
+success:
+	printf("MONITORING: ACABANDO BIEN COMMAND HANDLING");	
 	flock(serial_port_UL3, LOCK_UN); 
-	flock(serial_port_UL4, LOCK_UN);
 	return 0;
 }
 
@@ -3458,11 +3431,23 @@ int setup_serial_port(int serial_port){
     	printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
 		return -1;
 	}
-	tty.c_cflag &= ~PARENB; // Clear parity bit, disabling parity
-	tty.c_cflag &= ~CSTOPB; // Clear stop field, only one stop bit
-	tty.c_cflag |= CS8; // 8 bits per byte
+	tty.c_cflag &= ~PARENB; // Clear parity bit, disabling parity (most common)
+	tty.c_cflag &= ~CSTOPB; // Clear stop field, only one stop bit used in communication (most common)
+	tty.c_cflag &= ~CSIZE; // Clear all bits that set the data size 
+	tty.c_cflag |= CS8; // 8 bits per byte (most common)
 	tty.c_cflag &= ~CRTSCTS; // Disable RTS/CTS hardware flow control (most common)
+	tty.c_cflag |= CREAD | CLOCAL; // Turn on READ & ignore ctrl lines (CLOCAL = 1)
+
+	tty.c_lflag &= ~ICANON;
+	tty.c_lflag &= ~ECHO; // Disable echo
+	tty.c_lflag &= ~ECHOE; // Disable erasure
+	tty.c_lflag &= ~ECHONL; // Disable new-line echo
+	tty.c_lflag &= ~ISIG; // Disable interpretation of INTR, QUIT and SUSP
 	tty.c_iflag &= ~(IXON | IXOFF | IXANY); // Turn off s/w flow ctrl
+	tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL); // Disable any special handling of received bytes
+
+	tty.c_oflag &= ~OPOST; // Prevent special interpretation of output bytes (e.g. newline chars)
+	tty.c_oflag &= ~ONLCR; // Prevent conversion of newline to carriage return/line feed
 
 	tty.c_cc[VTIME] = SERIAL_PORT_TIMEOUT; // Set VTIME to the read timeout specified in the macro
 	tty.c_cc[VMIN] = 0;
