@@ -3314,6 +3314,16 @@ int dig_command_handling(char **cmd){
 	return rc;
 }
 
+/**
+ * Transforms DPB style command to a CAEN formatted command for HV/LV.
+ *
+ * @param char *hvlvcmd: Beginning of the command string for CAEN command, to distinguish between HV/LV
+ * Should be "$BD:0/1,$CMD:"
+ * @param const char *cmd: valid DPB formatted command
+ * @param char *result: number of words of the DPB formatted command
+ *
+ * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
+ */
 int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 
 	char chancode[8] = "CH:";
@@ -3360,7 +3370,7 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
  * Then it awaits for an answer, with a given timeout.
  *
  * @param char *board_dev: file location of the serial port connected to HV/LV 
- * @param const char *cmd: valid DPB formatted command
+ * @param const char *cmd: valid CAEN formatted command
  * @param char *result: result of the command
  *
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
