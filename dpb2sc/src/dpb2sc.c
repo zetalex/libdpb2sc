@@ -2375,6 +2375,9 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	json_object *jmsg_type = json_object_new_string("Command reply");
 	json_object *juuid = json_object_new_string(uuid);
 
+	printf("COMANDO AQUI 2 \n");
+	sleep(1);
+
 	if(val == 99)
 		jval = json_object_new_string("OK");
 	else if(val == 0)
@@ -2393,16 +2396,22 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	json_object_object_add(jcmd_data,"msg_type",jmsg_type);
 	json_object_object_add(jcmd_data,"msg_value", jval);
 	json_object_object_add(jcmd_data,"uuid", juuid);
-
+	printf("COMANDO AQUI 3 \n");
+	sleep(1);
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
+	printf("%s \n",serialized_json);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
 		printf("Error\r\n");
 		return rc;
 	}
+	printf("COMANDO AQUI 4 \n");
+	sleep(2);
 	strcpy(cmd_reply,serialized_json);
 	//zmq_send(cmd_router, serialized_json, strlen(serialized_json), 0);
 	json_object_put(jcmd_data);
+	printf("COMANDO AQUI 5 \n");
+	sleep(1);
 	return 0;
 }
 /**
