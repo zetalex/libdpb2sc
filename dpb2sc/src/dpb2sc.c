@@ -3403,16 +3403,13 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 		strcat(hvlvcmd,chancode);
 		strcat(hvlvcmd,",");
 	}
-	printf("Paso 3\n");
 	strcat(hvlvcmd,"PAR:");
 	char opcode[8];
-	printf("Paso 4\n");
 	if(!strcmp(cmd[1],"LV")){
 		if(!strcmp(cmd[2],"STATUS") && (!strcmp(cmd[3],"0") || !strcmp(cmd[3],"1"))){
 			strcpy(opcode, "BCEN");
 		}
 		else{
-			printf("Paso 4.25\n");
 			get_lv_hash_table_command(cmd[2],opcode);
 		}
 	}
@@ -3423,13 +3420,14 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 		else if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"CURR") ){
 			strcpy(opcode, "ISET");
 		}
+		else if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"STATUS") ){
+			strcpy(opcode, "PW");
+		}
 		else {
-			printf("Paso 4.5\n");
 			get_hv_hash_table_command(cmd[2],opcode);
 		}
 	}
 	strcat(hvlvcmd,opcode);
-	printf("Paso 5\n");
 	if(words_n==5){
 		strcat(hvlvcmd,",VAL:");
 		strcat(hvlvcmd,cmd[4]);
@@ -3558,6 +3556,13 @@ int hv_lv_command_response(char *board_response,char *reply,int r_w,int msg_id){
 	return 0;
 }
 
+/**
+ * Setups a given serial port with the standard 115200, 8 bits 1 stop bit no parity and flow control disabled
+ *
+ * @param int serial_port: file descriptor of the already opened serial port
+ *
+ * @return 0 if correct, -1 if if failed to set the attributes
+ */
 int setup_serial_port(int serial_port){
 
 	struct termios tty;
