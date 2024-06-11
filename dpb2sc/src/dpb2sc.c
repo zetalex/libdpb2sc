@@ -3316,7 +3316,7 @@ int dig_command_handling(char **cmd){
 
 int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 
-	char *chancode = "CH:";
+	char chancode[8] = "CH:";
 	if(!strcmp(cmd[0],"READ")){
 		strcat(hvlvcmd,"MON,");
 	}

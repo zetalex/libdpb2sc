@@ -484,7 +484,7 @@ char *lv_board_words[] = {
 };
 
 char *lv_mag_names[] = {
-    "Board Temperature",
+    "PCB Temperature",
     "BCM Temperature",
     "Relative Humidity",
     "Pressure",
