@@ -537,8 +537,8 @@ Hash Tables.
 ****************************************************************************/
 
 struct cmd_uthash {
-    char daq_word[10];                    /* key */
-    char board_word[10];
+    char daq_word[16];                    /* key */
+    char board_word[16];
     UT_hash_handle hh;         /* makes this structure hashable */
 };
 

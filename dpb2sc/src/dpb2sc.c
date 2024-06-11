@@ -2396,6 +2396,16 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	json_object_object_add(jcmd_data,"msg_type",jmsg_type);
 	json_object_object_add(jcmd_data,"msg_value", jval);
 	json_object_object_add(jcmd_data,"uuid", juuid);
+	const char *serialized_json1 = json_object_to_json_string(jmsg_id);
+	const char *serialized_json2 = json_object_to_json_string(jmsg_time);
+	const char *serialized_json3 = json_object_to_json_string(jmsg_type);
+	const char *serialized_json4 = json_object_to_json_string(jval);
+	const char *serialized_json5 = json_object_to_json_string(juuid);
+	printf("%s \n",serialized_json1);
+	printf("%s \n",serialized_json2);
+	printf("%s \n",serialized_json3);
+	printf("%s \n",serialized_json4);
+	printf("%s \n",serialized_json5);
 	printf("COMANDO AQUI 3 \n");
 	sleep(1);
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
@@ -2964,41 +2974,47 @@ int zmq_socket_init (){
 
 /************************** Hash Tables Functions ******************************/
 int populate_hv_hash_table(int table_size, char **keys, char **values) {
-	struct cmd_uthash *s;
-	s = malloc(sizeof *s * table_size);
+	struct cmd_uthash *s; 
 
 	for(int i = 0 ; i < table_size ; i++){
+		s = malloc(sizeof *s);
 		strcpy(s->daq_word, keys[i]);
     	strcpy(s->board_word, values[i]);
+		HASH_ADD_STR(hv_cmd_table, daq_word, s);  /* id: name of key field */
+		free(s);
 	}
-	HASH_ADD_STR(hv_cmd_table, daq_word, s);  /* id: name of key field */
-	free(s);
 	return 0;
 }
 
 int populate_lv_hash_table(int table_size, char **keys, char **values) {
 	struct cmd_uthash *s;
-	s = malloc(sizeof *s * table_size);
 
 	for(int i = 0 ; i < table_size ; i++){
+		s = malloc(sizeof *s);
 		strcpy(s->daq_word, keys[i]);
     	strcpy(s->board_word, values[i]);
+		HASH_ADD_STR(lv_cmd_table, daq_word, s);  /* id: name of key field */
+		free(s);
 	}
-	HASH_ADD_STR(lv_cmd_table, daq_word, s);  /* id: name of key field */
-	free(s);
 	return 0;
 }
 
 int get_hv_hash_table_command(char *key, char *value) {
+	printf("Geteando hash table HV \n");
 	struct cmd_uthash *s;
 	HASH_FIND_STR(hv_cmd_table,key,s);
+	if(s)
+		printf("Perfecto geteado en LV\n");
 	strcpy(value,s->board_word);
 	return 0;
 }
 
 int get_lv_hash_table_command(char *key, char *value) {
+	printf("Geteando hash table LV \n");
 	struct cmd_uthash *s;
 	HASH_FIND_STR(lv_cmd_table,key,s);
+	if(s)
+		printf("Perfecto geteado en LV\n");
 	strcpy(value,s->board_word);
 	return 0;
 }
@@ -3328,13 +3344,13 @@ int dig_command_handling(char **cmd){
  *
  * @param char *hvlvcmd: Beginning of the command string for CAEN command, to distinguish between HV/LV
  * Should be "$BD:0/1,$CMD:"
- * @param const char *cmd: valid DPB formatted command
+ * @param const char *cmd: valid DPB formatted command split into words
  * @param char *result: number of words of the DPB formatted command
  *
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
 int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
-
+	printf("Paso 1\n");
 	char chancode[8] = "CH:";
 	if(!strcmp(cmd[0],"READ")){
 		strcat(hvlvcmd,"MON,");
@@ -3342,14 +3358,18 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 	else{
 		strcat(hvlvcmd,"SET,");
 	}
+	printf("Paso 2\n");
 	if(words_n >=4){
 		strcat(chancode,cmd[3]);
 		strcat(hvlvcmd,chancode);
 		strcat(hvlvcmd,",");
 	}
+	printf("Paso 3\n");
 	strcat(hvlvcmd,"PAR:");
 	char opcode[8];
+	printf("Paso 4\n");
 	if(!strcmp(cmd[1],"LV")){
+		printf("Paso 4.25\n");
 		get_lv_hash_table_command(cmd[2],opcode);
 	}
 	else{
@@ -3360,10 +3380,12 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 			strcpy(opcode, "ISET");
 		}
 		else {
+			printf("Paso 4.5\n");
 			get_hv_hash_table_command(cmd[2],opcode);
 		}
 	}
 	strcat(hvlvcmd,opcode);
+	printf("Paso 5\n");
 	if(words_n==5){
 		strcat(hvlvcmd,",VAL:");
 		strcat(hvlvcmd,cmd[4]);
@@ -3391,7 +3413,6 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	struct termios tty;
 	char read_buf[128];
 	char temp_buf[128];
-	printf("MONITORING: EMPEZANDO COMMAND HANDLING");
 	// Try with UL3
 	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
 		//Open one device (UL3)
@@ -3400,44 +3421,35 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
     	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
 			usleep(5000);
     	}
-		printf("Bloqueo cogido con éxito \n");
 		setup_serial_port(serial_port_UL3);
 		if (serial_port_UL3 < 0) {
 			//Send alarm
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
 			return -EACCES;
 		}
-		printf("Enviando comando \n");
 		write(serial_port_UL3, cmd, strlen(cmd));
 		usleep(10000);
-		printf("Pregunta enviada\n");
 		// Keep reading until timeout (VTIME)
 		n = read(serial_port_UL3, temp_buf, sizeof(temp_buf));
-		printf("Respuesta recibida: %s\n",temp_buf);
-		printf("%d\n",n);
 		strcat(read_buf,temp_buf);
 		close(serial_port_UL3);
 		if(temp_buf[n-1] != '\n'){	//Check for LF
 			//Send Warning
-			printf("Alarma de HV/LV");
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
 			count_fails_until_success++;
 			count_since_reset++;
 		}
 		else{
-			printf("Todo bien");
 			count_fails_until_success = 0;
 			strcpy(result,read_buf);
 			goto success;
 		}
 	}
-	printf("MONITORING: ACABANDO MAL COMMAND HANDLING");
 	//Send Critical error
 	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
 	flock(serial_port_UL3, LOCK_UN); 
 	return -ETIMEDOUT;
-success:
-	printf("MONITORING: ACABANDO BIEN COMMAND HANDLING");	
+success:	
 	flock(serial_port_UL3, LOCK_UN); 
 	return 0;
 }
