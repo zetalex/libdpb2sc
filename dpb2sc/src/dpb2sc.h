@@ -139,6 +139,8 @@ int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_command_handling(char **);
 int hv_lv_command_handling(char *, char *, char *);
 int hv_lv_command_translation(char *, char **, int);
+int hv_lv_command_response(char *, char *,int, int);
+int command_response_string_json(int, char *, char*);
 int setup_serial_port(int);
 int populate_hv_hash_table(int, char **, char **);
 int populate_lv_hash_table(int, char **, char **);
@@ -457,7 +459,7 @@ char *ams_channels[] = {
 /******************************************************************************
 LV Command Data.
 ****************************************************************************/
-#define LV_CMD_TABLE_SIZE 8
+#define LV_CMD_TABLE_SIZE 9
 
 char *lv_daq_words[] = {
     "TEMP",

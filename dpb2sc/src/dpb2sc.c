@@ -2375,9 +2375,6 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	json_object *jmsg_type = json_object_new_string("Command reply");
 	json_object *juuid = json_object_new_string(uuid);
 
-	printf("COMANDO AQUI 2 \n");
-	sleep(1);
-
 	if(val == 99)
 		jval = json_object_new_string("OK");
 	else if(val == 0)
@@ -2401,13 +2398,6 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	const char *serialized_json3 = json_object_to_json_string(jmsg_type);
 	const char *serialized_json4 = json_object_to_json_string(jval);
 	const char *serialized_json5 = json_object_to_json_string(juuid);
-	printf("%s \n",serialized_json1);
-	printf("%s \n",serialized_json2);
-	printf("%s \n",serialized_json3);
-	printf("%s \n",serialized_json4);
-	printf("%s \n",serialized_json5);
-	printf("COMANDO AQUI 3 \n");
-	sleep(1);
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
 	printf("%s \n",serialized_json);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
@@ -2415,13 +2405,65 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 		printf("Error\r\n");
 		return rc;
 	}
-	printf("COMANDO AQUI 4 \n");
-	sleep(2);
 	strcpy(cmd_reply,serialized_json);
 	//zmq_send(cmd_router, serialized_json, strlen(serialized_json), 0);
 	json_object_put(jcmd_data);
-	printf("COMANDO AQUI 5 \n");
-	sleep(1);
+	return 0;
+}
+
+/**
+ * Parses command response into a JSON string and send it to socket
+ *
+ * @param int msg_id: Message ID
+ * @param char *val: read value in string
+ * @param char* cmd_reply: Stores CMD JSON reply to send it
+ *
+ * @return 0 or negative integer if validation fails
+ */
+int command_response_string_json(int msg_id, char *val, char* cmd_reply)
+{
+	json_object *jcmd_data2 = json_object_new_object();
+	char msg_date[64];
+	char uuid[64];
+	time_t t = time(NULL);
+	struct tm  tms = * localtime(&t);
+	struct timespec now;
+
+	int year = tms.tm_year+1900;
+	int mon  = tms.tm_mon+1;
+	int day  = tms.tm_mday;
+	int hour = tms.tm_hour;
+	int min  = tms.tm_min;
+	int sec = tms.tm_sec;
+
+	clock_gettime( CLOCK_REALTIME, &now );
+	int msec=now.tv_nsec / 1000000;
+
+	snprintf(msg_date, sizeof(msg_date), "%d-%d-%dT%d:%d:%d.%dZ",year,mon,day,hour,min,sec,msec);
+
+	gen_uuid(uuid);
+
+	json_object *jmsg_id2 = json_object_new_int(msg_id);
+	json_object *jmsg_time2 = json_object_new_string(msg_date);
+	json_object *jmsg_type2 = json_object_new_string("Command reply");
+	json_object *juuid2 = json_object_new_string(uuid);
+	json_object *jval2 = json_object_new_string(val);
+
+	json_object_object_add(jcmd_data2,"msg_id",jmsg_id2);
+	json_object_object_add(jcmd_data2,"msg_time",jmsg_time2);
+	json_object_object_add(jcmd_data2,"msg_type",jmsg_type2);
+	json_object_object_add(jcmd_data2,"msg_value", jval2);
+	json_object_object_add(jcmd_data2,"uuid", juuid2);
+	const char *serialized_json = json_object_to_json_string(jcmd_data2);
+	printf("%s \n",serialized_json);
+	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
+	if (rc) {
+		printf("Error\r\n");
+		return rc;
+	}
+	strcpy(cmd_reply,serialized_json);
+	//zmq_send(cmd_router, serialized_json, strlen(serialized_json), 0);
+	json_object_put(jcmd_data2);
 	return 0;
 }
 /**
@@ -3366,8 +3408,13 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 	char opcode[8];
 	printf("Paso 4\n");
 	if(!strcmp(cmd[1],"LV")){
-		printf("Paso 4.25\n");
-		get_lv_hash_table_command(cmd[2],opcode);
+		if(!strcmp(cmd[2],"STATUS") && (!strcmp(cmd[3],"0") || !strcmp(cmd[3],"1"))){
+			strcpy(opcode, "BCEN");
+		}
+		else{
+			printf("Paso 4.25\n");
+			get_lv_hash_table_command(cmd[2],opcode);
+		}
 	}
 	else{
 		if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"VOLT") ){
@@ -3447,6 +3494,67 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	return -ETIMEDOUT;
 success:	
 	flock(serial_port_UL3, LOCK_UN); 
+	return 0;
+}
+
+/**
+ * Takes a CAEN formatted response for HV/LV, strips the answer from it and packages it
+ * into a Command response type JSON
+ *
+ * @param char *board_response: CAEN formatted response string
+ * @param char *reply: pointer to where the JSON will be stored
+ * @param int r_w: set to 1 if the JSON is a response to a READ command, to 0 if it is to a set command
+ * @param int msg_id: integer with a message id sent by the DAQ. Must be included in the response
+ *
+ * @return always returns 0. the error is encapsulated into the JSON string to be sent to the DAQ
+ */
+
+int hv_lv_command_response(char *board_response,char *reply,int r_w,int msg_id){
+	// Strip the returned value from response string
+	char *mag_str = NULL;
+	char *start, *end;
+	char start_string[32];
+
+	if(r_w){
+		strcpy(start_string,"#CMD:OK,VAL:");
+	}
+	else{
+		strcpy(start_string,"#CMD:OK");
+	}
+
+	if ( start = strstr( board_response, start_string ) ){
+		start += strlen( start_string );
+		if ( end = strstr( start, "\r\n" ) )
+		{
+			mag_str = ( char * )malloc( end - start + 1 );
+			memcpy( mag_str, start, end - start );
+			mag_str[end - start] = '\0';
+			if(!r_w)
+				strcpy(mag_str,"OK");
+		}
+		else {
+			if(r_w){
+				mag_str=( char * )malloc(50);
+				strcpy(mag_str,"ERROR: READ operation not successful");
+			}
+			else {
+				mag_str=( char * )malloc(50);
+				strcpy(mag_str,"ERROR: SET operation not successful");
+			}
+		}
+	}
+	else{
+		if(r_w){
+			mag_str=( char * )malloc(50);
+			strcpy(mag_str,"ERROR: READ operation not successful");
+		}
+		else {
+			mag_str=( char * )malloc(50);
+			strcpy(mag_str,"ERROR: SET operation not successful");
+		}
+	}
+	printf("%s \n",mag_str);
+	command_response_string_json(msg_id,mag_str,reply);
 	return 0;
 }
 
