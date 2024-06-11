@@ -468,7 +468,8 @@ char *lv_daq_words[] = {
     "STATUS",
     "VOLT",
     "CURR",
-    "CPU"
+    "CPU",
+    NULL
 };
 
 char *lv_board_words[] = {
@@ -508,7 +509,8 @@ char *hv_daq_words[] = {
     "TEMP",
     "RAMPUP",
     "RAMPDOWN",
-    "CHANERR"
+    "CHANERR",
+    NULL
 };
 
 char *hv_board_words[] = {

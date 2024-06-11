@@ -2974,28 +2974,27 @@ int zmq_socket_init (){
 
 /************************** Hash Tables Functions ******************************/
 int populate_hv_hash_table(int table_size, char **keys, char **values) {
-	struct cmd_uthash *s; 
-
+	struct cmd_uthash *s = NULL; 
 	for(int i = 0 ; i < table_size ; i++){
-		s = malloc(sizeof *s);
+		s = (struct cmd_uthash *) malloc(sizeof *s);
 		strcpy(s->daq_word, keys[i]);
     	strcpy(s->board_word, values[i]);
 		HASH_ADD_STR(hv_cmd_table, daq_word, s);  /* id: name of key field */
-		free(s);
 	}
+	free(s);
 	return 0;
 }
 
 int populate_lv_hash_table(int table_size, char **keys, char **values) {
-	struct cmd_uthash *s;
+	struct cmd_uthash *s = NULL;
 
 	for(int i = 0 ; i < table_size ; i++){
-		s = malloc(sizeof *s);
+		s = (struct cmd_uthash *) malloc(sizeof *s);
 		strcpy(s->daq_word, keys[i]);
     	strcpy(s->board_word, values[i]);
 		HASH_ADD_STR(lv_cmd_table, daq_word, s);  /* id: name of key field */
-		free(s);
 	}
+	free(s);
 	return 0;
 }
 
@@ -3350,7 +3349,6 @@ int dig_command_handling(char **cmd){
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
 int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
-	printf("Paso 1\n");
 	char chancode[8] = "CH:";
 	if(!strcmp(cmd[0],"READ")){
 		strcat(hvlvcmd,"MON,");
@@ -3358,7 +3356,6 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 	else{
 		strcat(hvlvcmd,"SET,");
 	}
-	printf("Paso 2\n");
 	if(words_n >=4){
 		strcat(chancode,cmd[3]);
 		strcat(hvlvcmd,chancode);
@@ -3390,7 +3387,6 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 		strcat(hvlvcmd,",VAL:");
 		strcat(hvlvcmd,cmd[4]);
 	}
-	printf("COMMAND THREAD: %s",hvlvcmd);
 	strcat(hvlvcmd,"\r\n");
 	return 0;
 
