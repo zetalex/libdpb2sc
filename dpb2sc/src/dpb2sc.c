@@ -2065,7 +2065,7 @@ int parsing_mon_sensor_data_into_array (json_object *jarray,float val, char *mag
 {
 	struct json_object *jobj,*jstring,*jint,*jdouble = NULL;
 	jobj = json_object_new_object();
-	char buffer[8];
+	char buffer[32];
 
 	sprintf(buffer, "%3.4f", val);
 	jdouble = json_object_new_double_s((double) val,buffer);
@@ -3379,7 +3379,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		serial_port_UL3 = open(board_dev,O_RDWR);
 		// Wait until acquiring non-blocking exclusive lock
     	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
-			sleep(1);
+			usleep(5000);
     	}
 		printf("Bloqueo cogido con éxito \n");
 		setup_serial_port(serial_port_UL3);
