@@ -2615,7 +2615,7 @@ int get_GPIO_base_address(int *address){
 /**
  * Writes into a given GPIO address
  *
- * @param int address: GPIO address where the value is going to be written
+ * @param int address: GPIO address offset (from base address calculated from get_base_address) where the value is going to be written
  * @param int value: value which will be written (0 o 1)
  *
  * @return 0 if worked correctly, if not returns a negative integer.
@@ -2674,7 +2674,7 @@ int write_GPIO(int address, int value){
 /**
  * Gets GPIO base address
  *
- * @param int address: GPIO address where the desired value is stored
+ * @param int address: GPIO address offset (from base address calculated from get_base_address) where the desired value is stored
  * @param int *value: pointer where the read value will be stored
  *
  * @return 0 if worked correctly, if not returns a negative integer.
@@ -3501,19 +3501,19 @@ success:
  *
  * @param char *board_response: CAEN formatted response string
  * @param char *reply: pointer to where the JSON will be stored
- * @param int r_w: set to 1 if the JSON is a response to a READ command, to 0 if it is to a set command
  * @param int msg_id: integer with a message id sent by the DAQ. Must be included in the response
+ * @param char ** cmd: DPB formatted command for additional parsing
  *
  * @return always returns 0. the error is encapsulated into the JSON string to be sent to the DAQ
  */
 
-int hv_lv_command_response(char *board_response,char *reply,int r_w,int msg_id){
+int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **cmd){
 	// Strip the returned value from response string
 	char *mag_str = NULL;
 	char *start, *end;
 	char start_string[32];
 
-	if(r_w){
+	if(!strcmp(cmd[0],"READ")){
 		strcpy(start_string,"#CMD:OK,VAL:");
 	}
 	else{
@@ -3527,11 +3527,29 @@ int hv_lv_command_response(char *board_response,char *reply,int r_w,int msg_id){
 			mag_str = ( char * )malloc( end - start + 1 );
 			memcpy( mag_str, start, end - start );
 			mag_str[end - start] = '\0';
-			if(!r_w)
+			if(!strcmp(cmd[0],"SET"))
 				strcpy(mag_str,"OK");
-		}
+			else if(!strcmp(cmd[1],"HV") && !strcmp(cmd[2],"STATUS")){
+				int mag_status = atoi(mag_str) & 0x1;
+				if(mag_status){
+					strcpy(mag_str,"ON");
+				}
+				else{
+					strcpy(mag_str,"OFF");
+				}
+			}
+			else if(!strcmp(cmd[1],"HV") && !strcmp(cmd[2],"CHANERR")){
+				int mag_status = atoi(mag_str) & (0x1 << 13);
+				if(mag_status){
+					strcpy(mag_str,"ON");
+				}
+				else{
+					strcpy(mag_str,"OFF");
+				}
+			}
+		} 
 		else {
-			if(r_w){
+			if(!strcmp(cmd[0],"READ")){
 				mag_str=( char * )malloc(50);
 				strcpy(mag_str,"ERROR: READ operation not successful");
 			}
@@ -3542,7 +3560,7 @@ int hv_lv_command_response(char *board_response,char *reply,int r_w,int msg_id){
 		}
 	}
 	else{
-		if(r_w){
+		if(!strcmp(cmd[0],"READ")){
 			mag_str=( char * )malloc(50);
 			strcpy(mag_str,"ERROR: READ operation not successful");
 		}

@@ -139,7 +139,7 @@ int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_command_handling(char **);
 int hv_lv_command_handling(char *, char *, char *);
 int hv_lv_command_translation(char *, char **, int);
-int hv_lv_command_response(char *, char *,int, int);
+int hv_lv_command_response(char *, char *,int, char **);
 int command_response_string_json(int, char *, char*);
 int setup_serial_port(int);
 int populate_hv_hash_table(int, char **, char **);
@@ -253,6 +253,15 @@ const int GPIO_PINS[GPIO_PINS_SIZE] = {
     SFP5_RX_LOS
 };
 /** @} */
+
+/******************************************************************************
+* HV and LV GPIOs for CPUs enables
+****************************************************************************/
+#define LV_MAIN_CPU_GPIO_OFFSET     52
+#define LV_BACKUP_CPU_GPIO_OFFSET   53
+#define HV_MAIN_CPU_GPIO_OFFSET     54
+#define HV_BACKUP_CPU_GPIO_OFFSET   55
+#define HVLV_DRV_ENABLE_GPIO_OFFSET 56
 
 /******************************************************************************
 * Temperature Sensor Register Set - Temperature value, alarm value and alarm flags.
