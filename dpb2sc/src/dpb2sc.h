@@ -22,6 +22,7 @@
 
 #include "i2c.h"
 #include "linux/errno.h"
+
 /************************** Main Struct Definition *****************************/
 
 struct DPB_I2cSensors{
@@ -142,6 +143,7 @@ int hv_lv_command_translation(char *, char **, int);
 int hv_lv_command_response(char *, char *,int, char **);
 int command_response_string_json(int, char *, char*);
 int setup_serial_port(int);
+int hv_read_alarms(void);
 int populate_hv_hash_table(int, char **, char **);
 int populate_lv_hash_table(int, char **, char **);
 int get_hv_hash_table_command(char *, char *);
@@ -437,6 +439,7 @@ int memoryID;
 struct wrapper *memory;
 /** @} */
 
+#define BIT(nr) (1UL << (nr))
 /******************************************************************************
 *AMS channel descriptor.
 ****************************************************************************/

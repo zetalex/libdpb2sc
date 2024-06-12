@@ -3041,21 +3041,15 @@ int populate_lv_hash_table(int table_size, char **keys, char **values) {
 }
 
 int get_hv_hash_table_command(char *key, char *value) {
-	printf("Geteando hash table HV \n");
 	struct cmd_uthash *s;
 	HASH_FIND_STR(hv_cmd_table,key,s);
-	if(s)
-		printf("Perfecto geteado en LV\n");
 	strcpy(value,s->board_word);
 	return 0;
 }
 
 int get_lv_hash_table_command(char *key, char *value) {
-	printf("Geteando hash table LV \n");
 	struct cmd_uthash *s;
 	HASH_FIND_STR(lv_cmd_table,key,s);
-	if(s)
-		printf("Perfecto geteado en LV\n");
 	strcpy(value,s->board_word);
 	return 0;
 }
@@ -3381,63 +3375,6 @@ int dig_command_handling(char **cmd){
 }
 
 /**
- * Transforms DPB style command to a CAEN formatted command for HV/LV.
- *
- * @param char *hvlvcmd: Beginning of the command string for CAEN command, to distinguish between HV/LV
- * Should be "$BD:0/1,$CMD:"
- * @param const char *cmd: valid DPB formatted command split into words
- * @param char *result: number of words of the DPB formatted command
- *
- * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
- */
-int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
-	char chancode[8] = "CH:";
-	if(!strcmp(cmd[0],"READ")){
-		strcat(hvlvcmd,"MON,");
-	}
-	else{
-		strcat(hvlvcmd,"SET,");
-	}
-	if(words_n >=4){
-		strcat(chancode,cmd[3]);
-		strcat(hvlvcmd,chancode);
-		strcat(hvlvcmd,",");
-	}
-	strcat(hvlvcmd,"PAR:");
-	char opcode[8];
-	if(!strcmp(cmd[1],"LV")){
-		if(!strcmp(cmd[2],"STATUS") && (!strcmp(cmd[3],"0") || !strcmp(cmd[3],"1"))){
-			strcpy(opcode, "BCEN");
-		}
-		else{
-			get_lv_hash_table_command(cmd[2],opcode);
-		}
-	}
-	else{
-		if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"VOLT") ){
-			strcpy(opcode, "VSET");
-		}
-		else if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"CURR") ){
-			strcpy(opcode, "ISET");
-		}
-		else if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"STATUS") ){
-			strcpy(opcode, "PW");
-		}
-		else {
-			get_hv_hash_table_command(cmd[2],opcode);
-		}
-	}
-	strcat(hvlvcmd,opcode);
-	if(words_n==5){
-		strcat(hvlvcmd,",VAL:");
-		strcat(hvlvcmd,cmd[4]);
-	}
-	strcat(hvlvcmd,"\r\n");
-	return 0;
-
-}
-
-/**
  * Takes a CAEN formatted command for HV/LV and sends it through serial ports
  * Then it awaits for an answer, with a given timeout.
  *
@@ -3493,6 +3430,65 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 success:	
 	flock(serial_port_UL3, LOCK_UN); 
 	return 0;
+}
+
+/************************** HV LV Functions******************************/
+
+/**
+ * Transforms DPB style command to a CAEN formatted command for HV/LV.
+ *
+ * @param char *hvlvcmd: Beginning of the command string for CAEN command, to distinguish between HV/LV
+ * Should be "$BD:0/1,$CMD:"
+ * @param const char *cmd: valid DPB formatted command split into words
+ * @param char *result: number of words of the DPB formatted command
+ *
+ * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
+ */
+int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
+	char chancode[8] = "CH:";
+	if(!strcmp(cmd[0],"READ")){
+		strcat(hvlvcmd,"MON,");
+	}
+	else{
+		strcat(hvlvcmd,"SET,");
+	}
+	if(words_n >=4){
+		strcat(chancode,cmd[3]);
+		strcat(hvlvcmd,chancode);
+		strcat(hvlvcmd,",");
+	}
+	strcat(hvlvcmd,"PAR:");
+	char opcode[8];
+	if(!strcmp(cmd[1],"LV")){
+		if(!strcmp(cmd[2],"STATUS") && (!strcmp(cmd[3],"0") || !strcmp(cmd[3],"1"))){
+			strcpy(opcode, "BCEN");
+		}
+		else{
+			get_lv_hash_table_command(cmd[2],opcode);
+		}
+	}
+	else{
+		if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"VOLT") ){
+			strcpy(opcode, "VSET");
+		}
+		else if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"CURR") ){
+			strcpy(opcode, "ISET");
+		}
+		else if(!strcmp(cmd[0],"SET") && !strcmp(cmd[2],"STATUS") ){
+			strcpy(opcode, "PW");
+		}
+		else {
+			get_hv_hash_table_command(cmd[2],opcode);
+		}
+	}
+	strcat(hvlvcmd,opcode);
+	if(words_n==5){
+		strcat(hvlvcmd,",VAL:");
+		strcat(hvlvcmd,cmd[4]);
+	}
+	strcat(hvlvcmd,"\r\n");
+	return 0;
+
 }
 
 /**
@@ -3579,7 +3575,7 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
  *
  * @param int serial_port: file descriptor of the already opened serial port
  *
- * @return 0 if correct, -1 if if failed to set the attributes
+ * @return 0 if correct, -1 if failed to set the attributes
  */
 int setup_serial_port(int serial_port){
 
@@ -3619,16 +3615,65 @@ int setup_serial_port(int serial_port){
 	return 0;
 }
 
-/************************** Exit function declaration ******************************/
 /**
- * Closes ZMQ sockets and GPIOs when exiting.
+ * Reads HV related alarms and sends the corresponding alert message if any of the alarms is detected.
+ * Currently, the alarms from the HV being read are overvoltage, overcurrent, undervoltage and TRIP
+ *
+ * @return 0 if correct, negative number if failed to send JSON alarm
  */
-/*void atexit_function() {
-	unexport_GPIO();
-    zmq_close(mon_publisher);
-    zmq_close(alarm_publisher);
-    zmq_close(cmd_router);
-}*/
+int hv_read_alarms(){
+	// We just read the Status register from the HV
+	char *board_dev = "/dev/ttyUL3";
+	char hvlvcmd[40];
+	char buffer[8];
+	char response[40];
+	int rc = 0;
+	int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
+
+	//Get Timestamp
+	uint64_t timestamp;
+	timestamp = time(NULL);
+
+	//Parse all channels
+	for(int i = 0 ; i < 24; i++){
+		strcpy(hvlvcmd,"$BD:1,$CMD:MON,CH");
+		snprintf(buffer, sizeof(buffer), "%d",i);
+		strcat(hvlvcmd,buffer);
+		strcat(hvlvcmd,",PAR:STATUS\r\n");
+		hv_lv_command_handling(board_dev,hvlvcmd,response);
+		char *mag_str;
+		char *start, *end;
+		if ( start = strstr( response, "#CMD:OK,VAL:" ) ){
+			start += strlen( "#CMD:OK,VAL:" );
+			if ( end = strstr( start, "\r\n" ) )
+			{
+				mag_str = ( char * )malloc( end - start + 1 );
+				memcpy( mag_str, start, end - start );
+				mag_str[end - start] = '\0';
+			}
+			else {
+				rc = -EINVAL;
+				return rc;
+			}
+		}
+		//Get overcurrent, overvoltage, undervoltage and trip bit flags
+		OVC_flag = atoi(mag_str) & BIT(3);
+		if(OVC_flag)
+			rc = status_alarm_json("HV","Overcurrent Alarm",i,timestamp,"critical");
+		OVV_flag = atoi(mag_str) & BIT(4);
+		if(OVV_flag)
+			rc = status_alarm_json("HV","Overvoltage Alarm",i,timestamp,"critical");
+		UNV_flag = atoi(mag_str) & BIT(5);
+		if(UNV_flag)
+			rc = status_alarm_json("HV","Undervoltage Alarm",i,timestamp,"critical");
+		TRIP_flag = atoi(mag_str) & BIT(6);
+		if(TRIP_flag)
+			rc = status_alarm_json("HV","TRIP Protection",i,timestamp,"critical");
+	}
+	return rc;
+
+}
+
 /************************** Signal Handling function declaration ******************************/
 /**
  * Handles library closing, closing zmq context and removing sysfs GPIO folders
