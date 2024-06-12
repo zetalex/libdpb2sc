@@ -2064,18 +2064,29 @@ int ina3221_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
 
 int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *var_name, float val) {
 
-	char buffer[32];
+	char buffer[16];
 	struct json_object *jobj,*jdouble = NULL;
+	printf("Paso 1 channel data \n");
 	jobj = json_object_array_get_idx(jsfps, sfp_num);
 	if(jobj == NULL){
 		jobj = json_object_new_object();
+		printf("Paso 3 channel data \n");
+		sprintf(buffer, "%3.4f", val);
+		jdouble = json_object_new_double_s((double) val,buffer);
+		printf("Paso 4 channel data \n");
+		json_object_object_add(jobj,var_name,jdouble);
+		printf("Paso 5 channel data \n");
+		json_object_array_add(jsfps,jobj);
 	}
 	else{
-		json_object_array_del_idx(jsfps,sfp_num,1);
+		printf("Paso 2 channel data \n");
+		sprintf(buffer, "%3.4f", val);
+		jdouble = json_object_new_double_s((double) val,buffer);
+		printf("Paso 4 channel data \n");
+		json_object_object_add(jobj,var_name,jdouble);
+		printf("Paso 5 channel data \n");
 	}
-	jdouble = json_object_new_double_s((double) val,buffer);
-	json_object_object_add(jobj,var_name,jdouble);
-	json_object_array_add(jsfps,jobj);
+	return 0;
 }
 /**
  * Parses monitoring string data into a JSON array so as to include it in a JSON object
@@ -2090,24 +2101,33 @@ int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *va
 
 int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,char *var_name, int val) {
 
-	char buffer[32];
+	char buffer[16];
 	struct json_object *jobj,*jstring = NULL;
-	jobj = json_object_array_get_idx(jsfps, sfp_num);
-	if(jobj == NULL){
-		jobj = json_object_new_object();
-	}
-	else{
-		json_object_array_del_idx(jsfps,sfp_num,1);
-	}
+	printf("Paso 1 channel status \n");
 	if(val){
 		strcpy(buffer,"ON");
 	}
 	else{
 		strcpy(buffer,"OFF");
 	}
-	jstring = json_object_new_string(buffer);
-	json_object_object_add(jobj,var_name,jstring);
-	json_object_array_add(jsfps,jobj);
+	jobj = json_object_array_get_idx(jsfps, sfp_num);
+	if(jobj == NULL){
+		jobj = json_object_new_object();
+		printf("Paso 2 channel status \n");
+		jstring = json_object_new_string(buffer);
+		printf("Paso 4 channel status \n");
+		json_object_object_add(jobj,var_name,jstring);
+		printf("Paso 5 channel status \n");
+		json_object_array_add(jsfps,jobj);
+	}
+	else{
+		printf("Paso 3 channel status \n");
+		jstring = json_object_new_string(buffer);
+		printf("Paso 4 channel status \n");
+		json_object_object_add(jobj,var_name,jstring);
+		printf("Paso 5 channel status \n");
+	}
+	return 0;
 }
 /**
  * Parses monitoring string data into a JSON array so as to include it in a JSON object
@@ -2124,8 +2144,12 @@ int parsing_mon_environment_data_into_object(json_object *jobj,char *var_name, f
 
 	char buffer[32];
 	struct json_object *jdouble = NULL;
+	printf("Paso 1 environment data \n");
+	sprintf(buffer, "%3.4f", val);
 	jdouble = json_object_new_double_s((double) val,buffer);
+	printf("Paso 2 environment data \n");
 	json_object_object_add(jobj,var_name,jdouble);
+	return 0;
 }
 
 /**
@@ -2148,8 +2172,11 @@ int parsing_mon_environment_status_into_object(json_object *jobj,char *var_name,
 	else{
 		strcpy(buffer,"OFF");
 	}
+	printf("Paso 1 environment status \n");
 	jstring = json_object_new_string(buffer);
+	printf("Paso 2 environment status \n");
 	json_object_object_add(jobj,var_name,jstring);
+	return 0;
 }
 
 /**
