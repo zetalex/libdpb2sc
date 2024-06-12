@@ -499,15 +499,15 @@ char *lv_board_words[] = {
 };
 
 char *lv_mag_names[] = {
-    "PCB Temperature",
-    "BCM Temperature",
-    "Relative Humidity",
-    "Pressure",
-    "Water Leak",
-    "Output Status",
-    "Voltage Monitor",
-    "Current Monitor",
-    "CPU Status"
+    "boardtemp",
+    "bcmtemp",
+    "relathumidity",
+    "pressure",
+    "waterleak",
+    "status",
+    "voltage",
+    "current",
+    "cpustatus"
 };
 
 /******************************************************************************
@@ -538,13 +538,13 @@ char *hv_board_words[] = {
 };
 
 char *hv_mag_names[] = {
-    "Output Status",
-    "Voltage Monitor", 
-    "Current Monitor" , 
-    "Temperature",
-    "Rampup Speed" , 
-    "Rampdown Speed" , 
-    "Channel Error Status"
+    "status",
+    "voltage", 
+    "current" , 
+    "temperature",
+    "rampup" , 
+    "rampdown" , 
+    "chanerr"
 };
 
 

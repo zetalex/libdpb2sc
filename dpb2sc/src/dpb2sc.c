@@ -2051,6 +2051,67 @@ int ina3221_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
 	return 0;
 }
 /************************** JSON functions ******************************/
+
+int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *var_name, float val) {
+
+	char buffer[32];
+	struct json_object *jobj,*jdouble = NULL;
+	jobj = json_object_array_get_idx(jsfps, sfp_num);
+	if(jobj == NULL){
+		jobj = json_object_new_object();
+	}
+	else{
+		json_object_array_del_idx(jsfps,sfp_num,1);
+	}
+	jdouble = json_object_new_double_s((double) val,buffer);
+	json_object_object_add(jobj,var_name,jdouble);
+	json_object_array_add(jsfps,jobj);
+}
+
+int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,char *var_name, int val) {
+
+	char buffer[32];
+	struct json_object *jobj,*jstring = NULL;
+	jobj = json_object_array_get_idx(jsfps, sfp_num);
+	if(jobj == NULL){
+		jobj = json_object_new_object();
+	}
+	else{
+		json_object_array_del_idx(jsfps,sfp_num,1);
+	}
+	if(val){
+		strcpy(buffer,"ON");
+	}
+	else{
+		strcpy(buffer,"OFF");
+	}
+	jstring = json_object_new_string(buffer);
+	json_object_object_add(jobj,var_name,jstring);
+	json_object_array_add(jsfps,jobj);
+}
+
+int parsing_mon_environment_data_into_object(json_object *jobj,char *var_name, float val) {
+
+	char buffer[32];
+	struct json_object *jdouble = NULL;
+	jdouble = json_object_new_double_s((double) val,buffer);
+	json_object_object_add(jobj,var_name,jdouble);
+}
+
+int parsing_mon_environment_status_into_object(json_object *jobj,char *var_name, int val) {
+
+	char buffer[32];
+	struct json_object *jstring = NULL;
+	if(val){
+		strcpy(buffer,"ON");
+	}
+	else{
+		strcpy(buffer,"OFF");
+	}
+	jstring = json_object_new_string(buffer);
+	json_object_object_add(jobj,var_name,jstring);
+}
+
 /**
  * Parses monitoring data into a JSON array so as to include it in a JSON object
  *
@@ -3567,6 +3628,7 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
 	}
 	printf("%s \n",mag_str);
 	command_response_string_json(msg_id,mag_str,reply);
+	free(mag_str);
 	return 0;
 }
 
@@ -3669,6 +3731,7 @@ int hv_read_alarms(){
 		TRIP_flag = atoi(mag_str) & BIT(6);
 		if(TRIP_flag)
 			rc = status_alarm_json("HV","TRIP Protection",i,timestamp,"critical");
+		free(mag_str);
 	}
 	return rc;
 
