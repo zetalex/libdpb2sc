@@ -2051,6 +2051,16 @@ int ina3221_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
 	return 0;
 }
 /************************** JSON functions ******************************/
+/**
+ * Parses monitoring string data into a JSON array so as to include it in a JSON object
+ *
+ * @param json_object *jarray: JSON array in which the data will be stored
+ * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
+ * @param char val: Measured magnitude value in string format
+ * @param char *magnitude: Name of the measured magnitude
+ *
+ * @return 0
+ */
 
 int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *var_name, float val) {
 
@@ -2067,6 +2077,16 @@ int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *va
 	json_object_object_add(jobj,var_name,jdouble);
 	json_object_array_add(jsfps,jobj);
 }
+/**
+ * Parses monitoring string data into a JSON array so as to include it in a JSON object
+ *
+ * @param json_object *jarray: JSON array in which the data will be stored
+ * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
+ * @param char val: Measured magnitude value in string format
+ * @param char *magnitude: Name of the measured magnitude
+ *
+ * @return 0
+ */
 
 int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,char *var_name, int val) {
 
@@ -2089,6 +2109,16 @@ int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,char *
 	json_object_object_add(jobj,var_name,jstring);
 	json_object_array_add(jsfps,jobj);
 }
+/**
+ * Parses monitoring string data into a JSON array so as to include it in a JSON object
+ *
+ * @param json_object *jarray: JSON array in which the data will be stored
+ * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
+ * @param char val: Measured magnitude value in string format
+ * @param char *magnitude: Name of the measured magnitude
+ *
+ * @return 0
+ */
 
 int parsing_mon_environment_data_into_object(json_object *jobj,char *var_name, float val) {
 
@@ -2098,6 +2128,16 @@ int parsing_mon_environment_data_into_object(json_object *jobj,char *var_name, f
 	json_object_object_add(jobj,var_name,jdouble);
 }
 
+/**
+ * Parses monitoring string data into a JSON array so as to include it in a JSON object
+ *
+ * @param json_object *jarray: JSON array in which the data will be stored
+ * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
+ * @param char val: Measured magnitude value in string format
+ * @param char *magnitude: Name of the measured magnitude
+ *
+ * @return 0
+ */
 int parsing_mon_environment_status_into_object(json_object *jobj,char *var_name, int val) {
 
 	char buffer[32];
@@ -2112,98 +2152,6 @@ int parsing_mon_environment_status_into_object(json_object *jobj,char *var_name,
 	json_object_object_add(jobj,var_name,jstring);
 }
 
-/**
- * Parses monitoring data into a JSON array so as to include it in a JSON object
- *
- * @param json_object *jarray: JSON array in which the data will be stored
- * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
- * @param float val: Measured magnitude value
- * @param char *magnitude: Name of the measured magnitude
- *
- * @return 0
- */
-int parsing_mon_sensor_data_into_array (json_object *jarray,float val, char *magnitude, int chan)
-{
-	struct json_object *jobj,*jstring,*jint,*jdouble = NULL;
-	jobj = json_object_new_object();
-	char buffer[32];
-
-	sprintf(buffer, "%3.4f", val);
-	jdouble = json_object_new_double_s((double) val,buffer);
-	jstring = json_object_new_string(magnitude);
-
-	json_object_object_add(jobj,"magnitudename", jstring);
-	if (chan != 99){
-		jint = json_object_new_int(chan);
-		json_object_object_add(jobj,"channel", jint);
-	}
-	json_object_object_add(jobj,"value", jdouble);
-
-	json_object_array_add(jarray,jobj);
-	return 0;
-}
-
-/**
- * Parses monitoring string data into a JSON array so as to include it in a JSON object
- *
- * @param json_object *jarray: JSON array in which the data will be stored
- * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
- * @param char val: Measured magnitude value in string format
- * @param char *magnitude: Name of the measured magnitude
- *
- * @return 0
- */
-int parsing_mon_sensor_string_into_array(json_object *jarray,char *val, char *magnitude, int chan)
-{
-	struct json_object *jobj,*jstring,*jint,*jstring_val = NULL;
-	jobj = json_object_new_object();
-	char buffer[8];
-
-	jstring_val = json_object_new_string(val);
-	jstring = json_object_new_string(magnitude);
-
-	json_object_object_add(jobj,"magnitudename", jstring);
-	if (chan != 99){
-		jint = json_object_new_int(chan);
-		json_object_object_add(jobj,"channel", jint);
-	}
-	json_object_object_add(jobj,"value", jstring_val);
-
-	json_object_array_add(jarray,jobj);
-	return 0;
-}
-
-/**
- * Parses monitoring status data into a JSON array so as to include it in a JSON object
- *
- * @param json_object *jarray: JSON array in which the data will be stored
- * @param int status: Value of the status
- * @param char *magnitude: Name of the measured magnitude/interface
- * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
- *
- * @return 0
- */
-int parsing_mon_status_data_into_array(json_object *jarray, int status, char *magnitude, int chan)
-{
-	struct json_object *jobj,*jstring,*jint,*jstatus = NULL;
-	jobj = json_object_new_object();
-
-	jstring = json_object_new_string(magnitude);
-	if(status == 1)
-		jstatus = json_object_new_string("ON");
-	else if (status == 0)
-		jstatus = json_object_new_string("OFF");
-
-	json_object_object_add(jobj,"magnitudename", jstring);
-	if (chan != 99){
-		jint = json_object_new_int(chan);
-		json_object_object_add(jobj,"channel", jint);
-	}
-	json_object_object_add(jobj,"value", jstatus);
-
-	json_object_array_add(jarray,jobj);
-	return 0;
-}
 /**
  * Parses alarms data into a JSON string and send it to socket
  *
@@ -3445,7 +3393,6 @@ int dig_command_handling(char **cmd){
  *
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
-
 int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int serial_port_UL3;
 	int n;
@@ -3454,18 +3401,18 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	char temp_buf[128];
 	// Try with UL3
 	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
-		//Open one device (UL3)
+		//Open one device
 		serial_port_UL3 = open(board_dev,O_RDWR);
 		// Wait until acquiring non-blocking exclusive lock
     	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
 			usleep(5000);
     	}
-		setup_serial_port(serial_port_UL3);
 		if (serial_port_UL3 < 0) {
 			//Send alarm
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
 			return -EACCES;
 		}
+		setup_serial_port(serial_port_UL3);
 		write(serial_port_UL3, cmd, strlen(cmd));
 		usleep(10000);
 		// Keep reading until timeout (VTIME)
@@ -3563,13 +3510,15 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
  *
  * @return always returns 0. the error is encapsulated into the JSON string to be sent to the DAQ
  */
-
 int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **cmd){
 	// Strip the returned value from response string
 	char *mag_str = NULL;
 	char *start, *end;
 	char start_string[32];
-
+	if((!strcmp(cmd[1],"LV") && !lv_connected) || (!strcmp(cmd[1],"HV") && !hv_connected )){
+		command_response_string_json(msg_id,board_response,reply);
+		return 0;
+	}
 	if(!strcmp(cmd[0],"READ")){
 		strcpy(start_string,"#CMD:OK,VAL:");
 	}
