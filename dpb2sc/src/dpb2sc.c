@@ -2052,58 +2052,48 @@ int ina3221_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
 }
 /************************** JSON functions ******************************/
 /**
- * Parses monitoring string data into a JSON array so as to include it in a JSON object
+ * Parses monitoring float data into a JSON array so as to include it in a JSON object
  *
  * @param json_object *jarray: JSON array in which the data will be stored
- * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
- * @param char val: Measured magnitude value in string format
- * @param char *magnitude: Name of the measured magnitude
+ * @param int sfp_num: Number of measured channel (position in JSON array)
+ * @param char *var_name: Name of the measured magnitude
+ * @param float val: Measured magnitude value in float format
  *
  * @return 0
  */
-
 int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *var_name, float val) {
 
 	char buffer[16];
 	struct json_object *jobj,*jdouble = NULL;
-	printf("Paso 1 channel data \n");
 	jobj = json_object_array_get_idx(jsfps, sfp_num);
 	if(jobj == NULL){
 		jobj = json_object_new_object();
-		printf("Paso 3 channel data \n");
 		sprintf(buffer, "%3.4f", val);
 		jdouble = json_object_new_double_s((double) val,buffer);
-		printf("Paso 4 channel data \n");
 		json_object_object_add(jobj,var_name,jdouble);
-		printf("Paso 5 channel data \n");
 		json_object_array_add(jsfps,jobj);
 	}
 	else{
-		printf("Paso 2 channel data \n");
 		sprintf(buffer, "%3.4f", val);
 		jdouble = json_object_new_double_s((double) val,buffer);
-		printf("Paso 4 channel data \n");
 		json_object_object_add(jobj,var_name,jdouble);
-		printf("Paso 5 channel data \n");
 	}
 	return 0;
 }
 /**
- * Parses monitoring string data into a JSON array so as to include it in a JSON object
+ * Parses monitoring status data into a JSON array so as to include it in a JSON object
  *
  * @param json_object *jarray: JSON array in which the data will be stored
- * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
- * @param char val: Measured magnitude value in string format
- * @param char *magnitude: Name of the measured magnitude
+ * @param int sfp_num: Number of measured channel (position in JSON array)
+ * @param char *var_name: Name of the measured magnitude
+ * @param int val: Measured magnitude value in int format. 1 means ON, 0 means OFF
  *
  * @return 0
  */
-
 int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,char *var_name, int val) {
 
 	char buffer[16];
 	struct json_object *jobj,*jstring = NULL;
-	printf("Paso 1 channel status \n");
 	if(val){
 		strcpy(buffer,"ON");
 	}
@@ -2113,52 +2103,41 @@ int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,char *
 	jobj = json_object_array_get_idx(jsfps, sfp_num);
 	if(jobj == NULL){
 		jobj = json_object_new_object();
-		printf("Paso 2 channel status \n");
 		jstring = json_object_new_string(buffer);
-		printf("Paso 4 channel status \n");
 		json_object_object_add(jobj,var_name,jstring);
-		printf("Paso 5 channel status \n");
 		json_object_array_add(jsfps,jobj);
 	}
 	else{
-		printf("Paso 3 channel status \n");
 		jstring = json_object_new_string(buffer);
-		printf("Paso 4 channel status \n");
 		json_object_object_add(jobj,var_name,jstring);
-		printf("Paso 5 channel status \n");
 	}
 	return 0;
 }
 /**
- * Parses monitoring string data into a JSON array so as to include it in a JSON object
+ * Parses monitoring float data to include it directly in a JSON object
  *
  * @param json_object *jarray: JSON array in which the data will be stored
- * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
- * @param char val: Measured magnitude value in string format
- * @param char *magnitude: Name of the measured magnitude
+ * @param char *var_name: Name of the measured magnitude
+ * @param float val: Measured magnitude value in float format
  *
  * @return 0
  */
-
 int parsing_mon_environment_data_into_object(json_object *jobj,char *var_name, float val) {
 
 	char buffer[32];
 	struct json_object *jdouble = NULL;
-	printf("Paso 1 environment data \n");
 	sprintf(buffer, "%3.4f", val);
 	jdouble = json_object_new_double_s((double) val,buffer);
-	printf("Paso 2 environment data \n");
 	json_object_object_add(jobj,var_name,jdouble);
 	return 0;
 }
 
 /**
- * Parses monitoring string data into a JSON array so as to include it in a JSON object
+ * Parses monitoring status data to include it directly in a JSON object
  *
  * @param json_object *jarray: JSON array in which the data will be stored
- * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
- * @param char val: Measured magnitude value in string format
- * @param char *magnitude: Name of the measured magnitude
+ * @param char *var_name: Name of the measured magnitude
+ * @param int val: Measured magnitude value in int format. 1 means ON, 0 means OFF
  *
  * @return 0
  */
@@ -2172,9 +2151,7 @@ int parsing_mon_environment_status_into_object(json_object *jobj,char *var_name,
 	else{
 		strcpy(buffer,"OFF");
 	}
-	printf("Paso 1 environment status \n");
 	jstring = json_object_new_string(buffer);
-	printf("Paso 2 environment status \n");
 	json_object_object_add(jobj,var_name,jstring);
 	return 0;
 }
@@ -2435,7 +2412,6 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	const char *serialized_json4 = json_object_to_json_string(jval);
 	const char *serialized_json5 = json_object_to_json_string(juuid);
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
-	printf("%s \n",serialized_json);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
 		printf("Error\r\n");
@@ -2491,7 +2467,6 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 	json_object_object_add(jcmd_data2,"msg_value", jval2);
 	json_object_object_add(jcmd_data2,"uuid", juuid2);
 	const char *serialized_json = json_object_to_json_string(jcmd_data2);
-	printf("%s \n",serialized_json);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
 		printf("Error\r\n");
@@ -3602,7 +3577,6 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
 			strcpy(mag_str,"ERROR: SET operation not successful");
 		}
 	}
-	printf("%s \n",mag_str);
 	command_response_string_json(msg_id,mag_str,reply);
 	free(mag_str);
 	return 0;
