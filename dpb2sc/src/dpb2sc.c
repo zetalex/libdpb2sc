@@ -2390,9 +2390,9 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 
 	if(val == 99)
 		jval = json_object_new_string("OK");
-	else if(val == 0)
-		jval = json_object_new_string("ON");
 	else if(val == 1)
+		jval = json_object_new_string("ON");
+	else if(val == 0)
 		jval = json_object_new_string("OFF");
 	else if (val == -2)
 		jval = json_object_new_string("ERROR: SET operation not successful");
@@ -3102,6 +3102,12 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						goto end;
 					}
+					if(bool_read[0]){
+						bool_read[0] = 0;
+					}
+					else{
+						bool_read[0] = 1;
+					}
 					rc = command_status_response_json (msg_id,bool_read[0],cmd_reply);
 					goto end;
 				}
@@ -3399,8 +3405,8 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int serial_port_UL3;
 	int n;
 	struct termios tty;
-	char read_buf[128];
-	char temp_buf[128];
+	char read_buf[128] = "";
+	char temp_buf[128] = "";
 	// Try with UL3
 	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
 		//Open one device
@@ -3421,7 +3427,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		n = read(serial_port_UL3, temp_buf, sizeof(temp_buf));
 		strcat(read_buf,temp_buf);
 		close(serial_port_UL3);
-		if(temp_buf[n-1] != '\n'){	//Check for LF
+		if((n == 0) || (temp_buf[n-1] != '\n')){	//Check for LF
 			//Send Warning
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
 			count_fails_until_success++;
@@ -3648,7 +3654,7 @@ int hv_read_alarms(){
 
 	//Parse all channels
 	for(int i = 0 ; i < 24; i++){
-		strcpy(hvlvcmd,"$BD:1,$CMD:MON,CH");
+		strcpy(hvlvcmd,"$BD:1,$CMD:MON,CH:");
 		snprintf(buffer, sizeof(buffer), "%d",i);
 		strcat(hvlvcmd,buffer);
 		strcat(hvlvcmd,",PAR:STATUS\r\n");
