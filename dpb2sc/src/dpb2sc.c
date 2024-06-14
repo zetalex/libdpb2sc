@@ -3405,8 +3405,10 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int serial_port_UL3;
 	int n;
 	struct termios tty;
-	char read_buf[128] = "";
-	char temp_buf[128] = "";
+	char read_buf[128];
+	char temp_buf[128];
+	strcpy(read_buf,"");
+	strcpy(temp_buf,"");
 	// Try with UL3
 	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
 		//Open one device
@@ -3441,10 +3443,10 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	}
 	//Send Critical error
 	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
-	flock(serial_port_UL3, LOCK_UN); 
+	flock(serial_port_UL3, LOCK_UN);
 	return -ETIMEDOUT;
 success:	
-	flock(serial_port_UL3, LOCK_UN); 
+	flock(serial_port_UL3, LOCK_UN);
 	return 0;
 }
 
