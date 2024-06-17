@@ -3443,6 +3443,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	}
 	//Send Critical error
 	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
+	strcpy(result,"ERROR IN HV/LV Reading");
 	flock(serial_port_UL3, LOCK_UN);
 	return -ETIMEDOUT;
 success:	
@@ -3643,13 +3644,14 @@ int setup_serial_port(int serial_port){
  */
 int hv_read_alarms(){
 	// We just read the Status register from the HV
-	char *board_dev = "/dev/ttyUL3";
+	char board_dev[16];
 	char hvlvcmd[40];
 	char buffer[8];
 	char response[40];
 	int rc = 0;
 	int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
 
+	strcpy(board_dev,"/dev/ttyUL3");
 	//Get Timestamp
 	uint64_t timestamp;
 	timestamp = time(NULL);
