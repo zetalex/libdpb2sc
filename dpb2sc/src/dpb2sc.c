@@ -3648,6 +3648,7 @@ int hv_read_alarms(){
 	char hvlvcmd[40];
 	char buffer[8];
 	char response[40];
+	char mag_str[16];
 	int rc = 0;
 	int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
 
@@ -3663,20 +3664,26 @@ int hv_read_alarms(){
 		strcat(hvlvcmd,buffer);
 		strcat(hvlvcmd,",PAR:STATUS\r\n");
 		hv_lv_command_handling(board_dev,hvlvcmd,response);
-		char *mag_str;
+		char *target = NULL;
 		char *start, *end;
 		if ( start = strstr( response, "#CMD:OK,VAL:" ) ){
 			start += strlen( "#CMD:OK,VAL:" );
 			if ( end = strstr( start, "\r\n" ) )
 			{
-				mag_str = ( char * )malloc( end - start + 1 );
-				memcpy( mag_str, start, end - start );
-				mag_str[end - start] = '\0';
+				target = ( char * )malloc( end - start + 1 );
+				memcpy( target, start, end - start );
+				target[end - start] = '\0';
+				strcpy(mag_str,target);
+				free(target);
 			}
 			else {
 				rc = -EINVAL;
 				return rc;
 			}
+		}
+		else {
+				rc = -EINVAL;
+				return rc;
 		}
 		//Get overcurrent, overvoltage, undervoltage and trip bit flags
 		OVC_flag = atoi(mag_str) & BIT(3);
@@ -3691,7 +3698,6 @@ int hv_read_alarms(){
 		TRIP_flag = atoi(mag_str) & BIT(6);
 		if(TRIP_flag)
 			rc = status_alarm_json("HV","TRIP Protection",i,timestamp,"critical");
-		free(mag_str);
 	}
 	return rc;
 
