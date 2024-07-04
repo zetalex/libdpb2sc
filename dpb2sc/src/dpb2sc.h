@@ -149,6 +149,7 @@ int populate_hv_hash_table(int, char **, char **);
 int populate_lv_hash_table(int, char **, char **);
 int get_hv_hash_table_command(char *, char *);
 int get_lv_hash_table_command(char *, char *);
+int inList(int, int*, int);
 void atexit_function();
 void lib_close();
 int gen_uuid(char *);
@@ -517,7 +518,7 @@ char *lv_mag_names[] = {
 HV Command Data.
 ****************************************************************************/
 
-#define HV_CMD_TABLE_SIZE 7
+#define HV_CMD_TABLE_SIZE 10
 
 char *hv_daq_words[] = {
     "STATUS",
@@ -526,7 +527,10 @@ char *hv_daq_words[] = {
     "TEMP",
     "RAMPUP",
     "RAMPDOWN",
+    "TRIP",
     "CHANERR",
+    "SDVOLT",
+    "SDCURR",
     NULL
 };
 
@@ -537,7 +541,10 @@ char *hv_board_words[] = {
     "TEMP",
     "RUP",
     "RDWN",
-    "STATUS"
+    "TRIP",
+    "STATUS",
+    "SDVMON",
+    "SDCURR"
 };
 
 char *hv_mag_names[] = {
@@ -546,10 +553,15 @@ char *hv_mag_names[] = {
     "current" , 
     "temperature",
     "rampup" , 
-    "rampdown" , 
-    "chanerr"
+    "rampdown" ,
+    "trip", 
+    "chanerr",
+    "sdvolt",
+    "sdcurr"
 };
 
+// Step down channels
+int hv_sd_channels[] = {0,1,6,7,12,13,18,19};
 
 /******************************************************************************
 Hash Tables.

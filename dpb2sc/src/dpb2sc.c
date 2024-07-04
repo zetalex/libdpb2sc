@@ -3065,6 +3065,17 @@ int get_lv_hash_table_command(char *key, char *value) {
 	return 0;
 }
 
+int inList(int inp, int* list, int listLen) {
+    int num_present = 0;
+    for (int i = 0; i < listLen - 1; i++) {
+        if (list[i] == inp) {
+            num_present = 1;
+            break;
+        }
+    }
+    return num_present;
+}
+
 /************************** Command handling Functions******************************/
 
 /**
