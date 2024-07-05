@@ -144,7 +144,7 @@ int i2c_writen_reg(struct I2cDevice* dev, uint8_t reg, uint8_t *buf, size_t buf_
 	 * the first element.
 	 */
 	full_buf_len = buf_len + 1;
-	full_buf = malloc(sizeof(uint8_t) * full_buf_len);
+	full_buf = static_cast<uint8_t *>(malloc(sizeof(uint8_t) * full_buf_len));
 
 	full_buf[0] = reg;
 	for (i = 0; i < buf_len; i++) {

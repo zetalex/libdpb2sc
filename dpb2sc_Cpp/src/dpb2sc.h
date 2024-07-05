@@ -9,6 +9,7 @@
 #include "timer.h"
 #include <semaphore.h>
 #include <sys/shm.h>
+#include <sys/file.h>
 #include <fcntl.h>
 #include <time.h>
 #include <zmq.h>

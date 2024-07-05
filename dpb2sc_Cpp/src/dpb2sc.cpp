@@ -32,6 +32,7 @@ int init_semaphores(){
 		printf("Error initialising semaphore for Alarm files\n");
 		return rc;
 	}
+	return rc;
 }
 
 /************************** Shared Memory Functions ******************************/
@@ -52,7 +53,7 @@ int init_shared_memory() {
 		 return -1;
 	}
 
-	memory = shmat(memoryID, NULL, 0);
+	memory = static_cast<wrapper *>(shmat(memoryID, NULL, 0));
 	if (memory == (void *) -1) {
 		perror("shmat(): Could not map shared memory segment");
 		return -1;
@@ -89,7 +90,7 @@ int read_shm(int *channel, char *ev_type, char *ch_type){
 	      return 1;
 	   }
 
-	memory = shmat(memoryID, NULL, 0);
+	memory = static_cast<wrapper *>(shmat(memoryID, NULL, 0));
 	channel[0] = memory->chn;
 	strcpy(ev_type,memory->ev_type);
 	strcpy(ch_type,memory->ch_type);
@@ -147,21 +148,21 @@ int xlnx_ams_read_temp(int *chan, int n, float *res){
 			long fsize = ftell(raw);
 			fseek(raw, 0, SEEK_SET);  /* same as rewind(f); */
 
-			char *raw_string = malloc(fsize + 1);
+			char *raw_string = static_cast<char *>(malloc(fsize + 1));
 			fread(raw_string, fsize, 1, raw);
 
 			fseek(offset, 0, SEEK_END);
 			fsize = ftell(offset);
 			fseek(offset, 0, SEEK_SET);  /* same as rewind(f); */
 
-			char *offset_string = malloc(fsize + 1);
+			char *offset_string = static_cast<char *>(malloc(fsize + 1));
 			fread(offset_string, fsize, 1, offset);
 
 			fseek(scale, 0, SEEK_END);
 			fsize = ftell(scale);
 			fseek(scale, 0, SEEK_SET);  /* same as rewind(f); */
 
-			char *scale_string = malloc(fsize + 1);
+			char *scale_string = static_cast<char *>(malloc(fsize + 1));
 			fread(scale_string, fsize, 1, scale);
 
 			float Temperature = (atof(scale_string) * (atof(raw_string) + atof(offset_string))) / 1024; //Apply ADC conversion to Temperature, Xilinx Specs
@@ -219,14 +220,14 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
 			long fsize = ftell(raw);
 			fseek(raw, 0, SEEK_SET);  /* same as rewind(f); */
 
-			char *raw_string = malloc(fsize + 1);
+			char *raw_string = static_cast<char *>(malloc(fsize + 1));
 			fread(raw_string, fsize, 1, raw);
 
 			fseek(scale, 0, SEEK_END);
 			fsize = ftell(scale);
 			fseek(scale, 0, SEEK_SET);  /* same as rewind(f); */
 
-			char *scale_string = malloc(fsize + 1);
+			char *scale_string = static_cast<char *>(malloc(fsize + 1));
 			fread(scale_string, fsize, 1, scale);
 
 			float Voltage = (atof(scale_string) * atof(raw_string)) / 1024; //Apply ADC conversion to Voltage, Xilinx Specs
@@ -307,14 +308,14 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 				fsize = ftell(offset);
 				fseek(offset, 0, SEEK_SET);  /* same as rewind(f); */
 
-				char *offset_string = malloc(fsize + 1);
+				char *offset_string = static_cast<char *>(malloc(fsize + 1));
 				fread(offset_string, fsize, 1, offset);
 
 				fseek(scale, 0, SEEK_END);
 				fsize = ftell(scale);
 				fseek(scale, 0, SEEK_SET);  /* same as rewind(f); */
 
-				char *scale_string = malloc(fsize + 1);
+				char *scale_string = static_cast<char *>(malloc(fsize + 1));
 				fread(scale_string, fsize, 1, scale);
 
 				fclose(scale);
@@ -334,7 +335,7 @@ int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
 				fsize = ftell(scale);
 				fseek(scale, 0, SEEK_SET);  /* same as rewind(f); */
 
-				char *scale_string = malloc(fsize + 1);
+				char *scale_string = static_cast<char *>(malloc(fsize + 1));
 				fread(scale_string, fsize, 1, scale);
 				aux = (1024*val)/atof(scale_string);
 
@@ -2608,7 +2609,7 @@ int get_GPIO_base_address(int *address){
 		    	long fsize = ftell(GPIO);
 		    	fseek(GPIO, 0, SEEK_SET);  /* same as rewind(f); */
 
-		    	char *add_string = malloc(fsize + 1);
+		    	char *add_string = static_cast<char *>(malloc(fsize + 1));
 		    	fread(add_string, fsize, 1, GPIO);
 		    	address[0] = (int) atof(add_string) + 78 ;
 		    	free(add_string);
@@ -2732,7 +2733,7 @@ int read_GPIO(int address,int *value){
 	long fsize = ftell(GPIO_val);
 	fseek(GPIO_val, 0, SEEK_SET);  /* same as rewind(f); */
 
-	char *value_string = malloc(fsize + 1);
+	char *value_string = static_cast<char *>(malloc(fsize + 1));
 	fread(value_string, fsize, 1, GPIO_val);
 	value[0] = (int) atof(value_string);
 	fclose(GPIO_val);
