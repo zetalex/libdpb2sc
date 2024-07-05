@@ -65,16 +65,6 @@ sem_t alarm_sync;
 sem_t sem_valid;
 
 /** @} */
-/******************************************************************************
-*Child process and threads.
-****************************************************************************/
-/** @defgroup pth Child process and threads
- *  Threads and subprocesses declaration
- *  @{
- */
-/** @brief IIO Event Monitor Process ID */
-pid_t child_pid;
-/** @} */
 
 /******************************************************************************
 *ZMQ Socket Initializer
