@@ -3421,6 +3421,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	char temp_buf[128];
 	strcpy(read_buf,"");
 	strcpy(temp_buf,"");
+
 	// Try with UL3
 	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
 		//Open one device
@@ -3439,6 +3440,8 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		usleep(10000);
 		// Keep reading until timeout (VTIME)
 		n = read(serial_port_UL3, temp_buf, sizeof(temp_buf));
+		//read() doesn't add null terminated character at the end because it reads binary data
+		temp_buf[n] = '\0';
 		strcat(read_buf,temp_buf);
 		close(serial_port_UL3);
 		if((n == 0) || (temp_buf[n-1] != '\n')){	//Check for LF
@@ -3449,6 +3452,8 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		}
 		else{
 			count_fails_until_success = 0;
+			// Add null terminated character to the string
+			read_buf[n] = '\0';
 			strcpy(result,read_buf);
 			goto success;
 		}
@@ -3458,7 +3463,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	strcpy(result,"ERROR IN HV/LV Reading");
 	flock(serial_port_UL3, LOCK_UN);
 	return -ETIMEDOUT;
-success:	
+success:
 	flock(serial_port_UL3, LOCK_UN);
 	return 0;
 }
@@ -3613,7 +3618,6 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
 int setup_serial_port(int serial_port){
 
 	struct termios tty;
-
 	if(tcgetattr(serial_port, &tty) != 0) {
     	printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
 		return -1;
@@ -3660,10 +3664,10 @@ int hv_read_alarms(){
 	char hvlvcmd[40];
 	char buffer[8];
 	char response[40];
-	char mag_str[16];
+	char mag_str[32];
+	char mag_reason[32];
 	int rc = 0;
 	int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
-
 	strcpy(board_dev,"/dev/ttyUL3");
 	//Get Timestamp
 	uint64_t timestamp;
@@ -3672,7 +3676,7 @@ int hv_read_alarms(){
 	//Parse all channels
 	for(int i = 0 ; i < 24; i++){
 		strcpy(hvlvcmd,"$BD:1,$CMD:MON,CH:");
-		snprintf(buffer, sizeof(buffer), "%d",i);
+		sprintf(buffer, "%d",i);
 		strcat(hvlvcmd,buffer);
 		strcat(hvlvcmd,",PAR:STATUS\r\n");
 		hv_lv_command_handling(board_dev,hvlvcmd,response);
@@ -3690,11 +3694,13 @@ int hv_read_alarms(){
 			}
 			else {
 				rc = -EINVAL;
+				strcpy(mag_str,"ERROR");
 				return rc;
 			}
 		}
 		else {
 				rc = -EINVAL;
+				strcpy(mag_str,"ERROR");
 				return rc;
 		}
 		//Get overcurrent, overvoltage, undervoltage and trip bit flags
