@@ -3420,20 +3420,21 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	strcpy(read_buf,"");
 	strcpy(temp_buf,"");
 
+	//Open one device
+	serial_port_UL3 = open(board_dev,O_RDWR);
+	if (serial_port_UL3 < 0) {
+		//Send alarm
+		status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
+		return -EACCES;
+	}
+	// Wait until acquiring non-blocking exclusive lock
+	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
+		usleep(5000);
+	}
+
+	setup_serial_port(serial_port_UL3);
 	// Try with UL3
 	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
-		//Open one device
-		serial_port_UL3 = open(board_dev,O_RDWR);
-		// Wait until acquiring non-blocking exclusive lock
-    	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
-			usleep(5000);
-    	}
-		if (serial_port_UL3 < 0) {
-			//Send alarm
-			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
-			return -EACCES;
-		}
-		setup_serial_port(serial_port_UL3);
 		write(serial_port_UL3, cmd, strlen(cmd));
 		usleep(10000);
 		// Keep reading until timeout (VTIME)
