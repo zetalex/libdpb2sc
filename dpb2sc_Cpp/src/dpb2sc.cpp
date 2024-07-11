@@ -3035,7 +3035,6 @@ int populate_hv_hash_table(int table_size, char **keys, char **values) {
     	strcpy(s->board_word, values[i]);
 		HASH_ADD_STR(hv_cmd_table, daq_word, s);  /* id: name of key field */
 	}
-	free(s);
 	return 0;
 }
 
@@ -3048,7 +3047,6 @@ int populate_lv_hash_table(int table_size, char **keys, char **values) {
     	strcpy(s->board_word, values[i]);
 		HASH_ADD_STR(lv_cmd_table, daq_word, s);  /* id: name of key field */
 	}
-	free(s);
 	return 0;
 }
 

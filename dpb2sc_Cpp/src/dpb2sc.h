@@ -535,7 +535,8 @@ char *hv_board_words[] = {
     "TRIP",
     "STATUS",
     "SDVMON",
-    "SDIMON"
+    "SDIMON",
+	NULL
 };
 
 char *hv_mag_names[] = {
