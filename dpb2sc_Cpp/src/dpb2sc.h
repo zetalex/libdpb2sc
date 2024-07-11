@@ -20,6 +20,8 @@
 #include <regex.h>
 #include <termios.h>
 #include "uthash.h"
+#include <linux/serial.h>
+#include <sys/ioctl.h>
 
 #include "i2c.h"
 #include "linux/errno.h"

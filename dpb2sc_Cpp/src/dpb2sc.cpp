@@ -2282,10 +2282,10 @@ int status_alarm_json (char *board,char *chip, int chan,uint64_t timestamp,char 
 	json_object_object_add(jalarm_data,"value", jstatus);
 
 	const char *serialized_json = json_object_to_json_string(jalarm_data);
-	int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
-	if (rc) {
+	//int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
+	if (0) {
 		printf("Error validating JSON Schema\r\n");
-		return rc;
+		return -1;
 	}
 	else{
 		zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
@@ -3414,11 +3414,10 @@ int dig_command_handling(char **cmd){
 int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int serial_port_UL3;
 	int n;
+	int bytes;
 	struct termios tty;
 	char read_buf[128];
-	char temp_buf[128];
 	strcpy(read_buf,"");
-	strcpy(temp_buf,"");
 
 	//Open one device
 	serial_port_UL3 = open(board_dev,O_RDWR);
@@ -3433,23 +3432,25 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	}
 
 	setup_serial_port(serial_port_UL3);
+	write(serial_port_UL3, cmd, strlen(cmd));
 	// Try with UL3
-	for(int i = 0 ; i < SERIAL_PORT_RETRIES ; i++){
-		write(serial_port_UL3, cmd, strlen(cmd));
-		usleep(10000);
+	for(int i = 0 ; i < SERIAL_PORT_RETRIES ;){
 		// Keep reading until timeout (VTIME)
+		char temp_buf[8];
 		n = read(serial_port_UL3, temp_buf, sizeof(temp_buf));
-		//read() doesn't add null terminated character at the end because it reads binary data
-		temp_buf[n] = '\0';
-		strcat(read_buf,temp_buf);
-		close(serial_port_UL3);
-		if((n == 0) || (temp_buf[n-1] != '\n')){	//Check for LF
+		if(n > 0){
+			//read() doesn't add null terminated character at the end because it reads binary data
+			temp_buf[n] = '\0';
+			strcat(read_buf,temp_buf);
+		}
+		else{
 			//Send Warning
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
 			count_fails_until_success++;
 			count_since_reset++;
+			i++;
 		}
-		else{
+		if(temp_buf[n-1] == '\n'){
 			count_fails_until_success = 0;
 			// Add null terminated character to the string
 			read_buf[n] = '\0';
@@ -3458,11 +3459,13 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		}
 	}
 	//Send Critical error
+	close(serial_port_UL3);
 	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
 	strcpy(result,"ERROR IN HV/LV Reading");
 	flock(serial_port_UL3, LOCK_UN);
 	return -ETIMEDOUT;
 success:
+	close(serial_port_UL3);
 	flock(serial_port_UL3, LOCK_UN);
 	return 0;
 }
@@ -3648,6 +3651,14 @@ int setup_serial_port(int serial_port){
     	printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
 		return -1;
 	}
+
+	//Set the serial port in low latency mode
+
+	struct serial_struct serial_settings;
+	ioctl(serial_port, TIOCGSERIAL, &serial_settings);
+	serial_settings.flags |= ASYNC_LOW_LATENCY;
+	ioctl(serial_port, TIOCSSERIAL, &serial_settings);
+
 	return 0;
 }
 
