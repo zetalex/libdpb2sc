@@ -2158,6 +2158,23 @@ int parsing_mon_environment_status_into_object(json_object *jobj,char *var_name,
 }
 
 /**
+ * Parses monitoring string data to include it directly in a JSON object
+ *
+ * @param json_object *jarray: JSON array in which the data will be stored
+ * @param char *var_name: Name of the measured magnitude
+ * @param char *val: string to put in the value field of the JSON
+ *
+ * @return 0
+ */
+int parsing_mon_environment_string_into_object(json_object *jobj,char *var_name, char* val_str) {
+
+	struct json_object *jstring = NULL;
+	jstring = json_object_new_string(val_str);
+	json_object_object_add(jobj,var_name,jstring);
+	return 0;
+}
+
+/**
  * Parses alarms data into a JSON string and send it to socket
  *
 
@@ -3452,8 +3469,6 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		}
 		if(temp_buf[n-1] == '\n'){
 			count_fails_until_success = 0;
-			// Add null terminated character to the string
-			read_buf[n] = '\0';
 			strcpy(result,read_buf);
 			goto success;
 		}

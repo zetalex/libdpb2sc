@@ -116,6 +116,7 @@ int parsing_mon_channel_data_into_object(json_object *, int, char *, float);
 int parsing_mon_channel_status_into_object(json_object *, int, char *, int);
 int parsing_mon_environment_data_into_object(json_object *, char *, float);
 int parsing_mon_environment_status_into_object(json_object *, char *, int);
+int parsing_mon_environment_string_into_object(json_object *,char *, char *);
 int alarm_json (char*,char *,char *, int , float ,uint64_t ,char *);
 int status_alarm_json (char *,char *, int ,uint64_t ,char *);
 int command_response_json (int ,float,char *);
@@ -468,9 +469,10 @@ char *ams_channels[] = {
 /******************************************************************************
 LV Command Data.
 ****************************************************************************/
-#define LV_CMD_TABLE_SIZE 9
+#define LV_CMD_TABLE_SIZE 10
 
 char *lv_daq_words[] = {
+	"BDSNUM",
     "TEMP",
     "BCMTEMP",
     "RELHUM",
@@ -484,6 +486,7 @@ char *lv_daq_words[] = {
 };
 
 char *lv_board_words[] = {
+	"BDSNUM",
     "BDTEMP",
     "BCTEMP",
     "RH",
@@ -496,6 +499,7 @@ char *lv_board_words[] = {
 };
 
 char *lv_mag_names[] = {
+	"bdsnum",
     "boardtemp",
     "bcmtemp",
     "relathumidity",
@@ -511,13 +515,15 @@ char *lv_mag_names[] = {
 HV Command Data.
 ****************************************************************************/
 
-#define HV_CMD_TABLE_SIZE 10
+#define HV_CMD_TABLE_SIZE 12
 
 char *hv_daq_words[] = {
+	"BDSNUM",
+	"TEMP",
     "STATUS",
     "VOLT",
     "CURR",
-    "TEMP",
+    "CHANTEMP",
     "RAMPUP",
     "RAMPDOWN",
     "TRIP",
@@ -528,6 +534,8 @@ char *hv_daq_words[] = {
 };
 
 char *hv_board_words[] = {
+	"BDSNUM",
+	"BDTEMP",
     "STATUS",
     "VMON",
     "IMON",
@@ -537,11 +545,12 @@ char *hv_board_words[] = {
     "TRIP",
     "STATUS",
     "SDVMON",
-    "SDIMON",
-	NULL
+    "SDIMON"
 };
 
 char *hv_mag_names[] = {
+	"bdsnum",
+	"boardtemp",
     "status",
     "voltage", 
     "current" , 
