@@ -2069,13 +2069,13 @@ int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *va
 	jobj = json_object_array_get_idx(jsfps, sfp_num);
 	if(jobj == NULL){
 		jobj = json_object_new_object();
-		sprintf(buffer, "%3.4f", val);
+		sprintf(buffer, "%lf", (double) val);
 		jdouble = json_object_new_double_s((double) val,buffer);
 		json_object_object_add(jobj,var_name,jdouble);
 		json_object_array_add(jsfps,jobj);
 	}
 	else{
-		sprintf(buffer, "%3.4f", val);
+		sprintf(buffer, "%lf", (double) val);
 		jdouble = json_object_new_double_s((double) val,buffer);
 		json_object_object_add(jobj,var_name,jdouble);
 	}
@@ -2127,7 +2127,7 @@ int parsing_mon_environment_data_into_object(json_object *jobj,char *var_name, f
 
 	char buffer[32];
 	struct json_object *jdouble = NULL;
-	sprintf(buffer, "%3.4f", val);
+	sprintf(buffer, "%lf", (double) val);
 	jdouble = json_object_new_double_s((double) val,buffer);
 	json_object_object_add(jobj,var_name,jdouble);
 	return 0;
@@ -2194,12 +2194,12 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
 	sem_wait(&alarm_sync);
 	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type = NULL;
 	jalarm_data = json_object_new_object();
-	char buffer[8];
+	char buffer[16];
 	uint8_t level = 1;
 
 	uint64_t timestamp_msg = time(NULL)*1000;
 
-	sprintf(buffer, "%3.4f", val);
+	sprintf(buffer, "%lf", (double) val);
 
 	char *device = "ID DPB";
 	jboard = json_object_new_string(board);
@@ -2343,7 +2343,7 @@ int command_response_json (int msg_id, float val, char* cmd_reply)
 
 	snprintf(msg_date, sizeof(msg_date), "%d-%d-%dT%d:%d:%d.%dZ",year,mon,day,hour,min,sec,msec);
 
-	sprintf(buffer, "%3.4f", val);
+	sprintf(buffer, "%lf", (double) val);
 	gen_uuid(uuid);
 	json_object *jmsg_id = json_object_new_int(msg_id);
 	json_object *jmsg_time = json_object_new_string(msg_date);
