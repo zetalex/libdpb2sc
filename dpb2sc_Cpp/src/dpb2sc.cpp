@@ -3011,15 +3011,17 @@ int zmq_socket_init (){
 
 	int rc = 0;
 	int linger = 0;
-	int sndhwm = 1;
-	size_t sndhwm_size = sizeof(sndhwm);
+	int sndhwm_mon_cmd = 1;
+	int sndhwm_alarms = 6;
+	size_t sndhwm_mon_cmd_size = sizeof(sndhwm_mon_cmd);
+	size_t sndhwm_alarms_size = sizeof(sndhwm_alarms);
 	size_t linger_size = sizeof(linger);
 
     zmq_context = zmq_ctx_new();
     mon_publisher = zmq_socket(zmq_context, ZMQ_PUB);
 
-    zmq_setsockopt(mon_publisher, ZMQ_SNDHWM, &sndhwm, sndhwm_size);
-    zmq_setsockopt(mon_publisher, ZMQ_RCVHWM, &sndhwm, sndhwm_size);
+    zmq_setsockopt(mon_publisher, ZMQ_SNDHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
+    zmq_setsockopt(mon_publisher, ZMQ_RCVHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
     zmq_setsockopt (mon_publisher, ZMQ_LINGER, &linger, linger_size);
     rc = zmq_bind(mon_publisher, "tcp://*:5555");
 	if (rc) {
@@ -3027,8 +3029,8 @@ int zmq_socket_init (){
 	}
 
     alarm_publisher = zmq_socket(zmq_context, ZMQ_PUB);
-    zmq_setsockopt(alarm_publisher, ZMQ_SNDHWM, &sndhwm, sndhwm_size);
-    zmq_setsockopt(alarm_publisher, ZMQ_RCVHWM, &sndhwm, sndhwm_size);
+    zmq_setsockopt(alarm_publisher, ZMQ_SNDHWM, &sndhwm_alarms, sndhwm_alarms_size);
+    zmq_setsockopt(alarm_publisher, ZMQ_RCVHWM, &sndhwm_alarms, sndhwm_alarms_size);
     zmq_setsockopt (alarm_publisher, ZMQ_LINGER, &linger, linger_size);
     rc = zmq_bind(alarm_publisher, "tcp://*:5556");
 	if (rc) {
@@ -3036,10 +3038,10 @@ int zmq_socket_init (){
 	}
 
     cmd_router = zmq_socket(zmq_context, ZMQ_REP);
-    rc = zmq_bind(cmd_router, "tcp://*:5557");
-    zmq_setsockopt(cmd_router, ZMQ_SNDHWM, &sndhwm, sndhwm_size);
-    zmq_setsockopt(cmd_router, ZMQ_RCVHWM, &sndhwm, sndhwm_size);
+    zmq_setsockopt(cmd_router, ZMQ_SNDHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
+    zmq_setsockopt(cmd_router, ZMQ_RCVHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
     zmq_setsockopt (cmd_router, ZMQ_LINGER, &linger, linger_size);
+    rc = zmq_bind(cmd_router, "tcp://*:5557");
 	if (rc) {
 		return rc;
 	}
