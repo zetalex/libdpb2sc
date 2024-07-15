@@ -257,7 +257,7 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
  * @return Negative integer if setting fails, any file could not be opened or invalid argument.If not, returns 0 and the modifies the specified limit
  *
  */
-int xlnx_ams_set_limits(int chan, char *ev_type, char *ch_type, float val){
+int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, float val){
 	FILE *offset,*scale;
 
 		char buffer [sizeof(chan)*8+1];
@@ -373,40 +373,40 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 
 	int rc;
 	uint64_t timestamp;
-	data->dev_pcb_temp.filename = "/dev/i2c-2";
+	strcpy(data->dev_pcb_temp.filename , "/dev/i2c-2");
 	data->dev_pcb_temp.addr = 0x18;
 
-	data->dev_som_volt.filename = "/dev/i2c-2";
+	strcpy(data->dev_som_volt.filename , "/dev/i2c-2");
 	data->dev_som_volt.addr = 0x40;
-	data->dev_sfp0_2_volt.filename = "/dev/i2c-3";
+	strcpy(data->dev_sfp0_2_volt.filename , "/dev/i2c-3");
 	data->dev_sfp0_2_volt.addr = 0x40;
-	data->dev_sfp3_5_volt.filename = "/dev/i2c-3";
+	strcpy(data->dev_sfp3_5_volt.filename , "/dev/i2c-3");
 	data->dev_sfp3_5_volt.addr = 0x41;
 
-	data->dev_sfp0_A0.filename = "/dev/i2c-6";
+	strcpy(data->dev_sfp0_A0.filename , "/dev/i2c-6");
 	data->dev_sfp0_A0.addr = 0x50;
-	data->dev_sfp1_A0.filename = "/dev/i2c-10";
+	strcpy(data->dev_sfp1_A0.filename , "/dev/i2c-10");
 	data->dev_sfp1_A0.addr = 0x50;
-	data->dev_sfp2_A0.filename = "/dev/i2c-8";
+	strcpy(data->dev_sfp2_A0.filename , "/dev/i2c-8");
 	data->dev_sfp2_A0.addr = 0x50;
-	data->dev_sfp3_A0.filename = "/dev/i2c-12";
+	strcpy(data->dev_sfp3_A0.filename , "/dev/i2c-12");
 	data->dev_sfp3_A0.addr = 0x50;
-	data->dev_sfp4_A0.filename = "/dev/i2c-9";
+	strcpy(data->dev_sfp4_A0.filename , "/dev/i2c-9");
 	data->dev_sfp4_A0.addr = 0x50;
-	data->dev_sfp5_A0.filename = "/dev/i2c-13";
+	strcpy(data->dev_sfp5_A0.filename , "/dev/i2c-13");
 	data->dev_sfp5_A0.addr = 0x50;
 
-	data->dev_sfp0_A2.filename = "/dev/i2c-6";
+	strcpy(data->dev_sfp0_A2.filename , "/dev/i2c-6");
 	data->dev_sfp0_A2.addr = 0x51;
-	data->dev_sfp1_A2.filename = "/dev/i2c-10";
+	strcpy(data->dev_sfp1_A2.filename , "/dev/i2c-10");
 	data->dev_sfp1_A2.addr = 0x51;
-	data->dev_sfp2_A2.filename = "/dev/i2c-8";
+	strcpy(data->dev_sfp2_A2.filename , "/dev/i2c-8");
 	data->dev_sfp2_A2.addr = 0x51;
-	data->dev_sfp3_A2.filename = "/dev/i2c-12";
+	strcpy(data->dev_sfp3_A2.filename , "/dev/i2c-12");
 	data->dev_sfp3_A2.addr = 0x51;
-	data->dev_sfp4_A2.filename = "/dev/i2c-9";
+	strcpy(data->dev_sfp4_A2.filename , "/dev/i2c-9");
 	data->dev_sfp4_A2.addr = 0x51;
-	data->dev_sfp5_A2.filename = "/dev/i2c-13";
+	strcpy(data->dev_sfp5_A2.filename , "/dev/i2c-13");
 	data->dev_sfp5_A2.addr = 0x51;
 
 	sem_post(&alarm_sync);
@@ -2067,7 +2067,7 @@ int ina3221_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
  *
  * @return 0
  */
-int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *var_name, float val) {
+int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,const char *var_name, float val) {
 
 	char buffer[512];
 	struct json_object *jobj,*jdouble = NULL;
@@ -2096,7 +2096,7 @@ int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *va
  *
  * @return 0
  */
-int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,char *var_name, int val) {
+int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,const char *var_name, int val) {
 
 	char buffer[16];
 	struct json_object *jobj,*jstring = NULL;
@@ -2128,7 +2128,7 @@ int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,char *
  *
  * @return 0
  */
-int parsing_mon_environment_data_into_object(json_object *jobj,char *var_name, float val) {
+int parsing_mon_environment_data_into_object(json_object *jobj,const char *var_name, float val) {
 
 	char buffer[512];
 	struct json_object *jdouble = NULL;
@@ -2147,7 +2147,7 @@ int parsing_mon_environment_data_into_object(json_object *jobj,char *var_name, f
  *
  * @return 0
  */
-int parsing_mon_environment_status_into_object(json_object *jobj,char *var_name, int val) {
+int parsing_mon_environment_status_into_object(json_object *jobj,const char *var_name, int val) {
 
 	char buffer[32];
 	struct json_object *jstring = NULL;
@@ -2171,7 +2171,7 @@ int parsing_mon_environment_status_into_object(json_object *jobj,char *var_name,
  *
  * @return 0
  */
-int parsing_mon_environment_string_into_object(json_object *jobj,char *var_name, char* val_str) {
+int parsing_mon_environment_string_into_object(json_object *jobj,const char *var_name, char* val_str) {
 
 	struct json_object *jstring = NULL;
 	jstring = json_object_new_string(val_str);
@@ -2194,19 +2194,19 @@ int parsing_mon_environment_string_into_object(json_object *jobj,char *var_name,
  *
  * @return 0 or negative integer if validation fails
  */
-int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64_t timestamp,char *info_type)
+int alarm_json (const char *board,const char *chip,const char *ev_type, int chan, float val,uint64_t timestamp,const char *info_type)
 {
 	sem_wait(&alarm_sync);
 	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type = NULL;
 	jalarm_data = json_object_new_object();
 	char buffer[512];
-	uint8_t level = 1;
+	uint8_t level;
 
-	uint64_t timestamp_msg = time(NULL)*1000;
+	if(timestamp == 0)
+		uint64_t timestamp = time(NULL)*1000;
 
 	sprintf(buffer, "%lf", (double) val);
 
-	char *device = "ID DPB";
 	jboard = json_object_new_string(board);
 	if(!strcmp(info_type,"critical")){
 		level = 0;
@@ -2262,7 +2262,7 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
  *
  * @return 0 or negative integer if validation fails
  */
-int status_alarm_json (char *board,char *chip, int chan,uint64_t timestamp,char *info_type)
+int status_alarm_json (const char *board,const char *chip, int chan,uint64_t timestamp, const char *info_type)
 {
 	sem_wait(&alarm_sync);
 	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus = NULL;
@@ -2270,7 +2270,6 @@ int status_alarm_json (char *board,char *chip, int chan,uint64_t timestamp,char 
 
 	uint64_t timestamp_msg = (time(NULL))*1000;
 	uint8_t level = 1;
-	char *device = "ID DPB";
 
 	jboard = json_object_new_string(board);
 
@@ -2429,11 +2428,11 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	json_object_object_add(jcmd_data,"msg_type",jmsg_type);
 	json_object_object_add(jcmd_data,"msg_value", jval);
 	json_object_object_add(jcmd_data,"uuid", juuid);
-	const char *serialized_json1 = json_object_to_json_string(jmsg_id);
-	const char *serialized_json2 = json_object_to_json_string(jmsg_time);
-	const char *serialized_json3 = json_object_to_json_string(jmsg_type);
-	const char *serialized_json4 = json_object_to_json_string(jval);
-	const char *serialized_json5 = json_object_to_json_string(juuid);
+//	const char *serialized_json1 = json_object_to_json_string(jmsg_id);
+//	const char *serialized_json2 = json_object_to_json_string(jmsg_time);
+//	const char *serialized_json3 = json_object_to_json_string(jmsg_type);
+//	const char *serialized_json4 = json_object_to_json_string(jval);
+//	const char *serialized_json5 = json_object_to_json_string(juuid);
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
@@ -2503,13 +2502,13 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 /**
  * Validates generated JSON string with a validation schema
  *
- * @param char *schema: Name of validation schema file
+ * @param const char *schema: Name of validation schema file
  * @param const char *json_string: JSON string to be validated
  * @param char *temp_file: Name of Temporal File
  *
  * @return 0 if correct, negative integer if validation failed
  */
-int json_schema_validate (char *schema,const char *json_string, char *temp_file)
+int json_schema_validate (const char *schema,const char *json_string, const char *temp_file)
 {
 	sem_wait(&sem_valid);
 	FILE* fptr;
@@ -2664,7 +2663,7 @@ int write_GPIO(int address, int value){
     FILE *fd1;
     FILE *fd2;
     char val[1];
-    static char *dir = "out";
+    char dir[8] = "out";
 
     if((value != 0) && (value != 1) ){
 		sem_post(&file_sync);
@@ -2721,7 +2720,7 @@ int read_GPIO(int address,int *value){
 	char dir_add[64];
 	char val_add[64];
     FILE *fd1;
-    static char *dir = "in";
+    char dir[8] = "in";
     FILE *GPIO_val;
 
 	int add = address + GPIO_BASE_ADDRESS;
@@ -2826,9 +2825,8 @@ void unexport_GPIO(){
  *
  * @return  0 if parameters are OK, if not negative integer
  */
-int eth_link_status (char *eth_interface, int *status)
+int eth_link_status (const char *eth_interface, int *status)
 {
-	int rc = 0;
 	char eth_link[64];
 	FILE *link_file;
 	char str[64];
@@ -2897,12 +2895,12 @@ int eth_link_status_config (char *eth_interface, int val)
 /**
 * Checks from GPIO if Ethernet Links status has changed from up to down and reports it if necessary
 *
-* @param char *str: Name of the Ethernet interface
+* @param const char *str: Name of the Ethernet interface
 * @param int flag: value of the Ethernet interface flag, determines if the link was previously up
 *
 * @return  0 if parameters OK and reports the event, if not returns negative integer.
 */
-int eth_down_alarm(char *str,int *flag){
+int eth_down_alarm(const char *str,int *flag){
 
 	int eth_status[1];
 	int rc = 0;
@@ -2950,7 +2948,7 @@ int aurora_down_alarm(int aurora_link,int *flag){
 	int rc = 0;
 	int address = 0;
 	uint64_t timestamp ;
-	char *link_id;
+	char link_id[64] = "Aurora Main Link Status";
 
     if((flag[0] != 0) && (flag[0] != 1)){
     	return -EINVAL;
@@ -2960,19 +2958,19 @@ int aurora_down_alarm(int aurora_link,int *flag){
 	switch(aurora_link){
 	case 0:
 		address = DIG0_MAIN_AURORA_LINK;
-		link_id = "Aurora Main Link Status";
+		strcpy(link_id, "Aurora Main Link Status");
 		break;
 	case 1:
 		address = DIG0_BACKUP_AURORA_LINK;
-		link_id = "Aurora Backup Link Status";
+		strcpy(link_id, "Aurora Backup Link Status");
 		break;
 	case 2:
 		address = DIG1_MAIN_AURORA_LINK;
-		link_id = "Aurora Main Link Status";
+		strcpy(link_id, "Aurora Main Link Status");
 		break;
 	case 3:
 		address = DIG1_BACKUP_AURORA_LINK;
-		link_id = "Aurora Backup Link Status";
+		strcpy(link_id, "Aurora Backup Link Status");
 		break;
 	default:
 		return -EINVAL;
@@ -3049,7 +3047,7 @@ int zmq_socket_init (){
 }
 
 /************************** Hash Tables Functions ******************************/
-int populate_hv_hash_table(int table_size, char **keys, char **values) {
+int populate_hv_hash_table(int table_size, const char **keys, const char **values) {
 	struct cmd_uthash *s = NULL; 
 	for(int i = 0 ; i < table_size ; i++){
 		s = (struct cmd_uthash *) malloc(sizeof *s);
@@ -3060,7 +3058,7 @@ int populate_hv_hash_table(int table_size, char **keys, char **values) {
 	return 0;
 }
 
-int populate_lv_hash_table(int table_size, char **keys, char **values) {
+int populate_lv_hash_table(int table_size, const char **keys, const char **values) {
 	struct cmd_uthash *s = NULL;
 
 	for(int i = 0 ; i < table_size ; i++){
@@ -3482,8 +3480,6 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int serial_port_UL3;
 	int n;
-	int bytes;
-	struct termios tty;
 	char read_buf[128];
 	strcpy(read_buf,"");
 
@@ -3624,9 +3620,9 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
 		strcpy(start_string,"#CMD:OK");
 	}
 
-	if ( start = strstr( board_response, start_string ) ){
+	if ( (start = strstr( board_response, start_string )) ){
 		start += strlen( start_string );
-		if ( end = strstr( start, "\r\n" ) )
+		if ( (end = strstr( start, "\r\n" )) )
 		{
 			mag_str = ( char * )malloc( end - start + 1 );
 			memcpy( mag_str, start, end - start );
@@ -3743,7 +3739,6 @@ int hv_read_alarms(){
 	char buffer[8];
 	char response[40];
 	char mag_str[32];
-	char mag_reason[32];
 	int rc = 0;
 	int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
 	strcpy(board_dev,"/dev/ttyUL3");
@@ -3760,9 +3755,9 @@ int hv_read_alarms(){
 		hv_lv_command_handling(board_dev,hvlvcmd,response);
 		char *target = NULL;
 		char *start, *end;
-		if ( start = strstr( response, "#CMD:OK,VAL:" ) ){
+		if ( (start = strstr( response, "#CMD:OK,VAL:" ) )){
 			start += strlen( "#CMD:OK,VAL:" );
-			if ( end = strstr( start, "\r\n" ) )
+			if ( (end = strstr( start, "\r\n" )) )
 			{
 				target = ( char * )malloc( end - start + 1 );
 				memcpy( target, start, end - start );

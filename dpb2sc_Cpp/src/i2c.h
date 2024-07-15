@@ -14,7 +14,7 @@
  * Configuration for the I2C device.
  */
 struct I2cDevice {
-	char* filename; /**< Path of the I2C bus, eg: /dev/i2c-0 */
+	char filename[64]; /**< Path of the I2C bus, eg: /dev/i2c-0 */
 	uint16_t addr; /**< Address of the I2C slave, eg: 0x48 */
 
 	int fd; /**< File descriptor for the I2C bus */

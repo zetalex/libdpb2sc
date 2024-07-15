@@ -93,7 +93,7 @@ int init_shared_memory();
 int read_shm(int *, char *, char *);
 int xlnx_ams_read_temp(int *, int, float *);
 int xlnx_ams_read_volt(int *, int, float *);
-int xlnx_ams_set_limits(int, char *, char *, float);
+int xlnx_ams_set_limits(int, const char *, const char *, float);
 int mcp9844_read_temperature(struct DPB_I2cSensors *,float *);
 int mcp9844_set_limits(struct DPB_I2cSensors *,int, float);
 int mcp9844_set_config(struct DPB_I2cSensors *,uint8_t *,uint8_t *);
@@ -115,23 +115,23 @@ int ina3221_warning_interruptions(struct DPB_I2cSensors *,uint16_t , int );
 int ina3221_read_alarms(struct DPB_I2cSensors *,int);
 int ina3221_set_limits(struct DPB_I2cSensors *,int ,int ,int  ,float );
 int ina3221_set_config(struct DPB_I2cSensors *,uint8_t *,uint8_t *, int );
-int parsing_mon_channel_data_into_object(json_object *, int, char *, float);
-int parsing_mon_channel_status_into_object(json_object *, int, char *, int);
-int parsing_mon_environment_data_into_object(json_object *, char *, float);
-int parsing_mon_environment_status_into_object(json_object *, char *, int);
-int parsing_mon_environment_string_into_object(json_object *,char *, char *);
-int alarm_json (char*,char *,char *, int , float ,uint64_t ,char *);
-int status_alarm_json (char *,char *, int ,uint64_t ,char *);
+int parsing_mon_channel_data_into_object(json_object *, int, const char *, float);
+int parsing_mon_channel_status_into_object(json_object *, int, const char *, int);
+int parsing_mon_environment_data_into_object(json_object *, const char *, float);
+int parsing_mon_environment_status_into_object(json_object *, const char *, int);
+int parsing_mon_environment_string_into_object(json_object *,const char *, char *);
+int alarm_json (const char*, const char *, const char *, int , float ,uint64_t ,const char *);
+int status_alarm_json (const char *,const char *, int ,uint64_t ,const char *);
 int command_response_json (int ,float,char *);
 int command_status_response_json (int ,int,char *);
-int json_schema_validate (char *,const char *, char *);
+int json_schema_validate (const char *,const char *, const char *);
 int get_GPIO_base_address(int *);
 int write_GPIO(int , int );
 int read_GPIO(int ,int *);
 void unexport_GPIO();
-int eth_link_status (char *,int *);
+int eth_link_status (const char *,int *);
 int eth_link_status_config (char *, int );
-int eth_down_alarm(char *,int *);
+int eth_down_alarm(const char *,int *);
 int aurora_down_alarm(int ,int *);
 int zmq_socket_init ();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
@@ -144,8 +144,8 @@ int hv_lv_command_response(char *, char *,int, char **);
 int command_response_string_json(int, char *, char*);
 int setup_serial_port(int);
 int hv_read_alarms(void);
-int populate_hv_hash_table(int, char **, char **);
-int populate_lv_hash_table(int, char **, char **);
+int populate_hv_hash_table(int, const char **, const char **);
+int populate_lv_hash_table(int, const char **, const char **);
 int get_hv_hash_table_command(char *, char *);
 int get_lv_hash_table_command(char *, char *);
 int inList(int, int*, int);
@@ -446,7 +446,7 @@ struct wrapper *memory;
 /******************************************************************************
 *AMS channel descriptor.
 ****************************************************************************/
-char *ams_channels[] = {
+const char *ams_channels[] = {
         "PS LPD Temperature",
         "PS FPD Temperature",
         "VCC PS LPD voltage",
@@ -476,7 +476,7 @@ LV Command Data.
 ****************************************************************************/
 #define LV_CMD_TABLE_SIZE 10
 
-char *lv_daq_words[] = {
+const char *lv_daq_words[] = {
 	"BDSNUM",
     "TEMP",
     "BCMTEMP",
@@ -490,7 +490,7 @@ char *lv_daq_words[] = {
     NULL
 };
 
-char *lv_board_words[] = {
+const char *lv_board_words[] = {
 	"BDSNUM",
     "BDTEMP",
     "BCTEMP",
@@ -503,7 +503,7 @@ char *lv_board_words[] = {
     "CPU"
 };
 
-char *lv_mag_names[] = {
+const char *lv_mag_names[] = {
 	"bdsnum",
     "boardtemp",
     "bcmtemp",
@@ -525,7 +525,7 @@ HV Command Data.
 
 #define HV_CMD_TABLE_SIZE 12
 
-char *hv_daq_words[] = {
+const char *hv_daq_words[] = {
 	"BDSNUM",
 	"TEMP",
     "STATUS",
@@ -541,7 +541,7 @@ char *hv_daq_words[] = {
     NULL
 };
 
-char *hv_board_words[] = {
+const char *hv_board_words[] = {
 	"BDSNUM",
 	"BDTEMP",
     "STATUS",
@@ -556,7 +556,7 @@ char *hv_board_words[] = {
     "SDIMON"
 };
 
-char *hv_mag_names[] = {
+const char *hv_mag_names[] = {
 	"bdsnum",
 	"boardtemp",
     "status",
