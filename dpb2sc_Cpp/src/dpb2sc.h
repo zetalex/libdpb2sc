@@ -133,6 +133,8 @@ int aurora_down_alarm(int ,int *);
 int zmq_socket_init ();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_command_handling(char **);
+int dig_command_translation(char **, int);
+int dig_command_response(char *, char *, int, char );
 int hv_lv_command_handling(char *, char *, char *);
 int hv_lv_command_translation(char *, char **, int);
 int hv_lv_command_response(char *, char *,int, char **);

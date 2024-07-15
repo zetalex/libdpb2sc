@@ -3092,7 +3092,7 @@ int inList(int inp, int* list, int listLen) {
     return num_present;
 }
 
-/************************** Command handling Functions******************************/
+/************************** DPB Command handling ******************************/
 
 /**
 * Handles received DPB command
@@ -3413,10 +3413,56 @@ end:
 	return rc;
 }
 
+/************************** Digitizer Functions******************************/
+
+/**
+ * Takes a COPacket-formatted command and sends it to the indicated digitizer in dig_num
+ * through its specific serial port. This function must allocate in the future a way to use
+ * the data link to receive slow control data instead of the serial port
+ *
+ * @param int dig_num: digitizer number where the command will be sent to. 0 or 1, corresponding to ttyUL1 and ttyUL2 respectively
+ * @param const char *cmd: valid digitizer formatted command
+ * @param char *result: result of the command
+ *
+ * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
+ */
+
 int dig_command_handling(char **cmd){
 	int rc = 0;
 	return rc;
 }
+
+/**
+ * Transforms DPB style command to a COPacket formatted command for digitizer.
+ *
+ * @param const char *cmd: valid DPB formatted command split into words
+ * @param char *result: number of words of the DPB formatted command
+ *
+ * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
+ */
+int dig_command_translation(char **cmd, int words_n){
+	int rc = 0;
+	return rc;
+}
+
+
+/**
+ * Takes a COPacket formatted response strips the answer from it and packages it
+ * into a Command response type JSON
+ *
+ * @param char *board_response: digitizer formatted response string
+ * @param char *reply: pointer to where the JSON will be stored
+ * @param int msg_id: integer with a message id sent by the DAQ. Must be included in the response
+ * @param char ** cmd: DPB formatted command for additional parsing
+ *
+ * @return always returns 0. the error is encapsulated into the JSON string to be sent to the DAQ
+ */
+int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd){
+	int rc = 0;
+	return rc;
+}
+
+/************************** HV LV Functions******************************/
 
 /**
  * Takes a CAEN formatted command for HV/LV and sends it through serial ports
@@ -3484,8 +3530,6 @@ success:
 	flock(serial_port_UL3, LOCK_UN);
 	return 0;
 }
-
-/************************** HV LV Functions******************************/
 
 /**
  * Transforms DPB style command to a CAEN formatted command for HV/LV.
@@ -3731,16 +3775,16 @@ int hv_read_alarms(){
 		//Get overcurrent, overvoltage, undervoltage and trip bit flags
 		OVC_flag = atoi(mag_str) & BIT(3);
 		if(OVC_flag)
-			rc = status_alarm_json("HV","Overcurrent Alarm",i,timestamp,"critical");
+			rc = status_alarm_json("HV","Overcurrent",i,timestamp,"critical");
 		OVV_flag = atoi(mag_str) & BIT(4);
 		if(OVV_flag)
-			rc = status_alarm_json("HV","Overvoltage Alarm",i,timestamp,"critical");
+			rc = status_alarm_json("HV","Overvoltage",i,timestamp,"critical");
 		UNV_flag = atoi(mag_str) & BIT(5);
 		if(UNV_flag)
-			rc = status_alarm_json("HV","Undervoltage Alarm",i,timestamp,"critical");
+			rc = status_alarm_json("HV","Undervoltage",i,timestamp,"critical");
 		TRIP_flag = atoi(mag_str) & BIT(6);
 		if(TRIP_flag)
-			rc = status_alarm_json("HV","TRIP Protection",i,timestamp,"critical");
+			rc = status_alarm_json("HV","TRIP",i,timestamp,"critical");
 	}
 	return rc;
 
