@@ -32,6 +32,11 @@ int init_semaphores(){
 		printf("Error initialising semaphore for Alarm files\n");
 		return rc;
 	}
+	rc = sem_init(&sem_hvlv,1,1);
+	if(rc){
+		printf("Error initialising semaphore HV LV\n");
+		return rc;
+	}
 	return rc;
 }
 
@@ -3482,6 +3487,8 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	char read_buf[128];
 	strcpy(read_buf,"");
 
+	sem_wait(&sem_hvlv);
+
 	//Open one device
 	serial_port_UL3 = open(board_dev,O_RDWR);
 	if (serial_port_UL3 < 0) {
@@ -3524,10 +3531,12 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
 	strcpy(result,"ERROR IN HV/LV Reading");
 	flock(serial_port_UL3, LOCK_UN);
+	sem_post(&sem_hvlv);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_UL3);
 	flock(serial_port_UL3, LOCK_UN);
+	sem_post(&sem_hvlv);
 	return 0;
 }
 
@@ -3805,6 +3814,11 @@ void lib_close() {
    zmq_close(cmd_router);
    zmq_ctx_shutdown(zmq_context);
    zmq_ctx_destroy(zmq_context);
+   sem_destroy(&i2c_sync);
+   sem_destroy(&file_sync);
+   sem_destroy(&alarm_sync);
+   sem_destroy(&sem_valid);
+   sem_destroy(&sem_hvlv);
 
    break_flag = 1;
    return;

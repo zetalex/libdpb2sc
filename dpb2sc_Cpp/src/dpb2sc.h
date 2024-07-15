@@ -67,6 +67,9 @@ sem_t alarm_sync;
 /** @brief Semaphore to avoid race conditions when JSON validating */
 sem_t sem_valid;
 
+/** @brief Semaphore to avoid race conditions when reading from HV/LV serial port */
+sem_t sem_hvlv;
+
 /** @} */
 
 /******************************************************************************
