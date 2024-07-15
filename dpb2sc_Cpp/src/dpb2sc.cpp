@@ -2064,7 +2064,7 @@ int ina3221_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
  */
 int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,char *var_name, float val) {
 
-	char buffer[16];
+	char buffer[512];
 	struct json_object *jobj,*jdouble = NULL;
 	jobj = json_object_array_get_idx(jsfps, sfp_num);
 	if(jobj == NULL){
@@ -2125,7 +2125,7 @@ int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,char *
  */
 int parsing_mon_environment_data_into_object(json_object *jobj,char *var_name, float val) {
 
-	char buffer[32];
+	char buffer[512];
 	struct json_object *jdouble = NULL;
 	sprintf(buffer, "%lf", (double) val);
 	jdouble = json_object_new_double_s((double) val,buffer);
@@ -2194,7 +2194,7 @@ int alarm_json (char *board,char *chip,char *ev_type, int chan, float val,uint64
 	sem_wait(&alarm_sync);
 	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type = NULL;
 	jalarm_data = json_object_new_object();
-	char buffer[16];
+	char buffer[512];
 	uint8_t level = 1;
 
 	uint64_t timestamp_msg = time(NULL)*1000;
@@ -2324,7 +2324,7 @@ int command_response_json (int msg_id, float val, char* cmd_reply)
 {
 	json_object *jcmd_data = json_object_new_object();
 
-	char buffer[8];
+	char buffer[512];
 	char msg_date[64];
 	char uuid[64];
 	time_t t = time(NULL);

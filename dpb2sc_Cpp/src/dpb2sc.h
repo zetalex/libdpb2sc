@@ -513,6 +513,9 @@ char *lv_mag_names[] = {
     "cpustatus"
 };
 
+// Detected LV Serial Number
+char LV_SN[8];
+
 /******************************************************************************
 HV Command Data.
 ****************************************************************************/
@@ -567,6 +570,9 @@ char *hv_mag_names[] = {
 
 // Step down channels
 int hv_sd_channels[] = {0,1,6,7,12,13,18,19};
+
+// Detected HV Serial Number
+char HV_SN[8];
 
 /******************************************************************************
 Hash Tables.
