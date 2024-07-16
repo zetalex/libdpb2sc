@@ -2,7 +2,39 @@
 
 #include "dpb2sc.h"
 
-/************************** Semaphore Functions ******************************/
+/************************** Init and Close functions ******************************/
+/** @defgroup init_close Init and close functions
+ *  Functions to initialize and close different elements required by the library. lib_init must be called before using any of the other functions
+ *  @{
+ */
+
+int dpbsc_lib_init(struct DPB_I2cSensors *data) {
+
+	int rc = 0;
+
+	rc = init_semaphores();
+	if(rc)
+		return rc;
+	get_GPIO_base_address(&GPIO_BASE_ADDRESS);
+	rc = zmq_socket_init(); //Initialize ZMQ Sockets
+	if (rc) {
+		printf("Error\r\n");
+		return rc;
+	}
+	rc = init_I2cSensors(data); //Initialize i2c sensors
+	if (rc) {
+		printf("Error\r\n");
+		return rc;
+	}
+	rc = init_shared_memory();
+	if (rc) {
+		printf("Error\r\n");
+		return rc;
+	}
+	populate_lv_hash_table(LV_CMD_TABLE_SIZE,lv_daq_words,lv_board_words);
+	populate_hv_hash_table(HV_CMD_TABLE_SIZE,hv_daq_words,hv_board_words);
+	return 0;
+}
 /**
  * Start Semaphores needed for library functions
  *
@@ -40,7 +72,6 @@ int init_semaphores(){
 	return rc;
 }
 
-/************************** Shared Memory Functions ******************************/
 /**
  * Start Shared Memory needed for library functions
  *
@@ -80,39 +111,37 @@ int init_shared_memory() {
 }
 
 /**
- * Read from Shared memory to get IIO_EVENT_MONITOR Events
+ * Handles library closing, closing zmq context and removing sysfs GPIO folders
  *
- * @param int channel: Channel that triggered the alarm
- * @param char *ev_type: Direction of event triggered
- * @param char *ch_type: Type of channel that triggered the event
+ * @param void
  *
- * @return 0
+ * @return void
  */
-int read_shm(int *channel, char *ev_type, char *ch_type){
-	memoryID = shmget(MEMORY_KEY, sizeof(struct wrapper), 0);
-	if (memoryID == -1) {
-	      perror("Shared memory");
-	      return 1;
-	   }
-
-	memory = static_cast<wrapper *>(shmat(memoryID, NULL, 0));
-	channel[0] = memory->chn;
-	strcpy(ev_type,memory->ev_type);
-	strcpy(ch_type,memory->ch_type);
-	 if (shmdt(memory) == -1) {
-	      perror("shmdt");
-	      return 1;
-	   }
-	return 0;
+void dpbsc_lib_close(struct DPB_I2cSensors *data) {
+   unexport_GPIO();
+   zmq_socket_destroy();
+   sem_destroy(&i2c_sync);
+   sem_destroy(&file_sync);
+   sem_destroy(&alarm_sync);
+   sem_destroy(&sem_valid);
+   sem_destroy(&sem_hvlv);
+   stop_I2cSensors(data);
+   return;
 }
-/************************** AMS Functions ******************************/
 
+/** @} */
+
+/************************** AMS Functions ******************************/
+/** @defgroup ams Xilinx AMS Functions
+ *  Functions to interact with Xilinx AMS SysFS to get on-chip slow control values
+ *  @{
+ */
 /**
  * Reads temperature of n channels (channels specified in *chan) and stores the values in *res
  *
- * @param int *chan: array which contain channels to measure
- * @param int n: number of channels to measure
- * @param float *res: array where results are stored in
+ * @param chan array which contain channels to measure
+ * @param n number of channels to measure
+ * @param res array where results are stored in
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored values in *res
  *
@@ -189,9 +218,9 @@ int xlnx_ams_read_temp(int *chan, int n, float *res){
 /**
  * Reads voltage of n channels (channels specified in *chan) and stores the values in *res
  *
- * @param int *chan: array which contain channels to measure
- * @param int n: number of channels to measure
- * @param float *res: array where results are stored in
+ * @param chan array which contain channels to measure
+ * @param n number of channels to measure
+ * @param res array where results are stored in
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored values in *res
  *
@@ -254,10 +283,10 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
 /**
  * Determines the new limit of the alarm of the channel n
  *
- * @param int chan: channel whose alarm limit will be changed
- * @param char *ev_type: string that determines the type of the event
- * @param char *ch_type: string that determines the type of the channel
- * @param float val: value of the new limit
+ * @param chan channel whose alarm limit will be changed
+ * @param ev_type string that determines the type of the event
+ * @param ch_type string that determines the type of the channel
+ * @param val value of the new limit
  *
  * @return Negative integer if setting fails, any file could not be opened or invalid argument.If not, returns 0 and the modifies the specified limit
  *
@@ -368,12 +397,16 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 			}
 	return 0;
 	}
-
+/** @} */
 /************************** I2C Devices Functions ******************************/
+/** @defgroup i2c I2C Functions
+ *  Functions to interact with I2C devices like sensors and other elements that can provide slow control values
+ *  @{
+ */
 /**
  * Initialize every I2C sensor available
  *
- * @param DPB_I2cSensors *data; struct which contains every I2C sensor available
+ * @param data DPB_I2cSensors type struct which contains every I2C sensor available
  *
  * @return 0 and every I2C sensor initialized.
  */
@@ -546,7 +579,7 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 /**
  * Stops every I2C Sensors
  *
- * @param DPB_I2cSensors *data: struct which contains every I2C sensor available
+ * @param data DPB_I2cSensors type struct which contains every I2C sensor available
  *
  * @returns 0.
  */
@@ -574,12 +607,16 @@ int stop_I2cSensors(struct DPB_I2cSensors *data){
 
 	return 0;
 }
-
+/** @} */
 /************************** Temp.Sensor Functions ******************************/
+/** @defgroup temp PCB Temperature sensor functions
+ *  Functions to interact with specific configurations of the MCP9844 Temperature Sensor that measures the PCB temperature in the DPB
+ *  @{
+ */
 /**
  * Initialize MCP9844 Temperature Sensor
  *
- * @param I2cDevice *dev: device to be initialized
+ * @param dev device to be initialized
  *
  * @return Negative integer if initialization fails.If not, returns 0 and the device initialized
  *
@@ -630,8 +667,8 @@ int init_tempSensor (struct I2cDevice *dev) {
 /**
  * Reads ambient temperature and stores the value in *res
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device for the MCP9844 Temperature Sensor
- * @param float *res: where the ambient temperature value is stored
+ * @param data DPB_I2cSensors struct being the corresponding I2C device for the MCP9844 Temperature Sensor
+ * @param res where the ambient temperature value is stored
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored value in *res
  *
@@ -667,9 +704,9 @@ int mcp9844_read_temperature(struct DPB_I2cSensors *data,float *res) {
 /**
  * Set alarms limits for Temperature
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device for the MCP9844 Temperature Sensor
- * @param int n: which limit is modified
- * @param short temp: value of the limit that is to be set
+ * @param data DPB_I2cSensors struct being the corresponding I2C device for the MCP9844 Temperature Sensor
+ * @param n which limit is modified
+ * @param temp_val value of the limit that is to be set
  *
  * @return Negative integer if writing fails or limit chosen is incorrect.
  * @return 0 if everything is okay and modifies the temperature alarm limit
@@ -721,9 +758,9 @@ int mcp9844_set_limits(struct DPB_I2cSensors *data,int n, float temp_val) {
 /**
  * Enables or disables configuration register bits of the MCP9844 Temperature Sensor
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device for the MCP9844 Temperature Sensor
- * @param uint8_t *bit_ena: array which should contain the desired bit value (0 o 1)
- * @param uint8_t *bit_num: array which should contain the position of the bit/s that will be modified
+ * @param data DPB_I2cSensors struct being the corresponding I2C device for the MCP9844 Temperature Sensor
+ * @param bit_ena array which should contain the desired bit value (0 o 1)
+ * @param bit_num array which should contain the position of the bit/s that will be modified
  *
  * @return Negative integer if writing fails,array size is mismatching or incorrect value introduced
  * @return 0 if everything is okay and modifies the configuration register
@@ -772,7 +809,8 @@ int mcp9844_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
 /**
  * Handles MCP9844 Temperature Sensor interruptions
  *
- * @param uint8_t flag_buf: contains alarm flags
+ * @param data DPB_I2cSensors that contains I2C Sensors
+ * @param flag_buf contains alarm flags
  *
  * @return 0 and handles interruption depending on the active flags
  */
@@ -799,7 +837,7 @@ int mcp9844_interruptions(struct DPB_I2cSensors *data, uint8_t flag_buf){
 /**
  * Reads MCP9844 Temperature Sensor alarms flags
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device for the MCP9844 Temperature Sensor
+ * @param data DPB_I2cSensors struct being the corresponding I2C device for the MCP9844 Temperature Sensor
  *
  * @return  0 and if there is any flag active calls the corresponding function to handle the interruption
  *
@@ -827,12 +865,16 @@ int mcp9844_read_alarms(struct DPB_I2cSensors *data) {
 	alarm_buf[0] = alarm_buf[0] & 0x1F;	//Clear Flag bits
 	return 0;
 }
-
+/** @} */
 /************************** SFP Functions ******************************/
+/** @defgroup sfp SFP related functions
+ *  Each SFP has an EEPROM memory that can be accessed through I2C. These functions provide several functions to read every relevant slow control variable from this EEPROM
+ *  @{
+ */
 /**
  * Initialize SFP EEPROM page 1 as an I2C device
  *
- * @param I2cDevice *dev: SFP of which EEPROM is to be initialized
+ * @param dev I2CDevice of the SFP of which EEPROM is to be initialized
  *
  * @return Negative integer if initialization fails.If not, returns 0 and the EEPROM page initialized as I2C device
  *
@@ -873,7 +915,7 @@ int init_SFP_A0(struct I2cDevice *dev) {
 /**
  * Initialize SFP EEPROM page 2 as an I2C device
  *
- * @param I2cDevice *dev: SFP of which EEPROM is to be initialized
+ * @param dev I2cDevice of the SFP of which EEPROM is to be initialized
  *
  * @return Negative integer if initialization fails.If not, returns 0 and the EEPROM page initialized as I2C device
  *
@@ -895,9 +937,9 @@ int init_SFP_A2(struct I2cDevice *dev) {
 /**
  *Compares expected SFP checksum to its current value
  *
- * @param I2cDevice *dev: SFP of which the checksum is to be checked
- * @param uint8_t ini_reg: Register where the checksum count starts
- * @param int size: number of registers summed for the checksum
+ * @param  dev I2cDevice of the SFP of which the checksum is to be checked
+ * @param ini_reg Register where the checksum count starts
+ * @param size number of registers summed for the checksum
  *
  * @return Negative integer if checksum is incorrect, and 0 if it is correct
  */
@@ -931,9 +973,9 @@ int checksum_check(struct I2cDevice *dev,uint8_t ini_reg, int size){
 /**
  * Reads SFP temperature and stores the value in *res
  *
- * @param struct DPB_I2cSensors *data: I2C devices
- * @param int n: indicate from which of the 6 SFP is going to be read
- * @param float *res where the magnitude value is stored
+ * @param data: struct DPB_I2cSensors containing I2C devices
+ * @param n indicate from which of the 6 SFP is going to be read
+ * @param res where the magnitude value is stored
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored value in *res
  *
@@ -1017,9 +1059,9 @@ int sfp_avago_read_temperature(struct DPB_I2cSensors *data,int n, float *res) {
 /**
  * Reads SFP voltage supply and stores the value in *res
  *
- * @param struct DPB_I2cSensors *data: I2C devices
- * @param int n: indicate from which of the 6 SFP is going to be read
- * @param float *res: where the magnitude value is stored
+ * @param data DPB_I2cSensors struct containing I2C devices
+ * @param n indicate from which of the 6 SFP is going to be read
+ * @param res where the magnitude value is stored
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored value in *res
  *
@@ -1103,9 +1145,9 @@ int sfp_avago_read_voltage(struct DPB_I2cSensors *data,int n, float *res) {
 /**
  * Reads SFP laser bias current and stores the value in *res
  *
- * @param struct DPB_I2cSensors *data: I2C devices
- * @param int n: indicate from which of the 6 SFP is going to be read
- * @param float *res: where the magnitude value is stored
+ * @param data: DPB_I2cSensors struct containing I2C devices
+ * @param n indicate from which of the 6 SFP is going to be read
+ * @param res where the magnitude value is stored
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored value in *res
  *
@@ -1189,9 +1231,9 @@ int sfp_avago_read_lbias_current(struct DPB_I2cSensors *data,int n, float *res) 
 /**
  * Reads SFP average transmitted optical power and stores the value in *res
  *
- * @param struct DPB_I2cSensors *data: I2C devices
- * @param int n: indicate from which of the 6 SFP is going to be read
- * @param float *res: where the magnitude value is stored
+ * @param data DPB_I2cSensors containing I2C devices
+ * @param n indicate from which of the 6 SFP is going to be read
+ * @param res where the magnitude value is stored
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored value in *res
  *
@@ -1275,9 +1317,9 @@ int sfp_avago_read_tx_av_optical_pwr(struct DPB_I2cSensors *data,int n, float *r
 /**
  * Reads SFP average received optical power and stores the value in *res
  *
- * @param struct DPB_I2cSensors *data: I2C devices
- * @param int n: indicate from which of the 6 SFP is going to be read,
- * @param float *res: where the magnitude value is stored
+ * @param data DPB_I2cSensors containing I2C devices
+ * @param n indicate from which of the 6 SFP is going to be read,
+ * @param res where the magnitude value is stored
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored value in *res
  *
@@ -1362,9 +1404,9 @@ int sfp_avago_read_rx_av_optical_pwr(struct DPB_I2cSensors *data,int n, float *r
 /**
  * HReads SFP current RX_LOS and TX_FAULT status
  *
- * @param struct DPB_I2cSensors *data: I2C devices
- * @param int n: indicate from which of the 6 SFP is dealing with
- * @param uint8_t * res : stores the current RX_LOS and TX_FAULT status
+ * @param data DPB_I2cSensors containing I2C devices
+ * @param n indicate from which of the 6 SFP is dealing with
+ * @param res stores the current RX_LOS and TX_FAULT status
  *
  * @return 0 if reads properly and stores 0 or 1 depending on the current states (1 if status asserted, 0 if not)
  */
@@ -1449,8 +1491,8 @@ int sfp_avago_read_status(struct DPB_I2cSensors *data,int n,uint8_t *res) {
 /**
  * Handles SFP status interruptions
  *
- * @param uint16_t flags: contains alarms flags
- * @param int n: indicate from which of the 6 SFP is dealing with
+ * @param status bitfields with SFP different status bits
+ * @param n indicate from which of the 6 SFP is dealing with
  *
  * @return 0 and handles interruption depending on the active status flags
  */
@@ -1473,8 +1515,9 @@ int sfp_avago_status_interruptions(uint8_t status, int n){
 /**
  * Handles SFP alarm interruptions
  *
- * @param uint16_t flags: contains alarms flags
- * @param int n: indicate from which of the 6 SFP is dealing with
+ * @param data DPB_I2cSensors that contains I2C Sensors
+ * @param flags contains alarms flags
+ * @param n indicate from which of the 6 SFP is dealing with
  *
  * @return 0 and handles interruption depending on the active alarms flags
  */
@@ -1550,8 +1593,8 @@ int sfp_avago_alarms_interruptions(struct DPB_I2cSensors *data,uint16_t flags, i
 /**
  * Reads SFP status and alarms flags
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device for the SFP EEPROM page 2
- * @param int n: indicate from which of the 6 SFP is going to be read
+ * @param data DPB_I2cSensors being the corresponding I2C device for the SFP EEPROM page 2
+ * @param n indicate from which of the 6 SFP is going to be read
  *
  * @return  0 and if there is any flag active calls the corresponding function to handle the interruption.
  */
@@ -1651,12 +1694,19 @@ int sfp_avago_read_alarms(struct DPB_I2cSensors *data,int n) {
 	}
 	return 0;
 }
-
+/** @} */
 /************************** Volt. and Curr. Sensor Functions ******************************/
+/** @defgroup inavolt INA3221 Voltage and Current Sensors
+ *  DPB has voltage and current sensors that perform 4-terminal measurements in several voltage rails.
+ *  The sensors employed are INA3221, a 3 channel voltage and current sensor. These functions are in charge of
+ *  every operation that can be done with these sensors
+ *  @{
+ */
+
 /**
  * Initialize INA3221 Voltage and Current Sensor
  *
- * @param I2cDevice *dev: device to be initialized
+ * @param dev I2cDevice containing device to be initialized
  *
  * @return Negative integer if initialization fails.If not, returns 0 and the device initialized
  *
@@ -1707,9 +1757,9 @@ int init_voltSensor (struct I2cDevice *dev) {
 /**
  * Reads INA3221 Voltage and Current Sensor bus voltage from each of its 3 channels and stores the values in *res
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device INA3221 Voltage and Current Sensor
- * @param int n: indicate from which of the 3 INA3221 is going to be read,float *res where the voltage values are stored
- * @param float *res: storage of collected data
+ * @param data DPB_I2cSensors struct being the corresponding I2C device INA3221 Voltage and Current Sensor
+ * @param n indicate from which of the 3 INA3221 is going to be read,float *res where the voltage values are stored
+ * @param res storage of collected data
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored values in *res
  *
@@ -1758,9 +1808,9 @@ int ina3221_get_voltage(struct DPB_I2cSensors *data,int n, float *res){
  * Reads INA3221 Voltage and Current Sensor shunt voltage from a resistor in each of its 3 channels,
  * obtains the current dividing the voltage by the resistor value and stores the current values in *res
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device INA3221 Voltage and Current Sensor
- * @param int n: indicate from which of the 3 INA3221 is going to be read,float *res where the current values are stored
- * @param float *res: storage of collected data
+ * @param  data DPB_I2cSensors struct being the corresponding I2C device INA3221 Voltage and Current Sensor
+ * @param n indicate from which of the 3 INA3221 is going to be read,float *res where the current values are stored
+ * @param res storage of collected data
  *
  * @return Negative integer if reading fails.If not, returns 0 and the stored values in *res
  *
@@ -1808,9 +1858,9 @@ int ina3221_get_current(struct DPB_I2cSensors *data,int n, float *res){
 /**
  * Handles INA3221 Voltage and Current Sensor critical alarm interruptions
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device INA3221 Voltage and Current Sensor
- * @param uint16_t mask: contains critical alarm flags
- * @param int n: indicate from which of the 3 INA3221 is dealing with
+ * @param data DPB_I2cSensors struct being the corresponding I2C device INA3221 Voltage and Current Sensor
+ * @param mask contains critical alarm flags
+ * @param n indicate from which of the 3 INA3221 is dealing with
  *
  * @return 0 and handles interruption depending on the active alarms flags
  */
@@ -1846,9 +1896,9 @@ int ina3221_critical_interruptions(struct DPB_I2cSensors *data,uint16_t mask, in
 /**
  * Handles INA3221 Voltage and Current Sensor warning alarm interruptions
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device INA3221 Voltage and Current Sensor
- * @param uint16_t mask: contains warning alarm flags
- * @param int n: indicate from which of the 3 INA3221 is dealing with
+ * @param  data DPB_I2cSensors struct being the corresponding I2C device INA3221 Voltage and Current Sensor
+ * @param  mask contains warning alarm flags
+ * @param n indicate from which of the 3 INA3221 is dealing with
  *
  * @return 0 and handles interruption depending on the active alarms flags
  */
@@ -1885,8 +1935,8 @@ int ina3221_warning_interruptions(struct DPB_I2cSensors *data,uint16_t mask, int
 /**
  * Reads INA3221 Voltage and Current Sensor warning and critical alarms flags
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device for the INA3221 Voltage and Current Sensor
- * @param int n: indicate from which of the 3 INA3221 is going to be read
+ * @param data DPB_I2cSensors struct being the corresponding I2C device for the INA3221 Voltage and Current Sensor
+ * @param n indicate from which of the 3 INA3221 is going to be read
  *
  * @return  0 and if there is any flag active calls the corresponding function to handle the interruption.
  */
@@ -1933,11 +1983,11 @@ int ina3221_read_alarms(struct DPB_I2cSensors *data,int n){
 /**
  * Set current alarms limits for INA3221 (warning or critical)
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device for the MCP9844 Temperature Sensor
- * @param int n: which of the 3 INA3221 is being dealt with
- * @param int ch: which of the 3 INA3221 channels is being dealt with
- * @param int alarm_type: indicates if the limit to be modifies is for a critical alarm or warning alarm
- * @param float curr: current value which will be the new limit
+ * @param data DPB_I2cSensors struct being the corresponding I2C device for the MCP9844 Temperature Sensor
+ * @param n which of the 3 INA3221 is being dealt with
+ * @param ch which of the 3 INA3221 channels is being dealt with
+ * @param alarm_type indicates if the limit to be modifies is for a critical alarm or warning alarm
+ * @param curr current value which will be the new limit
  *
  * @return Negative integer if writing fails or any parameter is incorrect.
  * @return 0 if everything is okay and modifies the current alarm limit (as shunt voltage limit)
@@ -2001,10 +2051,10 @@ int ina3221_set_limits(struct DPB_I2cSensors *data,int n,int ch,int alarm_type ,
 /**
  * Enables or disables configuration register bits of the INA3221 Voltage Sensor
  *
- * @param struct DPB_I2cSensors *data: being the corresponding I2C device for the INA3221 Voltage Sensor
- * @param uint8_t *bit_ena: array which should contain the desired bit value (0 o 1)
- * @param uint8_t *bit_num: array which should contain the position of the bit/s that will be modified
- * @param int n :which of the 3 INA3221 is being dealt with
+ * @param data DPB_I2cSensors struct being the corresponding I2C device for the INA3221 Voltage Sensor
+ * @param bit_ena array which should contain the desired bit value (0 o 1)
+ * @param bit_num array which should contain the position of the bit/s that will be modified
+ * @param n which of the 3 INA3221 is being dealt with
  *
  * @return Negative integer if writing fails,array size is mismatching or incorrect value introduced
  * @return 0 if everything is okay and modifies the configuration register
@@ -2064,14 +2114,20 @@ int ina3221_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
 		return rc;
 	return 0;
 }
+/** @} */
 /************************** JSON functions ******************************/
+/** @defgroup json JSON related functions
+ *  Slow control data is sent using JSON formatted strings. These functions are used to build
+ *  JSON strings of different types (commands, monitoring, alarms...) and to interact with them to send through ZMQ to the DAQ
+ *  @{
+ */
 /**
  * Parses monitoring float data into a JSON array so as to include it in a JSON object
  *
- * @param json_object *jarray: JSON array in which the data will be stored
- * @param int sfp_num: Number of measured channel (position in JSON array)
- * @param char *var_name: Name of the measured magnitude
- * @param float val: Measured magnitude value in float format
+ * @param jsfps JSON array in which the data will be stored
+ * @param sfp_num Number of measured channel (position in JSON array)
+ * @param var_name Name of the measured magnitude
+ * @param val Measured magnitude value in float format
  *
  * @return 0
  */
@@ -2097,10 +2153,10 @@ int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,const ch
 /**
  * Parses monitoring status data into a JSON array so as to include it in a JSON object
  *
- * @param json_object *jarray: JSON array in which the data will be stored
- * @param int sfp_num: Number of measured channel (position in JSON array)
- * @param char *var_name: Name of the measured magnitude
- * @param int val: Measured magnitude value in int format. 1 means ON, 0 means OFF
+ * @param jsfps JSON array in which the data will be stored
+ * @param sfp_num Number of measured channel (position in JSON array)
+ * @param var_name Name of the measured magnitude
+ * @param val Measured magnitude value in int format. 1 means ON, 0 means OFF
  *
  * @return 0
  */
@@ -2130,9 +2186,9 @@ int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,const 
 /**
  * Parses monitoring float data to include it directly in a JSON object
  *
- * @param json_object *jarray: JSON array in which the data will be stored
- * @param char *var_name: Name of the measured magnitude
- * @param float val: Measured magnitude value in float format
+ * @param jobj JSON object in which the data will be stored
+ * @param var_name Name of the measured magnitude
+ * @param val Measured magnitude value in float format
  *
  * @return 0
  */
@@ -2149,9 +2205,9 @@ int parsing_mon_environment_data_into_object(json_object *jobj,const char *var_n
 /**
  * Parses monitoring status data to include it directly in a JSON object
  *
- * @param json_object *jarray: JSON array in which the data will be stored
- * @param char *var_name: Name of the measured magnitude
- * @param int val: Measured magnitude value in int format. 1 means ON, 0 means OFF
+ * @param jobj JSON object in which the data will be stored
+ * @param var_name Name of the measured magnitude
+ * @param val Measured magnitude value in int format. 1 means ON, 0 means OFF
  *
  * @return 0
  */
@@ -2173,9 +2229,9 @@ int parsing_mon_environment_status_into_object(json_object *jobj,const char *var
 /**
  * Parses monitoring string data to include it directly in a JSON object
  *
- * @param json_object *jarray: JSON array in which the data will be stored
- * @param char *var_name: Name of the measured magnitude
- * @param char *val: string to put in the value field of the JSON
+ * @param jobj JSON object in which the data will be stored
+ * @param var_name Name of the measured magnitude
+ * @param val_str string to put in the value field of the JSON
  *
  * @return 0
  */
@@ -2191,13 +2247,13 @@ int parsing_mon_environment_string_into_object(json_object *jobj,const char *var
  * Parses alarms data into a JSON string and send it to socket
  *
 
- * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed
- * @param float val: Measured magnitude value
- * @param char *board: Board that triggered the alarm
- * @param char *chip: Name of the chip that triggered the alarm
- * @param char *ev_type: Type of event that has occurred
- * @param uint64_t timestamp: Time when the event occurred
- * @param char *info_type: Determines the reported event type (info: warning or critical)
+ * @param chan Number of measured channel, if chan is 99 means channel will not be parsed
+ * @param val Measured magnitude value
+ * @param board Board that triggered the alarm
+ * @param chip Name of the chip that triggered the alarm
+ * @param ev_type Type of event that has occurred
+ * @param timestamp Time when the event occurred
+ * @param info_type Determines the reported event type (info: warning or critical)
  *
  *
  * @return 0 or negative integer if validation fails
@@ -2261,11 +2317,11 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 /**
  * Parses alarms data into a JSON string and send it to socket
  *
- * @param int chan: Number of measured channel, if chan is 99 means channel will not be parsed (also indicates it is not SFP related)
- * @param char *chip: Name of the chip that triggered the alarm
- * @param char *board: Name of the board where the alarm is asserted
- * @param uint64_t timestamp: Time when the event occurred
- * @param char *info_type: Determines the reported event type (info,warning or critical)
+ * @param chan Number of measured channel, if chan is 99 means channel will not be parsed (also indicates it is not SFP related)
+ * @param chip Name of the chip that triggered the alarm
+ * @param board Name of the board where the alarm is asserted
+ * @param timestamp Time when the event occurred
+ * @param info_type Determines the reported event type (info,warning or critical)
  *
  *
  * @return 0 or negative integer if validation fails
@@ -2326,9 +2382,9 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 /**
  * Parses command response into a JSON string and send it to socket
  *
- * @param int msg_id: Message ID
- * @param float val: read value
- * @param char* cmd_reply: Stores CMD JSON reply to send it
+ * @param msg_id Message ID
+ * @param val read value
+ * @param cmd_reply Stores CMD JSON reply to send it
  *
  * @return 0 or negative integer if validation fails
  */
@@ -2385,9 +2441,9 @@ int command_response_json (int msg_id, float val, char* cmd_reply)
 /**
  * Parses command response into a JSON string and send it to socket
  *
- * @param int msg_id: Message ID
- * @param int val: read value (1 is ON and 0 is OFF), if operation is set val = 99, JSON value field = OK , else is error, JSON value = ERROR
- * @param char* cmd_reply: Stores CMD JSON reply to send it
+ * @param msg_id Message ID
+ * @param val read value (1 is ON and 0 is OFF), if operation is set val = 99, JSON value field = OK , else is error, JSON value = ERROR
+ * @param cmd_reply Stores CMD JSON reply to send it
  *
  * @return 0 or negative integer if validation fails
  */
@@ -2456,9 +2512,9 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 /**
  * Parses command response into a JSON string and send it to socket
  *
- * @param int msg_id: Message ID
- * @param char *val: read value in string
- * @param char* cmd_reply: Stores CMD JSON reply to send it
+ * @param msg_id Message ID
+ * @param val read value in string
+ * @param cmd_reply Stores CMD JSON reply to send it
  *
  * @return 0 or negative integer if validation fails
  */
@@ -2510,9 +2566,9 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 /**
  * Validates generated JSON string with a validation schema
  *
- * @param const char *schema: Name of validation schema file
- * @param const char *json_string: JSON string to be validated
- * @param char *temp_file: Name of Temporal File
+ * @param schema Name of validation schema file
+ * @param json_string JSON string to be validated
+ * @param temp_file Name of Temporal File
  *
  * @return 0 if correct, negative integer if validation failed
  */
@@ -2584,12 +2640,17 @@ int json_schema_validate (const char *schema,const char *json_string, const char
 	sem_post(&sem_valid);
 	return 0;
 }
-
+/** @} */
 /************************** GPIO functions ******************************/
+/** @defgroup gpio GPIO related functions
+ *  Some slow control data is taken by reading GPIOs through sysfs or setting vallues using other output GPIOs.
+ *  These functions implement the required functionalities to use GPIO for these tasks, from creating the required sysfs directories and interacting with them.
+ *  @{
+ */
 /**
  * Gets GPIO base address
  *
- * @param int *address: pointer where the read GPIO base address plus corresponding offset will be stored
+ * @param address pointer where the read GPIO base address plus corresponding offset will be stored
  *
  * @return 0
  */
@@ -2656,8 +2717,8 @@ int get_GPIO_base_address(int *address){
 /**
  * Writes into a given GPIO address
  *
- * @param int address: GPIO address offset (from base address calculated from get_base_address) where the value is going to be written
- * @param int value: value which will be written (0 o 1)
+ * @param address GPIO address offset (from base address calculated from get_base_address) where the value is going to be written
+ * @param value value which will be written (0 o 1)
  *
  * @return 0 if worked correctly, if not returns a negative integer.
  */
@@ -2715,8 +2776,8 @@ int write_GPIO(int address, int value){
 /**
  * Gets GPIO base address
  *
- * @param int address: GPIO address offset (from base address calculated from get_base_address) where the desired value is stored
- * @param int *value: pointer where the read value will be stored
+ * @param address GPIO address offset (from base address calculated from get_base_address) where the desired value is stored
+ * @param value pointer where the read value will be stored
  *
  * @return 0 if worked correctly, if not returns a negative integer.
  */
@@ -2783,7 +2844,6 @@ int read_GPIO(int address,int *value){
 /**
  * Unexport possible remaining GPIO files when terminating app
  *
- * @return NULL
  */
 void unexport_GPIO(){
 
@@ -2824,12 +2884,13 @@ void unexport_GPIO(){
 	regfree(&r1);
 	return;
 }
-/************************** External monitoring (via GPIO) functions ******************************/
+
+
 /**
  * Checks from GPIO if Ethernet Links status and reports it
  *
- * @param char *eth_interface: Name of the Ethernet interface
- * @param int status: value of the Ethernet interface status
+ * @param eth_interface Name of the Ethernet interface
+ * @param status value of the Ethernet interface status
  *
  * @return  0 if parameters are OK, if not negative integer
  */
@@ -2866,12 +2927,11 @@ int eth_link_status (const char *eth_interface, int *status)
 
 }
 
-/************************** External monitoring (via GPIO) functions ******************************/
 /**
  * Updates Ethernet interface status to ON/OFF
  *
- * @param char *eth_interface: Name of the Ethernet interface
- * @param int val: value of the Ethernet interface status
+ * @param eth_interface Name of the Ethernet interface
+ * @param val value of the Ethernet interface status
  *
  * @return  0 if parameters are OK, if not negative integer
  */
@@ -2901,13 +2961,12 @@ int eth_link_status_config (char *eth_interface, int val)
 	return 0;
 
 }
-/************************** External alarms (via GPIO) functions ******************************/
 
 /**
 * Checks from GPIO if Ethernet Links status has changed from up to down and reports it if necessary
 *
-* @param const char *str: Name of the Ethernet interface
-* @param int flag: value of the Ethernet interface flag, determines if the link was previously up
+* @param str Name of the Ethernet interface
+* @param flag value of the Ethernet interface flag, determines if the link was previously up
 *
 * @return  0 if parameters OK and reports the event, if not returns negative integer.
 */
@@ -2948,12 +3007,12 @@ int eth_down_alarm(const char *str,int *flag){
 /**
 * Checks from GPIO if Aurora Links status has changed from up to down and reports it if necessary
  *
- * @param int aurora_link: Choose main or backup link of Dig0 or Dig1 (O: Dig0 Main, 1:Dig0 Backup, 2:Dig1 Main, 3:Dig1 Backup)
- * @param int flags: indicates current status of the link
+ * @param aurora_link Choose main or backup link of Dig0 or Dig1 (O: Dig0 Main, 1:Dig0 Backup, 2:Dig1 Main, 3:Dig1 Backup)
+ * @param flag indicates current status of the link
  *
  * @return  0 if parameters are OK, if not negative integer
  */
-int aurora_down_alarm(int aurora_link,int *flag){
+int aurora_down_alarm(int aurora_link, int *flag){
 
 	int aurora_status[1];
 	int rc = 0;
@@ -3009,9 +3068,13 @@ int aurora_down_alarm(int aurora_link,int *flag){
 	}
 	return 0;
 }
-
+/** @} */
 /************************** ZMQ Functions******************************/
-
+/** @defgroup zmq ZMQ related functions
+ *  Slow control data is sent through ZeroMQ sockets. These functions provide the ZeroMQ related functions to create and destroy the used ZMQ sockets.
+ *  These functions are expected to be replaced by DAQ libraries once released
+ *  @{
+ */
 /**
  * Initializes ZMQ monitoring, command and alarms sockets
  *
@@ -3059,7 +3122,53 @@ int zmq_socket_init (){
 	return 0;
 }
 
+/**
+ * Destroys ZMQ monitoring, command and alarms sockets and the context
+ *
+ *
+ * @return 0 if succeeded to destroy ZMQ sockets. Returns errno depending on the function that failed
+ */
+int zmq_socket_destroy (){
+	int rc = 0;
+	rc = zmq_close(mon_publisher);
+	if(rc){
+		return errno;
+	}
+	rc = zmq_close(alarm_publisher);
+	if(rc){
+		return errno;
+	}
+	rc = zmq_close(cmd_router);
+	if(rc){
+		return errno;
+	}
+	rc = zmq_ctx_shutdown(zmq_context);
+	if(rc){
+		return errno;
+	}
+	rc = zmq_ctx_destroy(zmq_context);
+	if(rc){
+		return errno;
+	}
+   return rc;
+}
+/** @} */
 /************************** Hash Tables Functions ******************************/
+/** @defgroup hash Hash Table function
+ *  UtHash tables, which resemble to Python Dictionaries, are used to perform the translation between the command formats of the DPB, the HV/LV and the Digitizer.
+ *  The key is the DPB command and the value is the corresponding HV, LV or Digitizer command.
+ *  @{
+ */
+
+/**
+* Populates the HV Hash table by giving two arrays of strings corresponding to key-value pairs.
+*
+* @param table_size length of the table
+* @param keys array of strings with the ordered keys
+* @param values array of string
+*
+* @return 0 always
+*/
 int populate_hv_hash_table(int table_size, const char **keys, const char **values) {
 	struct cmd_uthash *s = NULL; 
 	for(int i = 0 ; i < table_size ; i++){
@@ -3070,7 +3179,15 @@ int populate_hv_hash_table(int table_size, const char **keys, const char **value
 	}
 	return 0;
 }
-
+/**
+* Populates the LV Hash table by giving two arrays of strings corresponding to key-value pairs.
+*
+* @param table_size length of the table
+* @param keys array of strings with the ordered keys
+* @param values array of string
+*
+* @return 0 always
+*/
 int populate_lv_hash_table(int table_size, const char **keys, const char **values) {
 	struct cmd_uthash *s = NULL;
 
@@ -3100,9 +3217,9 @@ int get_lv_hash_table_command(char *key, char *value) {
 /**
 * Helper function to detect an element inside an array
 *
-* @param int inp: element to be found in the list
-* @param int *list: list to be inspected
-* @param int listLen: length of the list
+* @param inp element to be found in the list
+* @param list list to be inspected
+* @param listLen length of the list
 *
 * @return 1 if number found. -ENOENT if no number found
 */
@@ -3120,16 +3237,20 @@ int inList(int inp, int* list, int listLen) {
     else
     	return -ENOENT;
 }
-
-/************************** DPB Command handling ******************************/
-
+/** @} */
+/************************** Command handling functions ******************************/
+/** @defgroup cmd Command handling Functions
+ *  These functions implement the parsing and building of all the commands used in the DPB. DPB works with different sets of commands depending on the board it has to communicate with
+ *  It can communicate within the DPB itself, HV, LV or Digitizers.
+ *  @{
+ */
 /**
 * Handles received DPB command
 *
-* @param DPB_I2cSensors *data: Struct that contains I2C devices
-* @param char **cmd: Segmented command
-* @param int msg_id: Unique identifier of the received JSON command request message
-* @param char *cmd_reply: Stores command JSON reply to send it
+* @param  data: DPB_I2cSensors Struct that contains I2C devices
+* @param cmd Segmented command
+* @param msg_id Unique identifier of the received JSON command request message
+* @param cmd_reply Stores command JSON reply to send it
 *
 * @return 0 if parameters OK and reports the event, if not returns negative integer.
 */
@@ -3442,21 +3563,19 @@ end:
 	return rc;
 }
 
-/************************** Digitizer Functions******************************/
-
 /**
  * Takes a COPacket-formatted command and sends it to the indicated digitizer in dig_num
  * through its specific serial port. This function must allocate in the future a way to use
  * the data link to receive slow control data instead of the serial port
  *
- * @param int dig_num: digitizer number where the command will be sent to. 0 or 1, corresponding to ttyUL1 and ttyUL2 respectively
- * @param const char *cmd: valid digitizer formatted command
- * @param char *result: result of the command
+ * @param dig_num digitizer number where the command will be sent to. 0 or 1, corresponding to ttyUL1 and ttyUL2 respectively
+ * @param cmd valid digitizer formatted command
+ * @param result result of the command
  *
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
 
-int dig_command_handling(char **cmd){
+int dig_command_handling(int dig_num, char **cmd, char *result){
 	int rc = 0;
 	return rc;
 }
@@ -3464,12 +3583,13 @@ int dig_command_handling(char **cmd){
 /**
  * Transforms DPB style command to a COPacket formatted command for digitizer.
  *
- * @param const char *cmd: valid DPB formatted command split into words
- * @param char *result: number of words of the DPB formatted command
+ * @param digcmd digitizer command given as a result of this function
+ * @param cmd valid DPB formatted command split into words
+ * @param words_n number of words of the DPB formatted command
  *
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
-int dig_command_translation(char **cmd, int words_n){
+int dig_command_translation(char *digcmd, char **cmd, int words_n){
 	int rc = 0;
 	return rc;
 }
@@ -3479,10 +3599,10 @@ int dig_command_translation(char **cmd, int words_n){
  * Takes a COPacket formatted response strips the answer from it and packages it
  * into a Command response type JSON
  *
- * @param char *board_response: digitizer formatted response string
- * @param char *reply: pointer to where the JSON will be stored
- * @param int msg_id: integer with a message id sent by the DAQ. Must be included in the response
- * @param char ** cmd: DPB formatted command for additional parsing
+ * @param board_response digitizer formatted response string
+ * @param reply pointer to where the JSON will be stored
+ * @param msg_id integer with a message id sent by the DAQ. Must be included in the response
+ * @param cmd DPB formatted command for additional parsing
  *
  * @return always returns 0. the error is encapsulated into the JSON string to be sent to the DAQ
  */
@@ -3491,15 +3611,13 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 	return rc;
 }
 
-/************************** HV LV Functions******************************/
-
 /**
  * Takes a CAEN formatted command for HV/LV and sends it through serial ports
  * Then it awaits for an answer, with a given timeout.
  *
- * @param char *board_dev: file location of the serial port connected to HV/LV 
- * @param const char *cmd: valid CAEN formatted command
- * @param char *result: result of the command
+ * @param board_dev file location of the serial port connected to HV/LV
+ * @param cmd valid CAEN formatted command
+ * @param result result of the command
  *
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
@@ -3570,10 +3688,10 @@ success:
 /**
  * Transforms DPB style command to a CAEN formatted command for HV/LV.
  *
- * @param char *hvlvcmd: Beginning of the command string for CAEN command, to distinguish between HV/LV
+ * @param hvlvcmd Beginning of the command string for CAEN command, to distinguish between HV/LV
  * Should be "$BD:0/1,$CMD:"
- * @param const char *cmd: valid DPB formatted command split into words
- * @param char *result: number of words of the DPB formatted command
+ * @param cmd valid DPB formatted command split into words
+ * @param words_n number of words of the DPB formatted command
  *
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
@@ -3628,10 +3746,10 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
  * Takes a CAEN formatted response for HV/LV, strips the answer from it and packages it
  * into a Command response type JSON
  *
- * @param char *board_response: CAEN formatted response string
- * @param char *reply: pointer to where the JSON will be stored
- * @param int msg_id: integer with a message id sent by the DAQ. Must be included in the response
- * @param char ** cmd: DPB formatted command for additional parsing
+ * @param board_response CAEN formatted response string
+ * @param reply pointer to where the JSON will be stored
+ * @param msg_id integer with a message id sent by the DAQ. Must be included in the response
+ * @param cmd DPB formatted command for additional parsing
  *
  * @return always returns 0. the error is encapsulated into the JSON string to be sent to the DAQ
  */
@@ -3721,7 +3839,7 @@ end:	command_response_string_json(msg_id,mag_str,reply);
 /**
  * Setups a given serial port with the standard 115200, 8 bits 1 stop bit no parity and flow control disabled
  *
- * @param int serial_port: file descriptor of the already opened serial port
+ * @param serial_port file descriptor of the already opened serial port
  *
  * @return 0 if correct, -1 if failed to set the attributes
  */
@@ -3842,37 +3960,18 @@ int hv_read_alarms(){
 	return rc;
 
 }
+/** @} */
 
-/************************** Signal Handling function declaration ******************************/
-/**
- * Handles library closing, closing zmq context and removing sysfs GPIO folders
- *
- * @param void
- *
- * @return void
+
+/************************** Other functions ******************************/
+/** @defgroup other Other Functions
+ *  Miscellaneous functions
+ *  @{
  */
-void lib_close() {
-   unexport_GPIO();
-   zmq_close(mon_publisher);
-   zmq_close(alarm_publisher);
-   zmq_close(cmd_router);
-   zmq_ctx_shutdown(zmq_context);
-   zmq_ctx_destroy(zmq_context);
-   sem_destroy(&i2c_sync);
-   sem_destroy(&file_sync);
-   sem_destroy(&alarm_sync);
-   sem_destroy(&sem_valid);
-   sem_destroy(&sem_hvlv);
-
-   break_flag = 1;
-   return;
-}
-
-/************************** UUID generator function declaration ******************************/
 /**
  * Generates UUID
  *
- * @param char *uuid: String where UUID is stored
+ * @param uuid String where UUID is stored
  *
  * @return 0 and stores the UUID generated
  */
@@ -3898,3 +3997,30 @@ int gen_uuid(char *uuid) {
     return 0;
 }
 
+/**
+ * Read from Shared memory to get IIO_EVENT_MONITOR Events
+ *
+ * @param channel Channel that triggered the alarm
+ * @param ev_type Direction of event triggered
+ * @param ch_type Type of channel that triggered the event
+ *
+ * @return 0
+ */
+int read_shm(int *channel, char *ev_type, char *ch_type){
+	memoryID = shmget(MEMORY_KEY, sizeof(struct wrapper), 0);
+	if (memoryID == -1) {
+	      perror("Shared memory");
+	      return 1;
+	   }
+
+	memory = static_cast<wrapper *>(shmat(memoryID, NULL, 0));
+	channel[0] = memory->chn;
+	strcpy(ev_type,memory->ev_type);
+	strcpy(ch_type,memory->ch_type);
+	 if (shmdt(memory) == -1) {
+	      perror("shmdt");
+	      return 1;
+	   }
+	return 0;
+}
+/** @} */

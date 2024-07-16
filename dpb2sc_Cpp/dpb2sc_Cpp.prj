@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="ASCII"?>
 <sdkproject:SdkProject xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sdkproject="http://www.xilinx.com/sdkproject" name="dpb2sc_Cpp" location="/home/hyperk2/Vitis_2022_Petalinuxv2_WORK/dpb2sc_Cpp" platform="/home/hyperk2/Vitis_2022_Petalinuxv2_WORK/DBP2_Platform/export/DBP2_Platform/DBP2_Platform.xpfm" platformUID="xilinx:::0.0(custom)" systemProject="dpb2sc_system" sysConfig="DBP2_Platform" runtime="C/C++" cpu="linux_domain" cpuInstance="cortex-a53" os="linux" language="CPP" isSharedLib="true">
-  <configuration name="Debug" id="xilinx.gnu.arm.a53.linux.sharedlib.debug.1057680426">
+  <configuration name="Debug" id="xilinx.gnu.arm.a53.linux.sharedlib.debug.1057680426" dirty="true">
     <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
     <lastBuildOptions xsi:type="sdkproject:SdkOptions"/>
   </configuration>
-  <configuration name="Release" id="xilinx.gnu.arm.a53.linux.sharedlib.release.297086355">
+  <configuration name="Release" id="xilinx.gnu.arm.a53.linux.sharedlib.release.297086355" dirty="true">
     <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
     <lastBuildOptions xsi:type="sdkproject:SdkOptions"/>
   </configuration>

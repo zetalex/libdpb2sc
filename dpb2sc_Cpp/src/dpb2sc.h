@@ -81,6 +81,8 @@ void *alarm_publisher ;
 void *cmd_router;
 /************************** Function Prototypes ******************************/
 
+int dpbsc_lib_init(struct DPB_I2cSensors *data);
+void dpbsc_lib_close(struct DPB_I2cSensors *data);
 int init_tempSensor (struct I2cDevice *);
 int init_voltSensor (struct I2cDevice *);
 int checksum_check(struct I2cDevice *,uint8_t,int);
@@ -134,6 +136,7 @@ int eth_link_status_config (char *, int );
 int eth_down_alarm(const char *,int *);
 int aurora_down_alarm(int ,int *);
 int zmq_socket_init ();
+int zmq_socket_destroy();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_command_handling(char **);
 int dig_command_translation(char **, int);
@@ -150,7 +153,6 @@ int get_hv_hash_table_command(char *, char *);
 int get_lv_hash_table_command(char *, char *);
 int inList(int, int*, int);
 void atexit_function();
-void lib_close();
 int gen_uuid(char *);
 
 /******************************************************************************/
@@ -179,7 +181,6 @@ int dig0_main_flag = 1;
 int dig1_main_flag = 1;
 int dig0_backup_flag = 1;
 int dig1_backup_flag = 1;
-int break_flag = 0;
 int sfp0_connected = 0;
 int sfp1_connected = 0;
 int sfp2_connected = 0;
