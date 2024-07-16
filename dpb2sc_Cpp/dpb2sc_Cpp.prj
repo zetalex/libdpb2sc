@@ -4,7 +4,7 @@
     <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
     <lastBuildOptions xsi:type="sdkproject:SdkOptions"/>
   </configuration>
-  <configuration name="Release" id="xilinx.gnu.arm.a53.linux.sharedlib.release.297086355">
+  <configuration name="Release" id="xilinx.gnu.arm.a53.linux.sharedlib.release.297086355" dirty="true">
     <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
     <lastBuildOptions xsi:type="sdkproject:SdkOptions"/>
   </configuration>
