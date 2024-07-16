@@ -2356,7 +2356,7 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 	json_object_object_add(jalarm_data,"value", jstatus);
 
 	const char *serialized_json = json_object_to_json_string(jalarm_data);
-	//int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
+	int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
 	if (0) {
 		printf("Error validating JSON Schema\r\n");
 		return -1;
