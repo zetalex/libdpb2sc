@@ -2261,29 +2261,20 @@ int parsing_mon_environment_string_into_object(json_object *jobj,const char *var
 int alarm_json (const char *board,const char *chip,const char *ev_type, int chan, float val,uint64_t timestamp,const char *info_type)
 {
 	sem_wait(&alarm_sync);
-	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type = NULL;
+	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type, *j_level = NULL;
 	jalarm_data = json_object_new_object();
 	char buffer[512];
-	uint8_t level;
 
 	if(timestamp == 0)
-		uint64_t timestamp = time(NULL)*1000;
+		timestamp = time(NULL)*1000;
 
 	sprintf(buffer, "%lf", (double) val);
 
 	jboard = json_object_new_string(board);
-	if(!strcmp(info_type,"critical")){
-		level = 0;
-	}
-	else if(!strcmp(info_type,"warning")){
-		level = 1;
-	}
-	else{
-		return -EINVAL;
-	}
 
 	json_object_object_add(jalarm_data,"board", jboard);
 
+	j_level = json_object_new_string(info_type);
 	jdouble = json_object_new_double_s((double) val,buffer);
 	jchip = json_object_new_string(chip);
 	jev_type = json_object_new_string(ev_type);
@@ -2292,6 +2283,8 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 	json_object_object_add(jalarm_data,"magnitudename", jchip);
 	json_object_object_add(jalarm_data,"eventtype", jev_type);
 	json_object_object_add(jalarm_data,"eventtimestamp", jtimestamp);
+	json_object_object_add(jalarm_data,"level", j_level);
+
 	if (chan != 99){
 		jchan = json_object_new_int(chan);
 		json_object_object_add(jalarm_data,"channel", jchan);
@@ -2329,27 +2322,23 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 int status_alarm_json (const char *board,const char *chip, int chan,uint64_t timestamp, const char *info_type)
 {
 	sem_wait(&alarm_sync);
-	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus = NULL;
+	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
 	jalarm_data = json_object_new_object();
 
 	uint64_t timestamp_msg = (time(NULL))*1000;
-	uint8_t level = 1;
 
 	jboard = json_object_new_string(board);
 
 	json_object_object_add(jalarm_data,"board", jboard);
-	if(!strcmp(info_type,"critical")){
-		level = 0;
-	}
-	else{
-		return -EINVAL;
-	}
 
 	jchip = json_object_new_string(chip);
 	jtimestamp = json_object_new_int64(timestamp_msg);
+	j_level = json_object_new_string(info_type);
 
 	json_object_object_add(jalarm_data,"magnitudename", jchip);
 	json_object_object_add(jalarm_data,"eventtimestamp", jtimestamp);
+	json_object_object_add(jalarm_data,"level", j_level);
+
 	if (chan != 99){
 		jchan = json_object_new_int(chan);
 		json_object_object_add(jalarm_data,"channel", jchan);
