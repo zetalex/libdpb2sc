@@ -3097,6 +3097,16 @@ int get_lv_hash_table_command(char *key, char *value) {
 	return 0;
 }
 
+/**
+* Helper function to detect an element inside an array
+*
+* @param int inp: element to be found in the list
+* @param int *list: list to be inspected
+* @param int listLen: length of the list
+*
+* @return 1 if number found. -ENOENT if no number found
+*/
+
 int inList(int inp, int* list, int listLen) {
     int num_present = 0;
     for (int i = 0; i < listLen - 1; i++) {
@@ -3105,7 +3115,10 @@ int inList(int inp, int* list, int listLen) {
             break;
         }
     }
-    return num_present;
+    if(num_present)
+    	return num_present;
+    else
+    	return -ENOENT;
 }
 
 /************************** DPB Command handling ******************************/
