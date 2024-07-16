@@ -63,19 +63,19 @@
                             							
                             <tool id="xilinx.gnu.arm.a53.linux.cxx.toolchain.compiler.sharedlib.debug.1451125039" name="ARM v8 Linux g++ compiler" superClass="xilinx.gnu.arm.a53.linux.cxx.toolchain.compiler.sharedlib.debug">
                                 								
-                                <option defaultValue="gnu.c.optimization.level.none" id="xilinx.gnu.compiler.option.optimization.level.1438558176" name="Optimization Level" superClass="xilinx.gnu.compiler.option.optimization.level" valueType="enumerated"/>
+                                <option defaultValue="gnu.c.optimization.level.none" id="xilinx.gnu.compiler.option.optimization.level.1438558176" name="Optimization Level" superClass="xilinx.gnu.compiler.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
                                 								
                                 <option id="xilinx.gnu.compiler.option.debugging.level.167623212" name="Debug Level" superClass="xilinx.gnu.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
                                 								
-                                <option id="xilinx.gnu.compiler.inferred.swplatform.flags.120785237" name="Software Platform Inferred Flags" superClass="xilinx.gnu.compiler.inferred.swplatform.flags" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootFlag}" valueType="string"/>
+                                <option id="xilinx.gnu.compiler.inferred.swplatform.flags.120785237" name="Software Platform Inferred Flags" superClass="xilinx.gnu.compiler.inferred.swplatform.flags" useByScannerDiscovery="false" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootFlag}" valueType="string"/>
                                 								
-                                <option id="xilinx.gnu.compiler.inferred.swplatform.includes.871653155" name="Software Platform Include Path" superClass="xilinx.gnu.compiler.inferred.swplatform.includes" valueType="includePath">
+                                <option id="xilinx.gnu.compiler.inferred.swplatform.includes.871653155" name="Software Platform Include Path" superClass="xilinx.gnu.compiler.inferred.swplatform.includes" useByScannerDiscovery="false" valueType="includePath">
                                     									
                                     <listOptionValue builtIn="false" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootPath,append=/usr/include}"/>
                                     								
                                 </option>
                                 								
-                                <option id="xilinx.gnu.compiler.misc.other.591838081" name="Other flags" superClass="xilinx.gnu.compiler.misc.other" value="-c -fmessage-length=0 -MT&quot;$@&quot; -fPIC" valueType="string"/>
+                                <option id="xilinx.gnu.compiler.misc.other.591838081" name="Other flags" superClass="xilinx.gnu.compiler.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -MT&quot;$@&quot; -fPIC -fanalyzer" valueType="string"/>
                                 								
                                 <inputType id="xilinx.gnu.arm.a53.linux.cxx.compiler.input.194562669" name="C++ source files" superClass="xilinx.gnu.arm.a53.linux.cxx.compiler.input"/>
                                 							
@@ -107,7 +107,7 @@
                             							
                             <tool id="xilinx.gnu.arm.a53.linux.cxx.toolchain.linker.465049751" name="ARM v8 Linux g++ linker" superClass="xilinx.gnu.arm.a53.linux.cxx.toolchain.linker">
                                 								
-                                <option id="xilinx.gnu.linker.inferred.swplatform.flags.487599094" name="Software Platform Inferred Flags" superClass="xilinx.gnu.linker.inferred.swplatform.flags" valueType="libs">
+                                <option id="xilinx.gnu.linker.inferred.swplatform.flags.487599094" name="Software Platform Inferred Flags" superClass="xilinx.gnu.linker.inferred.swplatform.flags" useByScannerDiscovery="false" valueType="libs">
                                     									
                                     <listOptionValue builtIn="false" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootFlag}"/>
                                     									
@@ -117,7 +117,7 @@
                                     								
                                 </option>
                                 								
-                                <option id="xilinx.gnu.linker.inferred.swplatform.lpath.2038933500" name="Software Platform Library Path" superClass="xilinx.gnu.linker.inferred.swplatform.lpath" valueType="libPaths">
+                                <option id="xilinx.gnu.linker.inferred.swplatform.lpath.2038933500" name="Software Platform Library Path" superClass="xilinx.gnu.linker.inferred.swplatform.lpath" useByScannerDiscovery="false" valueType="libPaths">
                                     									
                                     <listOptionValue builtIn="false" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootPath,append=/lib}"/>
                                     									
@@ -125,7 +125,7 @@
                                     								
                                 </option>
                                 								
-                                <option id="xilinx.gnu.c.link.option.ldflags.870953471" name="Linker Flags" superClass="xilinx.gnu.c.link.option.ldflags" value=" -shared" valueType="string"/>
+                                <option id="xilinx.gnu.c.link.option.ldflags.870953471" name="Linker Flags" superClass="xilinx.gnu.c.link.option.ldflags" useByScannerDiscovery="false" value=" -shared -fanalyzer" valueType="string"/>
                                 								
                                 <option id="xilinx.gnu.c.link.option.libs.341853134" name="Libraries (-l)" superClass="xilinx.gnu.c.link.option.libs" useByScannerDiscovery="false" valueType="libs">
                                     									
@@ -221,19 +221,19 @@
                             							
                             <tool id="xilinx.gnu.arm.a53.linux.cxx.toolchain.compiler.sharedlib.release.938518584" name="ARM v8 Linux g++ compiler" superClass="xilinx.gnu.arm.a53.linux.cxx.toolchain.compiler.sharedlib.release">
                                 								
-                                <option defaultValue="gnu.c.optimization.level.more" id="xilinx.gnu.compiler.option.optimization.level.15458451" name="Optimization Level" superClass="xilinx.gnu.compiler.option.optimization.level" valueType="enumerated"/>
+                                <option defaultValue="gnu.c.optimization.level.more" id="xilinx.gnu.compiler.option.optimization.level.15458451" name="Optimization Level" superClass="xilinx.gnu.compiler.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
                                 								
                                 <option id="xilinx.gnu.compiler.option.debugging.level.1980004979" name="Debug Level" superClass="xilinx.gnu.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.none" valueType="enumerated"/>
                                 								
-                                <option id="xilinx.gnu.compiler.inferred.swplatform.flags.1610363864" name="Software Platform Inferred Flags" superClass="xilinx.gnu.compiler.inferred.swplatform.flags" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootFlag}" valueType="string"/>
+                                <option id="xilinx.gnu.compiler.inferred.swplatform.flags.1610363864" name="Software Platform Inferred Flags" superClass="xilinx.gnu.compiler.inferred.swplatform.flags" useByScannerDiscovery="false" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootFlag}" valueType="string"/>
                                 								
-                                <option id="xilinx.gnu.compiler.inferred.swplatform.includes.1130710822" name="Software Platform Include Path" superClass="xilinx.gnu.compiler.inferred.swplatform.includes" valueType="includePath">
+                                <option id="xilinx.gnu.compiler.inferred.swplatform.includes.1130710822" name="Software Platform Include Path" superClass="xilinx.gnu.compiler.inferred.swplatform.includes" useByScannerDiscovery="false" valueType="includePath">
                                     									
                                     <listOptionValue builtIn="false" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootPath,append=/usr/include}"/>
                                     								
                                 </option>
                                 								
-                                <option id="xilinx.gnu.compiler.misc.other.581742462" name="Other flags" superClass="xilinx.gnu.compiler.misc.other" value="-c -fmessage-length=0 -MT&quot;$@&quot; -fPIC" valueType="string"/>
+                                <option id="xilinx.gnu.compiler.misc.other.581742462" name="Other flags" superClass="xilinx.gnu.compiler.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -MT&quot;$@&quot; -fPIC -fanalyzer -fsanitize=undefined" valueType="string"/>
                                 								
                                 <inputType id="xilinx.gnu.arm.a53.linux.cxx.compiler.input.498666108" name="C++ source files" superClass="xilinx.gnu.arm.a53.linux.cxx.compiler.input"/>
                                 							
@@ -265,7 +265,7 @@
                             							
                             <tool id="xilinx.gnu.arm.a53.linux.cxx.toolchain.linker.488776191" name="ARM v8 Linux g++ linker" superClass="xilinx.gnu.arm.a53.linux.cxx.toolchain.linker">
                                 								
-                                <option id="xilinx.gnu.linker.inferred.swplatform.flags.1865110687" name="Software Platform Inferred Flags" superClass="xilinx.gnu.linker.inferred.swplatform.flags" valueType="libs">
+                                <option id="xilinx.gnu.linker.inferred.swplatform.flags.1865110687" name="Software Platform Inferred Flags" superClass="xilinx.gnu.linker.inferred.swplatform.flags" useByScannerDiscovery="false" valueType="libs">
                                     									
                                     <listOptionValue builtIn="false" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootFlag}"/>
                                     									
@@ -275,7 +275,7 @@
                                     								
                                 </option>
                                 								
-                                <option id="xilinx.gnu.linker.inferred.swplatform.lpath.951598494" name="Software Platform Library Path" superClass="xilinx.gnu.linker.inferred.swplatform.lpath" valueType="libPaths">
+                                <option id="xilinx.gnu.linker.inferred.swplatform.lpath.951598494" name="Software Platform Library Path" superClass="xilinx.gnu.linker.inferred.swplatform.lpath" useByScannerDiscovery="false" valueType="libPaths">
                                     									
                                     <listOptionValue builtIn="false" value="${resolvePlatformFile:project=dpb2sc_Cpp,fileType=sysrootPath,append=/lib}"/>
                                     									
@@ -283,9 +283,9 @@
                                     								
                                 </option>
                                 								
-                                <option id="xilinx.gnu.c.link.option.ldflags.2106709450" name="Linker Flags" superClass="xilinx.gnu.c.link.option.ldflags" value=" -shared" valueType="string"/>
+                                <option id="xilinx.gnu.c.link.option.ldflags.2106709450" name="Linker Flags" superClass="xilinx.gnu.c.link.option.ldflags" useByScannerDiscovery="false" value=" -shared -fanalyzer" valueType="string"/>
                                 								
-                                <option id="xilinx.gnu.c.link.option.libs.192323848" superClass="xilinx.gnu.c.link.option.libs" useByScannerDiscovery="false" valueType="libs">
+                                <option id="xilinx.gnu.c.link.option.libs.192323848" name="Libraries (-l)" superClass="xilinx.gnu.c.link.option.libs" useByScannerDiscovery="false" valueType="libs">
                                     									
                                     <listOptionValue builtIn="false" value="json-c"/>
                                     									

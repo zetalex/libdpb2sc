@@ -146,6 +146,9 @@ int xlnx_ams_read_temp(int *chan, int n, float *res){
 
 		if((raw==NULL)|(offset==NULL)|(scale==NULL)){
 			printf("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
+			fclose(raw);
+			fclose(offset);
+			fclose(scale);
 			return -1;
 			}
 		else{
@@ -217,6 +220,8 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
 
 		if((raw==NULL)|(scale==NULL)){
 			printf("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
+			fclose(raw);
+			fclose(scale);
 			return -1;
 			}
 		else{
@@ -292,6 +297,7 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 
 		if((scale==NULL)|(thres < 0)){
 			printf("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
+			fclose(scale);
 			return -1;
 			}
 		else{
@@ -307,6 +313,8 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 					return -1;
 				}
 				if(strcmp("rising",ev_type)){
+					fclose(scale);
+					fclose(offset);
 					return -EINVAL;
 				}
 				fseek(offset, 0, SEEK_END);
@@ -2827,6 +2835,7 @@ void unexport_GPIO(){
  */
 int eth_link_status (const char *eth_interface, int *status)
 {
+	sem_wait(&file_sync);
 	char eth_link[64];
 	FILE *link_file;
 	char str[64];
@@ -2849,8 +2858,10 @@ int eth_link_status (const char *eth_interface, int *status)
 	else if((strcmp(str,"no")) == 0)
 		status[0] = 0;
 	else{
+		sem_post(&file_sync);
 		return -EINVAL;
 	}
+	sem_post(&file_sync);
 	return 0;
 
 }
@@ -3491,7 +3502,10 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	serial_port_UL3 = open(board_dev,O_RDWR);
 	if (serial_port_UL3 < 0) {
 		//Send alarm
+		printf("Error opening HV/LV UART\n");
+		sem_post(&sem_hvlv);
 		status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
+		strcpy(result,"ERROR IN HV/LV Reading");
 		return -EACCES;
 	}
 	// Wait until acquiring non-blocking exclusive lock
@@ -3513,6 +3527,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		}
 		else{
 			//Send Warning
+			printf("Warning, character not received\n");
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
 			count_fails_until_success++;
 			count_since_reset++;
@@ -3526,6 +3541,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	}
 	//Send Critical error
 	close(serial_port_UL3);
+	printf("Critical, character not received\n");
 	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
 	strcpy(result,"ERROR IN HV/LV Reading");
 	flock(serial_port_UL3, LOCK_UN);
@@ -3608,7 +3624,8 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
  */
 int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **cmd){
 	// Strip the returned value from response string
-	char *mag_str = NULL;
+	char mag_str[64];
+	char *target = NULL;
 	char *start, *end;
 	char start_string[32];
 	if((!strcmp(cmd[1],"LV") && !lv_connected) || (!strcmp(cmd[1],"HV") && !hv_connected )){
@@ -3626,54 +3643,66 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
 		start += strlen( start_string );
 		if ( (end = strstr( start, "\r\n" )) )
 		{
-			mag_str = ( char * )malloc( end - start + 1 );
-			memcpy( mag_str, start, end - start );
-			mag_str[end - start] = '\0';
-			if(!strcmp(cmd[0],"SET"))
-				strcpy(mag_str,"OK");
-			else if(!strcmp(cmd[1],"HV") && !strcmp(cmd[2],"STATUS")){
-				int mag_status = atoi(mag_str) & 0x1;
-				if(mag_status){
-					strcpy(mag_str,"ON");
-				}
-				else{
-					strcpy(mag_str,"OFF");
-				}
+			target = ( char * )malloc( end - start + 1 );
+			if(target){
+				memcpy( target, start, end - start );
+				target[end - start] = '\0';
+				strcpy(mag_str,target);
+				free(target);
 			}
-			else if(!strcmp(cmd[1],"HV") && !strcmp(cmd[2],"CHANERR")){
-				int mag_status = atoi(mag_str) & (0x1 << 13);
-				if(mag_status){
-					strcpy(mag_str,"ON");
+			else {
+				if(!strcmp(cmd[0],"READ")){
+					strcpy(mag_str,"ERROR: READ operation not successful");
 				}
-				else{
-					strcpy(mag_str,"OFF");
+				else {
+					strcpy(mag_str,"ERROR: SET operation not successful");
 				}
+				goto end;
 			}
-		} 
+
+		}
 		else {
 			if(!strcmp(cmd[0],"READ")){
-				mag_str=( char * )malloc(50);
 				strcpy(mag_str,"ERROR: READ operation not successful");
 			}
 			else {
-				mag_str=( char * )malloc(50);
 				strcpy(mag_str,"ERROR: SET operation not successful");
 			}
+			goto end;
 		}
 	}
-	else{
+	else {
 		if(!strcmp(cmd[0],"READ")){
-			mag_str=( char * )malloc(50);
 			strcpy(mag_str,"ERROR: READ operation not successful");
 		}
 		else {
-			mag_str=( char * )malloc(50);
 			strcpy(mag_str,"ERROR: SET operation not successful");
 		}
+		goto end;
 	}
-	command_response_string_json(msg_id,mag_str,reply);
-	free(mag_str);
-	return 0;
+
+	if(!strcmp(cmd[0],"SET"))
+		strcpy(mag_str,"OK");
+	else if(!strcmp(cmd[1],"HV") && !strcmp(cmd[2],"STATUS")){
+		int mag_status = atoi(mag_str) & 0x1;
+		if(mag_status){
+			strcpy(mag_str,"ON");
+		}
+		else{
+			strcpy(mag_str,"OFF");
+		}
+	}
+	else if(!strcmp(cmd[1],"HV") && !strcmp(cmd[2],"CHANERR")){
+		int mag_status = atoi(mag_str) & (0x1 << 13);
+		if(mag_status){
+			strcpy(mag_str,"ON");
+		}
+		else{
+			strcpy(mag_str,"OFF");
+		}
+	}
+end:	command_response_string_json(msg_id,mag_str,reply);
+		return 0;
 }
 
 /**
@@ -3762,9 +3791,14 @@ int hv_read_alarms(){
 			if ( (end = strstr( start, "\r\n" )) )
 			{
 				target = ( char * )malloc( end - start + 1 );
-				memcpy( target, start, end - start );
-				target[end - start] = '\0';
-				strcpy(mag_str,target);
+				if(target){
+					memcpy( target, start, end - start );
+					target[end - start] = '\0';
+					strcpy(mag_str,target);
+				}
+				else{
+					strcpy(mag_str,"ERROR");
+				}
 				free(target);
 			}
 			else {
