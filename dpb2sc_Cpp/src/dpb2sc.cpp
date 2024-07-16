@@ -3614,6 +3614,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int serial_port_UL3;
 	int n;
 	char read_buf[128];
+	char error[128];
 	strcpy(read_buf,"");
 
 	sem_wait(&sem_hvlv);
@@ -3624,8 +3625,9 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		//Send alarm
 		printf("Error opening HV/LV UART\n");
 		sem_post(&sem_hvlv);
+		printf("Oh dear, something went wrong with open()! %s\n", strerror_r(errno,error,128));
 		status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
-		strcpy(result,"ERROR IN HV/LV Reading");
+		strcpy(result,"ERROR");
 		return -EACCES;
 	}
 	// Wait until acquiring non-blocking exclusive lock
