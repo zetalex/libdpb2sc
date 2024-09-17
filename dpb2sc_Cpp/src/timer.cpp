@@ -7,7 +7,7 @@
  *
  * All RT signals must be blocked in all threads before calling make_periodic()
  */
-
+extern "C" {
 #include <stdio.h>
 #include <signal.h>
 #include <errno.h>
@@ -121,3 +121,4 @@ int main(int argc, char *argv[])
 }
 
 */
+}

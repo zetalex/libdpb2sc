@@ -4,7 +4,7 @@
  * @date 2019/08/09
  * @author Cosmin Tanislav
  */
-
+extern "C" {
 #include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
 
@@ -234,4 +234,5 @@ void i2c_stop(struct I2cDevice* dev) {
 	 * Close the I2C bus file descriptor.
 	 */
 	close(dev->fd);
+}
 }

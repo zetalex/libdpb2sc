@@ -1,5 +1,5 @@
 /************************** Libraries includes *****************************/
-
+extern "C" {
 #include "dpb2sc.h"
 
 /************************** Init and Close functions ******************************/
@@ -4015,3 +4015,4 @@ int read_shm(int *channel, char *ev_type, char *ch_type){
 	return 0;
 }
 /** @} */
+}

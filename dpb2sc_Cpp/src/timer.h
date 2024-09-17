@@ -2,7 +2,7 @@
 #ifndef TIMER_H_   /* Include guard */
 #define TIMER_H_
 
-
+extern "C" {
 #include <stdio.h>
 #include <signal.h>
 #include <errno.h>
@@ -18,6 +18,6 @@ struct periodic_info {
 
 int make_periodic(int unsigned period, struct periodic_info *info);
 void wait_period(struct periodic_info *info);
-
+}
 #endif
 

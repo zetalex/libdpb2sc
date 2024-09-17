@@ -1,7 +1,7 @@
 #ifndef __DPB2SC_H_INCLUDED__
 #define __DPB2SC_H_INCLUDED__
 
-
+extern "C" {
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -81,8 +81,8 @@ void *alarm_publisher ;
 void *cmd_router;
 /************************** Function Prototypes ******************************/
 
-int dpbsc_lib_init(struct DPB_I2cSensors *data);
-void dpbsc_lib_close(struct DPB_I2cSensors *data);
+int dpbsc_lib_init(struct DPB_I2cSensors *);
+void dpbsc_lib_close(struct DPB_I2cSensors *);
 int init_tempSensor (struct I2cDevice *);
 int init_voltSensor (struct I2cDevice *);
 int checksum_check(struct I2cDevice *,uint8_t,int);
@@ -138,9 +138,9 @@ int aurora_down_alarm(int ,int *);
 int zmq_socket_init ();
 int zmq_socket_destroy();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
-int dig_command_handling(char **);
-int dig_command_translation(char **, int);
-int dig_command_response(char *, char *, int, char );
+int dig_command_handling(int, char **, char *);
+int dig_command_translation(char *, char **, int);
+int dig_command_response(char *, char *, int, char **);
 int hv_lv_command_handling(char *, char *, char *);
 int hv_lv_command_translation(char *, char **, int);
 int hv_lv_command_response(char *, char *,int, char **);
@@ -591,4 +591,5 @@ struct cmd_uthash {
 struct cmd_uthash *lv_cmd_table = NULL;   
 struct cmd_uthash *hv_cmd_table = NULL;  
 
+}
 #endif

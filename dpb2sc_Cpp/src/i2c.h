@@ -4,7 +4,7 @@
  * @date 2019/08/09
  * @author Cosmin Tanislav
  */
-
+extern "C" {
 #include <stdint.h>
 
 #ifndef SRC_I2C_H_
@@ -31,3 +31,4 @@ int i2c_mask_reg(struct I2cDevice* dev, uint8_t reg, uint8_t mask);
 void i2c_stop(struct I2cDevice* dev);
 
 #endif /* SRC_I2C_H_ */
+}
