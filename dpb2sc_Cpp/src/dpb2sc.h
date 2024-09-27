@@ -34,18 +34,8 @@ struct DPB_I2cSensors{
 	struct I2cDevice dev_sfp0_2_volt;
 	struct I2cDevice dev_sfp3_5_volt;
 	struct I2cDevice dev_som_volt;
-	struct I2cDevice dev_sfp0_A0;
-	struct I2cDevice dev_sfp1_A0;
-	struct I2cDevice dev_sfp2_A0;
-	struct I2cDevice dev_sfp3_A0;
-	struct I2cDevice dev_sfp4_A0;
-	struct I2cDevice dev_sfp5_A0;
-	struct I2cDevice dev_sfp0_A2;
-	struct I2cDevice dev_sfp1_A2;
-	struct I2cDevice dev_sfp2_A2;
-	struct I2cDevice dev_sfp3_A2;
-	struct I2cDevice dev_sfp4_A2;
-	struct I2cDevice dev_sfp5_A2;
+    struct I2cDevice dev_sfp_A0[6];
+    struct I2cDevice dev_sfp_A2[6];
 };
 /******************************************************************************
 *Local Semaphores.
@@ -101,6 +91,7 @@ int mcp9844_set_limits(struct DPB_I2cSensors *,int, float);
 int mcp9844_set_config(struct DPB_I2cSensors *,uint8_t *,uint8_t *);
 int mcp9844_interruptions(struct DPB_I2cSensors *, uint8_t );
 int mcp9844_read_alarms(struct DPB_I2cSensors *);
+int init_I2C_SFP(int, struct DPB_I2cSensors *);
 int sfp_avago_read_temperature(struct DPB_I2cSensors *,int , float *);
 int sfp_avago_read_voltage(struct DPB_I2cSensors *,int , float *);
 int sfp_avago_read_lbias_current(struct DPB_I2cSensors *,int, float *);
@@ -162,6 +153,7 @@ int gen_uuid(char *);
 #define AMS_VOLT_NUM_CHAN 21
 #define SERIAL_PORT_TIMEOUT 20 //20 deciseconds
 #define SERIAL_PORT_RETRIES 5
+#define SFP_NUM 6
 /************************** Custom Errors Definitions *****************************/
 /** @defgroup err Custom Error Flags
  *  Shared Memory content
@@ -181,25 +173,24 @@ int dig0_main_flag = 1;
 int dig1_main_flag = 1;
 int dig0_backup_flag = 1;
 int dig1_backup_flag = 1;
-int sfp0_connected = 0;
-int sfp1_connected = 0;
-int sfp2_connected = 0;
-int sfp3_connected = 0;
-int sfp4_connected = 0;
-int sfp5_connected = 0;
 int lv_connected = 0;
 int hv_connected = 0;
 int count_fails_until_success = 0;
 int count_since_reset = 0;
-/************************** SFP Alarms Masks Definitions *****************************/
-/** @defgroup SFP_Masks SFP Alarms Masks
- *  SFP Alarms Masks Definitions
+
+/************************** SFP Related Variables *****************************/
+/** @defgroup SFP_I2C SFP I2C File locations
+ *  SFP I2C File locations Definitions
  *  @{
  */
 /** @brief Alarm mask */
 uint16_t alarms_mask[6] = {0,0,0,0,0,0};
 /** @brief Status mask */
 uint8_t status_mask[6] = {0,0,0,0,0,0};
+/** @brief SFP I2C String array */
+char *sfp_i2c_locations[6] = {"/dev/i2c-6","/dev/i2c-10","/dev/i2c-8","/dev/i2c-12","/dev/i2c-9","/dev/i2c-13"};
+/** @brief SFP connected array */
+int sfp_connected[SFP_NUM] = {0,0,0,0,0,0};
 /** @} */
 /************************** GPIO Pins Definitions *****************************/
 /** @defgroup GPIO GPIO pins

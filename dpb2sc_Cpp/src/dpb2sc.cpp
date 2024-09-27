@@ -414,6 +414,18 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 
 	int rc;
 	uint64_t timestamp;
+
+	//Populate SFP I2C device arrays
+	for (int i = 0; i < SFP_NUM; i++){
+
+		// First page address
+		strcpy(data->dev_sfp_A0[i].filename , sfp_i2c_locations[i]);
+		data->dev_sfp_A0[i].addr = 0x50;
+
+		// Second page address
+		strcpy(data->dev_sfp_A2[i].filename , "/dev/i2c-6");
+		data->dev_sfp_A2[i].addr = 0x51;
+	}
 	strcpy(data->dev_pcb_temp.filename , "/dev/i2c-2");
 	data->dev_pcb_temp.addr = 0x18;
 
@@ -424,32 +436,7 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 	strcpy(data->dev_sfp3_5_volt.filename , "/dev/i2c-3");
 	data->dev_sfp3_5_volt.addr = 0x41;
 
-	strcpy(data->dev_sfp0_A0.filename , "/dev/i2c-6");
-	data->dev_sfp0_A0.addr = 0x50;
-	strcpy(data->dev_sfp1_A0.filename , "/dev/i2c-10");
-	data->dev_sfp1_A0.addr = 0x50;
-	strcpy(data->dev_sfp2_A0.filename , "/dev/i2c-8");
-	data->dev_sfp2_A0.addr = 0x50;
-	strcpy(data->dev_sfp3_A0.filename , "/dev/i2c-12");
-	data->dev_sfp3_A0.addr = 0x50;
-	strcpy(data->dev_sfp4_A0.filename , "/dev/i2c-9");
-	data->dev_sfp4_A0.addr = 0x50;
-	strcpy(data->dev_sfp5_A0.filename , "/dev/i2c-13");
-	data->dev_sfp5_A0.addr = 0x50;
-
-	strcpy(data->dev_sfp0_A2.filename , "/dev/i2c-6");
-	data->dev_sfp0_A2.addr = 0x51;
-	strcpy(data->dev_sfp1_A2.filename , "/dev/i2c-10");
-	data->dev_sfp1_A2.addr = 0x51;
-	strcpy(data->dev_sfp2_A2.filename , "/dev/i2c-8");
-	data->dev_sfp2_A2.addr = 0x51;
-	strcpy(data->dev_sfp3_A2.filename , "/dev/i2c-12");
-	data->dev_sfp3_A2.addr = 0x51;
-	strcpy(data->dev_sfp4_A2.filename , "/dev/i2c-9");
-	data->dev_sfp4_A2.addr = 0x51;
-	strcpy(data->dev_sfp5_A2.filename , "/dev/i2c-13");
-	data->dev_sfp5_A2.addr = 0x51;
-
+	// PCB Temperature sensor
 	sem_post(&alarm_sync);
 	rc = init_tempSensor(&data->dev_pcb_temp);
 	if (rc) {
@@ -457,6 +444,7 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 		rc = status_alarm_json("DPB","PCB Temperature Sensor I2C Bus Status",99,timestamp,"critical");
 	}
 
+	// INA 3221 voltage and current sensors
 	rc = init_voltSensor(&data->dev_sfp0_2_volt);
 	if (rc) {
 		timestamp = time(NULL);
@@ -474,98 +462,18 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 		timestamp = time(NULL);
 		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",2,timestamp,"critical");
 	}
+	// SFP I2C buses
+	for (int i = 0; i < SFP_NUM; i++){
+	rc = init_I2C_SFP(i,data);
 
-	rc = init_SFP_A0(&data->dev_sfp0_A0);
 	if (rc) {
-		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","SFP I2C Bus Status",0,timestamp,"critical");
-	}
-	else{
-		rc = init_SFP_A2(&data->dev_sfp0_A2);
-		if (rc) {
 			timestamp = time(NULL);
-			rc = status_alarm_json("DPB","SFP I2C Bus Status",0,timestamp,"critical");
-		}
-		else{
-			sfp0_connected = 1;
+			rc = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"critical");
 		}
 	}
-	rc = init_SFP_A0(&data->dev_sfp1_A0);
-	if (rc) {
-		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","SFP I2C Bus Status",1,timestamp,"critical");
-	}
-	else{
-		rc = init_SFP_A2(&data->dev_sfp1_A2);
-		if (rc) {
-			timestamp = time(NULL);
-			rc = status_alarm_json("DPB","SFP I2C Bus Status",1,timestamp,"critical");
-		}
-		else{
-			sfp1_connected = 1;
-		}
-	}
-	rc = init_SFP_A0(&data->dev_sfp2_A0);
-	if (rc) {
-		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","SFP I2C Bus Status",2,timestamp,"critical");
-	}
-	else{
-		rc = init_SFP_A2(&data->dev_sfp2_A2);
-		if (rc) {
-			timestamp = time(NULL);
-			rc = status_alarm_json("DPB","SFP I2C Bus Status",2,timestamp,"critical");
-		}
-		else{
-			sfp2_connected = 1;
-		}
-	}
-	rc = init_SFP_A0(&data->dev_sfp3_A0);
-	if (rc) {
-		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","SFP I2C Bus Status",3,timestamp,"critical");
-	}
-	else{
-		rc = init_SFP_A2(&data->dev_sfp3_A2);
-		if (rc) {
-			timestamp = time(NULL);
-			rc = status_alarm_json("DPB","SFP I2C Bus Status",3,timestamp,"critical");
-		}
-		else{
-			sfp3_connected = 1;
-		}
-	}
-	rc = init_SFP_A0(&data->dev_sfp4_A0);
-	if (rc) {
-		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","SFP I2C Bus Status",4,timestamp,"critical");
-	}
-	else{
-		rc = init_SFP_A2(&data->dev_sfp4_A2);
-		if (rc) {
-			timestamp = time(NULL);
-			rc = status_alarm_json("DPB","SFP I2C Bus Status",4,timestamp,"critical");
-		}
-		else{
-			sfp4_connected = 1;
-		}
-	}
-	rc = init_SFP_A0(&data->dev_sfp5_A0);
-	if (rc) {
-		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","SFP I2C Bus Status",5,timestamp,"critical");
-	}
-	else{
-		rc = init_SFP_A2(&data->dev_sfp5_A2);
-		if (rc) {
-			timestamp = time(NULL);
-			rc = status_alarm_json("DPB","SFP I2C Bus Status",5,timestamp,"critical");
-		}
-		else{
-			sfp5_connected = 1;
-		}
-	}
-	rc = mcp9844_set_limits(data,0,60);
+
+	// PCB Temperature set temperature limits
+		rc = mcp9844_set_limits(data,0,60);
 	if (rc) {
 		printf("Failed to set MCP9844 Upper Limit\r\n");
 	}
@@ -591,19 +499,10 @@ int stop_I2cSensors(struct DPB_I2cSensors *data){
 	i2c_stop(&data->dev_sfp3_5_volt);
 	i2c_stop(&data->dev_som_volt);
 
-	i2c_stop(&data->dev_sfp0_A0);
-	i2c_stop(&data->dev_sfp1_A0);
-	i2c_stop(&data->dev_sfp2_A0);
-	i2c_stop(&data->dev_sfp3_A0);
-	i2c_stop(&data->dev_sfp4_A0);
-	i2c_stop(&data->dev_sfp5_A0);
-
-	i2c_stop(&data->dev_sfp0_A2);
-	i2c_stop(&data->dev_sfp1_A2);
-	i2c_stop(&data->dev_sfp2_A2);
-	i2c_stop(&data->dev_sfp3_A2);
-	i2c_stop(&data->dev_sfp4_A2);
-	i2c_stop(&data->dev_sfp5_A2);
+	for (int i = 0; i < SFP_NUM; i++){
+		i2c_stop(&data->dev_sfp_A0[i]);
+		i2c_stop(&data->dev_sfp_A2[i]);
+	}
 
 	return 0;
 }
@@ -871,6 +770,29 @@ int mcp9844_read_alarms(struct DPB_I2cSensors *data) {
  *  Each SFP has an EEPROM memory that can be accessed through I2C. These functions provide several functions to read every relevant slow control variable from this EEPROM
  *  @{
  */
+
+int init_I2C_SFP(int n, struct DPB_I2cSensors *data){
+	// Check SFP powered on
+	int rc = 0;
+	// In case it is powered on, initialize it
+		rc = init_SFP_A0(&data->dev_sfp_A0[n]);
+		if (rc) {
+			sfp_connected[n] = 0;
+			return rc;
+		}
+		else{
+			rc = init_SFP_A2(&data->dev_sfp_A2[n]);
+			if (rc) {
+				sfp_connected[n] = 0;
+				return rc;
+			}
+			else{
+				sfp_connected[n]= 1;
+				return 0;
+			}
+		}
+	return 0;
+}
 /**
  * Initialize SFP EEPROM page 1 as an I2C device
  *
@@ -988,59 +910,12 @@ int sfp_avago_read_temperature(struct DPB_I2cSensors *data,int n, float *res) {
 
 	struct I2cDevice dev;
 
-	switch(n){
-		case DEV_SFP0:
-			if(sfp0_connected){
-				dev = data->dev_sfp0_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP1:
-			if(sfp1_connected){
-				dev = data->dev_sfp1_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP2:
-			if(sfp2_connected){
-				dev = data->dev_sfp2_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP3:
-				if(sfp3_connected){
-				dev = data->dev_sfp3_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP4:
-			if(sfp4_connected){
-				dev = data->dev_sfp4_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP5:
-			if(sfp5_connected){
-				dev = data->dev_sfp5_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		default:
-			return -EINVAL;
-		break;
-		}
+	if(sfp_connected[n]){
+		dev = data->dev_sfp_A2[n];
+	}
+	else{
+		return -EINVAL;
+	}
 
 	// Read MSB of SFP temperature
 	rc = i2c_readn_reg(&dev,temp_reg,temp_buf,1);
@@ -1074,59 +949,12 @@ int sfp_avago_read_voltage(struct DPB_I2cSensors *data,int n, float *res) {
 
 	struct I2cDevice dev;
 
-	switch(n){
-		case DEV_SFP0:
-			if(sfp0_connected){
-				dev = data->dev_sfp0_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP1:
-			if(sfp1_connected){
-				dev = data->dev_sfp1_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP2:
-			if(sfp2_connected){
-				dev = data->dev_sfp2_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP3:
-				if(sfp3_connected){
-				dev = data->dev_sfp3_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP4:
-			if(sfp4_connected){
-				dev = data->dev_sfp4_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP5:
-			if(sfp5_connected){
-				dev = data->dev_sfp5_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		default:
-			return -EINVAL;
-		break;
-		}
+	if(sfp_connected[n]){
+		dev = data->dev_sfp_A2[n];
+	}
+	else{
+		return -EINVAL;
+	}
 
 	// Read MSB of SFP VCC
 	rc = i2c_readn_reg(&dev,voltage_reg,voltage_buf,1);
@@ -1160,60 +988,12 @@ int sfp_avago_read_lbias_current(struct DPB_I2cSensors *data,int n, float *res) 
 
 	struct I2cDevice dev;
 
-	switch(n){
-		case DEV_SFP0:
-			if(sfp0_connected){
-				dev = data->dev_sfp0_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP1:
-			if(sfp1_connected){
-				dev = data->dev_sfp1_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP2:
-			if(sfp2_connected){
-				dev = data->dev_sfp2_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP3:
-				if(sfp3_connected){
-				dev = data->dev_sfp3_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP4:
-			if(sfp4_connected){
-				dev = data->dev_sfp4_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP5:
-			if(sfp5_connected){
-				dev = data->dev_sfp5_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		default:
-			return -EINVAL;
-		break;
-		}
-
+if(sfp_connected[n]){
+		dev = data->dev_sfp_A2[n];
+	}
+	else{
+		return -EINVAL;
+	}
 	// Read MSB of SFP Laser Bias Current
 	rc = i2c_readn_reg(&dev,current_reg,current_buf,1);
 	if(rc < 0)
@@ -1246,59 +1026,12 @@ int sfp_avago_read_tx_av_optical_pwr(struct DPB_I2cSensors *data,int n, float *r
 
 	struct I2cDevice dev;
 
-	switch(n){
-		case DEV_SFP0:
-			if(sfp0_connected){
-				dev = data->dev_sfp0_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP1:
-			if(sfp1_connected){
-				dev = data->dev_sfp1_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP2:
-			if(sfp2_connected){
-				dev = data->dev_sfp2_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP3:
-				if(sfp3_connected){
-				dev = data->dev_sfp3_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP4:
-			if(sfp4_connected){
-				dev = data->dev_sfp4_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP5:
-			if(sfp5_connected){
-				dev = data->dev_sfp5_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		default:
-			return -EINVAL;
-		break;
-		}
+if(sfp_connected[n]){
+		dev = data->dev_sfp_A2[n];
+	}
+	else{
+		return -EINVAL;
+	}
 
 	// Read MSB of SFP Laser Bias Current
 	rc = i2c_readn_reg(&dev,power_reg,power_buf,1);
@@ -1332,59 +1065,12 @@ int sfp_avago_read_rx_av_optical_pwr(struct DPB_I2cSensors *data,int n, float *r
 
 	struct I2cDevice dev;
 
-	switch(n){
-		case DEV_SFP0:
-			if(sfp0_connected){
-				dev = data->dev_sfp0_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP1:
-			if(sfp1_connected){
-				dev = data->dev_sfp1_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP2:
-			if(sfp2_connected){
-				dev = data->dev_sfp2_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP3:
-				if(sfp3_connected){
-				dev = data->dev_sfp3_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP4:
-			if(sfp4_connected){
-				dev = data->dev_sfp4_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP5:
-			if(sfp5_connected){
-				dev = data->dev_sfp5_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		default:
-			return -EINVAL;
-		break;
-		}
+if(sfp_connected[n]){
+		dev = data->dev_sfp_A2[n];
+	}
+	else{
+		return -EINVAL;
+	}
 
 	// Read MSB of SFP Laser Bias Current
 	rc = i2c_readn_reg(&dev,power_reg,power_buf,1);
@@ -1417,59 +1103,12 @@ int sfp_avago_read_status(struct DPB_I2cSensors *data,int n,uint8_t *res) {
 
 	struct I2cDevice dev;
 
-	switch(n){
-		case DEV_SFP0:
-			if(sfp0_connected){
-				dev = data->dev_sfp0_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP1:
-			if(sfp1_connected){
-				dev = data->dev_sfp1_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP2:
-			if(sfp2_connected){
-				dev = data->dev_sfp2_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP3:
-				if(sfp3_connected){
-				dev = data->dev_sfp3_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP4:
-			if(sfp4_connected){
-				dev = data->dev_sfp4_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP5:
-			if(sfp5_connected){
-				dev = data->dev_sfp5_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		default:
-			return -EINVAL;
-		break;
-		}
+if(sfp_connected[n]){
+		dev = data->dev_sfp_A2[n];
+	}
+	else{
+		return -EINVAL;
+	}
 
 	// Read status bit register
 	rc = i2c_readn_reg(&dev,status_reg,status_buf,1);
@@ -1607,59 +1246,12 @@ int sfp_avago_read_alarms(struct DPB_I2cSensors *data,int n) {
 
 	struct I2cDevice dev;
 
-	switch(n){
-		case DEV_SFP0:
-			if(sfp0_connected){
-				dev = data->dev_sfp0_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP1:
-			if(sfp1_connected){
-				dev = data->dev_sfp1_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP2:
-			if(sfp2_connected){
-				dev = data->dev_sfp2_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-		break;
-		case DEV_SFP3:
-				if(sfp3_connected){
-				dev = data->dev_sfp3_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP4:
-			if(sfp4_connected){
-				dev = data->dev_sfp4_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		case DEV_SFP5:
-			if(sfp5_connected){
-				dev = data->dev_sfp5_A2;
-			}
-			else{
-				return -EINVAL;
-			}
-			break;
-		default:
-			return -EINVAL;
-		break;
-		}
+if(sfp_connected[n]){
+		dev = data->dev_sfp_A2[n];
+	}
+	else{
+		return -EINVAL;
+	}
 
 	// Read status bit register
 	rc = i2c_readn_reg(&dev,status_reg,status_buf,1);
