@@ -3459,7 +3459,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		case HKDIG_GET_CHN_CNTRL:
 		value1 = atoi(cmd[3]);
-		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BOARD_I3V3A].CmdString, (uint32_t)value1);
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
 
 
@@ -3472,7 +3472,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_RMON_N:
 
 		value1 = atoi(cmd[4]);
-		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BOARD_I3V3A].CmdString, (uint32_t)value1);
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
 
 		//// Case 5 words
@@ -3485,7 +3485,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		
 		value1 = atoi(cmd[3]);
 		value2 = atoi(cmd[4]);
-		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BOARD_I3V3A].CmdString, (uint32_t)value1, (uint32_t)value2);
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1, (uint32_t)value2);
 		break;
 		// Select clock
 		case HKDIG_SET_CLOCK:
@@ -3494,14 +3494,16 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		else {
 			value1 = 0;
 		}
-		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BOARD_I3V3A].CmdString, (uint32_t)value1);
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
 
 		case HKDIG_ERRO:
 			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
+			return -EINVAL;
 			break;
 		default:
 			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_ERRO].CmdString);
+			return -EINVAL;
 			break;
  
 	}
@@ -3530,7 +3532,6 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 
 	char daq_response[64];
 	char *value,*temp;
-
 	// Get Command field of the received response
 	int16_t cmdIdx = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
 	if(cmdIdx == HKDIG_ERRO){
