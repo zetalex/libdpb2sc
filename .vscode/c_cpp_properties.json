@@ -1,0 +1,49 @@
+{
+    "env": {
+        "sysroots_path": "/media/hyperk2/SSD_DATA/GITLAB_CERN/hk_petalinux_project_dpb2_2022_2/images/linux/sdk/sysroots",
+        "myIncludePath": [
+            "${workspaceFolder}/include",
+            "${workspaceFolder}/src"
+        ]
+    },
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        },
+        {
+            "name": "ARM64_Xilinx",
+            "includePath": [
+                "${sysroots_path}/cortexa72-cortexa53-xilinx-linux/usr/include/**",
+                "${sysroots_path}/x86_64-petalinux-linux/usr/bin/aarch64-xilinx-linux/**",
+                "/media/hyperk2/SSD_DATA/BitBucket/redlibs"
+            ],
+            "defines": [],
+            "compilerPath": "${sysroots_path}/x86_64-petalinux-linux/usr/bin/aarch64-xilinx-linux/aarch64-xilinx-linux-gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-arm64",
+            "mergeConfigurations": false,
+            "browse": {
+                "path": [
+                    "/media/hyperk2/SSD_DATA/GITHUB/libdpb2sc/**",
+                    "${sysroots_path}/cortexa72-cortexa53-xilinx-linux/usr/include/**",
+                    "${sysroots_path}/cortexa72-cortexa53-xilinx-linux/usr/include/c++/11.2.0/**",
+                    "${sysroots_path}/x86_64-petalinux-linux/usr/bin/aarch64-xilinx-linux/**",
+                    "${workspaceFolder}",
+                    "/media/hyperk2/SSD_DATA/BitBucket/redlibs/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4,
+    "enableConfigurationSquiggles": true
+}

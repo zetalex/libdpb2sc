@@ -1,4 +1,10 @@
 /************************** Libraries includes *****************************/
+// COPacket includes
+#include <common/protocols/COPacket/COPacket.hpp>
+#include <COPacketCmdHkDig.h>
+
+extern _COPacketCmdList HkDigCmdList;
+
 extern "C" {
 #include "dpb2sc.h"
 
@@ -33,6 +39,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	}
 	populate_lv_hash_table(LV_CMD_TABLE_SIZE,lv_daq_words,lv_board_words);
 	populate_hv_hash_table(HV_CMD_TABLE_SIZE,hv_daq_words,hv_board_words);
+	populate_dig_hash_table(DIG_STANDARD_CMD_TABLE_SIZE, dig_dpb_words);
 	return 0;
 }
 /**
@@ -67,6 +74,16 @@ int init_semaphores(){
 	rc = sem_init(&sem_hvlv,1,1);
 	if(rc){
 		printf("Error initialising semaphore HV LV\n");
+		return rc;
+	}
+	rc = sem_init(&sem_dig0,1,1);
+	if(rc){
+		printf("Error initialising semaphore Dig0\n");
+		return rc;
+	}
+	rc = sem_init(&sem_dig1,1,1);
+	if(rc){
+		printf("Error initialising semaphore Dig1\n");
 		return rc;
 	}
 	return rc;
@@ -125,6 +142,8 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    sem_destroy(&alarm_sync);
    sem_destroy(&sem_valid);
    sem_destroy(&sem_hvlv);
+   sem_destroy(&sem_dig0);
+   sem_destroy(&sem_dig1);
    stop_I2cSensors(data);
    return;
 }
@@ -2638,12 +2657,12 @@ int aurora_down_alarm(int aurora_link, int *flag){
 		flag[0] = aurora_status[0];
 		if(aurora_link<2){
 			timestamp = time(NULL);
-			rc = status_alarm_json("Dig0",link_id,99,timestamp,"critical");
+			rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical");
 			return rc;
 		}
 		else{
 			timestamp = time(NULL);
-			rc = status_alarm_json("Dig1",link_id,99,timestamp,"critical");
+			rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical");
 			return rc;
 		}
 	}
@@ -2781,6 +2800,26 @@ int populate_lv_hash_table(int table_size, const char **keys, const char **value
 	return 0;
 }
 
+/**
+* Populates the Digitizer Hash table by giving one arrays of strings corresponding to key. Values are just increasing numbers
+*
+* @param table_size length of the table
+* @param keys array of strings with the ordered keys
+*
+* @return 0 always
+*/
+int populate_dig_hash_table(int table_size, const char **keys) {
+	struct dig_uthash *s = NULL;
+
+	for(int i = 0 ; i < table_size ; i++){
+		s = (struct dig_uthash *) malloc(sizeof *s);
+		strcpy(s->dpb_words, keys[i]);
+    	s->dig_cmd_num = i;
+		HASH_ADD_STR(dig_cmd_table, dpb_words, s);  /* id: name of key field */
+	}
+	return 0;
+}
+
 int get_hv_hash_table_command(char *key, char *value) {
 	struct cmd_uthash *s;
 	HASH_FIND_STR(hv_cmd_table,key,s);
@@ -2792,6 +2831,28 @@ int get_lv_hash_table_command(char *key, char *value) {
 	struct cmd_uthash *s;
 	HASH_FIND_STR(lv_cmd_table,key,s);
 	strcpy(value,s->board_word);
+	return 0;
+}
+
+int get_dig_hash_table_command(char **cmd, int *value) {
+	struct dig_uthash *s;
+	// Get Uthash table key
+	char str_dpb_format[32];
+	strcpy(str_dpb_format,cmd[0]);
+	strcat(str_dpb_format," ");
+	strcat(str_dpb_format,cmd[2]);
+
+	if(cmd[3] != NULL && !strcmp(cmd[3],"ALL")){
+		strcat(str_dpb_format," ");
+		strcat(str_dpb_format,cmd[3]);
+	}
+	if(cmd[4] != NULL && (!strcmp(cmd[4],"ON") || !strcmp(cmd[4],"OFF"))){
+		strcat(str_dpb_format," ");
+		strcat(str_dpb_format,cmd[4]);
+	}
+	// Find the Digitizer command ID in the Uthash table
+	HASH_FIND_STR(dig_cmd_table,str_dpb_format,s);
+	*value = s->dig_cmd_num;
 	return 0;
 }
 
@@ -3156,9 +3217,95 @@ end:
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
 
-int dig_command_handling(int dig_num, char **cmd, char *result){
-	int rc = 0;
-	return rc;
+int dig_command_handling(int dig_num, char *cmd, char *result){
+
+	char    pkt_char = ' ';
+    uint16_t index = 0;
+	int serial_port_fd;
+	int n;
+	char read_buf[128];
+	char error[128];
+	char board_dev[32];
+	char board_name[8];
+	sem_t *sem_temp;
+	strcpy(read_buf,"");
+	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
+
+	switch (dig_num) {
+		case 0:
+		strcpy(board_dev,"/dev/ttyUL1");
+		strcpy(board_name,"DIG0");
+		sem_temp = &sem_dig0;
+		break;
+		case 1:
+		strcpy(board_dev,"/dev/ttyUL2");
+		strcpy(board_name,"DIG1");
+		sem_temp = &sem_dig1;
+		break;
+		default:
+		printf("Invalid digitizer number");
+		return -EINVAL;
+	}
+	sem_wait(sem_temp);
+	//Open one device
+	serial_port_fd = open(board_dev,O_RDWR);
+	if (serial_port_fd < 0) {
+		//Send alarm
+		printf("Error opening Dig%d UART\n",dig_num);
+		sem_post(sem_temp);
+		status_alarm_json("DIG0","UART Lite 3", 99,0,"warning");
+		strcpy(result,"ERROR");
+		return -EACCES;
+	}
+	// Wait until acquiring non-blocking exclusive lock
+	while(flock(serial_port_fd, LOCK_EX | LOCK_NB) == -1) {
+		usleep(5000);
+	}
+
+	setup_serial_port(serial_port_fd);
+	write(serial_port_fd, cmd, strlen(cmd));
+
+	for(int i = 0 ; i < SERIAL_PORT_RETRIES ;){
+		// Keep reading until timeout (VTIME)
+		char pkt_char = ' ';
+		n = read(serial_port_fd, &pkt_char, 1);
+		if(n > 0){
+			if(pkt_char == pkt.GetStartChar()){
+				//reset
+				index = 0;
+			}
+			read_buf[index++] = pkt_char;
+		}
+		else{
+			//Send Warning
+			printf("Warning, character not received\n");
+			status_alarm_json(board_name,"Serial Port", 99,0,"warning");
+			count_fails_until_success++;
+			count_since_reset++;
+			i++;
+		}
+		if(pkt_char == pkt.GetStopChar()){
+			//read() doesn't add null terminated character at the end because it reads binary data
+			read_buf[index] = '\0';
+			count_fails_until_success = 0;
+			strcpy(result,read_buf);
+			goto success;
+		}
+	}
+
+	//Send Critical error
+	close(serial_port_fd);
+	printf("Critical, character not received\n");
+	status_alarm_json(board_name,"Serial Port", 99,0,"critical");
+	strcpy(result,"ERROR IN Digitizer Reading");
+	flock(serial_port_fd, LOCK_UN);
+	sem_post(sem_temp);
+	return -ETIMEDOUT;
+success:
+	close(serial_port_fd);
+	flock(serial_port_fd, LOCK_UN);
+	sem_post(sem_temp);
+	return 0;
 }
 
 /**
@@ -3172,6 +3319,173 @@ int dig_command_handling(int dig_num, char **cmd, char *result){
  */
 int dig_command_translation(char *digcmd, char **cmd, int words_n){
 	int rc = 0;
+	
+	int dig_cmd_id = 0;
+	int value1 = 0;
+	int value2 = 0;
+	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
+	get_dig_hash_table_command(cmd,&dig_cmd_id);
+
+	//Build COPacket
+	switch (dig_cmd_id){
+
+		// Case 3 words
+		// Reset the TDC counters of all channels at once
+		case HKDIG_TDC_RST:
+		// Reset Aurora link, both primary and secondary
+		case HKDIG_RST_AURORA_LINK:
+		case HKDIG_GET_PED_TYPE:
+		case HKDIG_GET_GW_VER:
+
+		// Disable all FE clearing bit in Board control register
+		case HKDIG_STOP_FE_ALL:
+		// Enable all FE setting bit in Board control register
+		case HKDIG_START_FE_ALL:
+		// Enable all FEs and all DAQ setting bits in board control register
+		case HKDIG_START_DAQ_ALL:
+		// Disable all FEs and all DAQ clearing bits in board control register
+		case HKDIG_STOP_DAQ_ALL:
+
+		// Run Rate monitor
+		case HKDIG_RUN_RMON:
+		// Get Software date and time of compilation. Use menu_str to store data
+		case HKDIG_GET_SW_VER:
+
+		case HKDIG_GET_BOARD_STATUS:
+
+		case HKDIG_GET_BOARD_CNTRL:
+
+		// Get TLink lock status
+		case HKDIG_GET_TLNK_LOCK:
+
+		// Get Rate monitor interval
+		case HKDIG_GET_RMON_T:
+
+
+		// Get uptime in seconds
+		case HKDIG_GET_UPTIME:
+
+		// Get clock selection
+		case HKDIG_GET_CLOCK:
+
+		// 3.3VA is divided by 2 (1.65V): multiply value in mV by 2
+		case HKDIG_GET_BOARD_3V3A:
+
+		// 12VA is divided by 7.8 (1.54V): multiply value in mV by 78/10
+		case HKDIG_GET_BOARD_12VA:
+
+		// I=V/2
+		case HKDIG_GET_BOARD_I12V:
+
+		// 5VA is divided by 3.85 (1.54V): multiply value in mV by 385/100
+		case HKDIG_GET_BOARD_5V0A:
+
+		// 5VF is divided by 3.85 (1.54V): multiply value in mV by 385/100
+		case HKDIG_GET_BOARD_5V0F:
+
+		// C12V is divided by 7.8 (1.54V): multiply value in mV by 78/10
+		case HKDIG_GET_BOARD_C12V:
+
+		// I of 5VF is calculated dividing read voltage by 3.6: multiply value in mV by 10/36
+		case HKDIG_GET_BOARD_I5VF:
+
+		// I of 3.3VA is calculated dividing read voltage by 3.6: multiply value in mV by 10/36
+		case HKDIG_GET_BOARD_I3V3A:
+
+		// I of 12VA is calculated dividing read voltage by 7.8: multiply value in mV by 10/78
+		case HKDIG_GET_BOARD_I12VA:
+
+		// Read Temperature from LTM84 sensors
+		case HKDIG_GET_BOARD_TU40:
+
+		case HKDIG_GET_BOARD_TU41:
+
+		case HKDIG_GET_BOARD_TU45:
+
+		// Get all sensors data from BME280
+		case HKDIG_GET_BME_DATA:
+
+		// Get Temperature calibration data
+		case HKDIG_GET_BME_TCAL:
+
+		// Get Pressure
+		case HKDIG_GET_BME_HCAL:
+
+		// Get pressure calibration data
+		case HKDIG_GET_BME_PCAL:
+			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
+			break;
+
+
+		// Case 4 words
+		case HKDIG_GET_THR_NUM:
+		case HKDIG_GET_IT_NUM:
+		case HKDIG_GET_DT_NUM:
+		case HKDIG_EN_CAL_N:// Enable channel calibration input
+		// Disable calibration input for channel n
+		case HKDIG_DIS_CAL_N:
+		
+		// Enable FE for channel n
+		case HKDIG_START_FE_N:
+		// Disable FE for channel n
+		case HKDIG_STOP_FE_N:
+		// Start DAQ for channel n
+		case HKDIG_START_DAQ_N:
+
+		// Stop DAQ acquisition, leaving pedestal and calibration unchanged
+		case HKDIG_STOP_DAQ_N:
+
+		case HKDIG_GET_CHN_STATUS:
+
+		case HKDIG_GET_CHN_CNTRL:
+		value1 = atoi(cmd[3]);
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BOARD_I3V3A].CmdString, (uint32_t)value1);
+		break;
+
+
+		case HKDIG_SET_THR_ALL:
+		case HKDIG_SET_IT_ALL:
+		case HKDIG_SET_DT_ALL:
+		// Set RMon interval
+		case HKDIG_SET_RMON_T:
+		// Return the rmon for this channel
+		case HKDIG_GET_RMON_N:
+
+		value1 = atoi(cmd[4]);
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BOARD_I3V3A].CmdString, (uint32_t)value1);
+		break;
+
+		//// Case 5 words
+		case HKDIG_SET_THR_NUM:
+		case HKDIG_SET_IT_NUM:
+		case HKDIG_SET_DT_NUM:
+
+		// Setting pedestal type per channel
+		case HKDIG_SET_PED_TYPE:
+		
+		value1 = atoi(cmd[3]);
+		value2 = atoi(cmd[4]);
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BOARD_I3V3A].CmdString, (uint32_t)value1, (uint32_t)value2);
+		break;
+		// Select clock
+		case HKDIG_SET_CLOCK:
+		if(!strcmp(cmd[4],"DPB"))
+			value1 = 1;
+		else {
+			value1 = 0;
+		}
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BOARD_I3V3A].CmdString, (uint32_t)value1);
+		break;
+
+		case HKDIG_ERRO:
+			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
+			break;
+		default:
+			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
+			break;
+ 
+	}
+	// Convert back into string
 	return rc;
 }
 
@@ -3188,8 +3502,31 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
  * @return always returns 0. the error is encapsulated into the JSON string to be sent to the DAQ
  */
 int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd){
-	int rc = 0;
-	return rc;
+
+	COPacketResponse_type	pktError=COPACKET_NOERR;
+	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
+	
+	pktError = pkt.LoadString(board_response);
+
+	char daq_response[64];
+	uint16_t value;
+
+	// Get Command field of the received response
+	int16_t cmdIdx = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
+	if(cmdIdx == HKDIG_ERRO){
+		sprintf(daq_response,"ERROR: %s operation not successful",cmd[0]);
+		command_response_string_json(msg_id,daq_response,reply);
+		return 0;
+	}
+	if(!strcmp(cmd[0],"READ")){
+		while(pkt.GetNextFieldAsUINT16(value) != COPACKET_NOERR);
+		command_response_json(msg_id,(float) value, reply);
+	}
+	else{ // If it is SET, we just return OK
+		command_response_string_json(msg_id,"OK",reply);
+	}
+
+	return 0;
 }
 
 /**
@@ -3217,7 +3554,6 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		//Send alarm
 		printf("Error opening HV/LV UART\n");
 		sem_post(&sem_hvlv);
-		printf("Oh dear, something went wrong with open()! %s\n", strerror_r(errno,error,128));
 		status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
 		strcpy(result,"ERROR");
 		return -EACCES;

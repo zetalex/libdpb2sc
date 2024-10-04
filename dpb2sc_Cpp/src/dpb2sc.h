@@ -60,6 +60,12 @@ sem_t sem_valid;
 /** @brief Semaphore to avoid race conditions when reading from HV/LV serial port */
 sem_t sem_hvlv;
 
+/** @brief Semaphore to avoid race conditions when reading from Digitizer 0 serial port */
+sem_t sem_dig0;
+
+/** @brief Semaphore to avoid race conditions when reading from Digitizer 1 serial port */
+sem_t sem_dig1;
+
 /** @} */
 
 /******************************************************************************
@@ -129,7 +135,7 @@ int aurora_down_alarm(int ,int *);
 int zmq_socket_init ();
 int zmq_socket_destroy();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
-int dig_command_handling(int, char **, char *);
+int dig_command_handling(int, char *, char *);
 int dig_command_translation(char *, char **, int);
 int dig_command_response(char *, char *, int, char **);
 int hv_lv_command_handling(char *, char *, char *);
@@ -140,8 +146,10 @@ int setup_serial_port(int);
 int hv_read_alarms(void);
 int populate_hv_hash_table(int, const char **, const char **);
 int populate_lv_hash_table(int, const char **, const char **);
+int populate_dig_hash_table(int, const char **);
 int get_hv_hash_table_command(char *, char *);
 int get_lv_hash_table_command(char *, char *);
+int get_dig_hash_table_command(char **, int *);
 int inList(int, int*, int);
 void atexit_function();
 int gen_uuid(char *);
@@ -173,8 +181,11 @@ int dig0_main_flag = 1;
 int dig1_main_flag = 1;
 int dig0_backup_flag = 1;
 int dig1_backup_flag = 1;
+// TODO Periodic Scan of HV,LV and digitizers to see if they are available  
 int lv_connected = 0;
 int hv_connected = 0;
+int dig0_connected = 0;
+int dig1_connected = 0;
 int count_fails_until_success = 0;
 int count_since_reset = 0;
 
@@ -188,7 +199,7 @@ uint16_t alarms_mask[6] = {0,0,0,0,0,0};
 /** @brief Status mask */
 uint8_t status_mask[6] = {0,0,0,0,0,0};
 /** @brief SFP I2C String array */
-char *sfp_i2c_locations[6] = {"/dev/i2c-6","/dev/i2c-10","/dev/i2c-8","/dev/i2c-12","/dev/i2c-9","/dev/i2c-13"};
+const char *sfp_i2c_locations[6] = {"/dev/i2c-6","/dev/i2c-10","/dev/i2c-8","/dev/i2c-12","/dev/i2c-9","/dev/i2c-13"};
 /** @brief SFP connected array */
 int sfp_connected[SFP_NUM] = {0,0,0,0,0,0};
 /** @} */
@@ -570,6 +581,90 @@ int hv_sd_channels[] = {0,1,6,7,12,13,18,19};
 char HV_SN[8];
 
 /******************************************************************************
+Digitizer Command Data.
+****************************************************************************/
+
+#define DIG_STANDARD_CMD_TABLE_SIZE 54
+
+const char *dig_dpb_words[] = {
+	"READ DISCTRES",
+	"SET DISCTRES",
+    "SET DISCTRES ALL",
+    "READ INTTIME",
+    "SET INTTIME",
+    "SET INTTIME ALL",
+    "READ DEADTIME",
+    "SET DEADTIME",
+    "SET DEADTIME ALL",
+    "SET CALIB ON",
+    "SET CALIB OFF",
+    "READ CHSTATUS", 
+    "READ CHCONTROL",
+    "SET CHSTATUS", // TODO: Ask Fabrizio
+    "SET FESTATUS ON",
+    "SET FESTATUS OFF",
+    "SET DAQSTATUS ON",
+    "SET DAQSTATUS OFF",
+    "SET FESTATUS ALL ON",
+    "SET FESTATUS ALL OFF",
+    "SET DAQSTATUS ALL ON",
+    "SET DAQSTATUS ALL OFF",
+    "SET TDCRST",
+    "SET PEDTYPE",
+    "READ PEDTYPE",
+    "READ GWVER",
+    "READ SWVER",
+    "READ BDSTATUS",
+    "READ BDCONTROL",
+    "READ UPTIME",
+    "SET AURORARST",
+    "SET CLOCK",
+    "READ DAQCLOCK",
+    "READ TLNCLOCK",
+    "READ RMONT",
+    "SET RMONT",
+    "READ RMON",
+    "SET RMONRUN",
+    "READ 3V3A",
+    "READ 12VA",
+    "READ I12V",
+    "READ 5V0A",
+    "READ 5V0F",
+    "READ C12V",
+    "READ I5VF",
+    "READ I3V3A",
+    "READ I12VA",
+    "READ TU40",
+    "READ TU41",
+    "READ TU45",
+    "READ BME",
+    "READ TEMP",
+    "READ RELHUM",
+    "READ PRESS",
+    NULL
+};
+
+const char *dig_monitor_mag_names[] = {
+	"bdsnum",
+	"boardtemp",
+    "status",
+    "voltage", 
+    "current" , 
+    "temperature",
+    "rampup" , 
+    "rampdown" ,
+    "trip", 
+    "chanerr",
+    "sdvolt",
+    "sdcurr"
+};
+
+// Detected Dig0 Serial Number
+char DIG0_SN[32];
+// Detected Dig1 Serial Number
+char DIG1_SN[32];
+
+/******************************************************************************
 Hash Tables.
 ****************************************************************************/
 
@@ -583,4 +678,12 @@ struct cmd_uthash *lv_cmd_table = NULL;
 struct cmd_uthash *hv_cmd_table = NULL;  
 
 }
+
+struct dig_uthash {
+    char dpb_words[32];                    /* key */
+    int dig_cmd_num;                    /* Digitizer command id */
+    UT_hash_handle hh;         /* makes this structure hashable */
+};
+
+struct dig_uthash *dig_cmd_table = NULL; 
 #endif
