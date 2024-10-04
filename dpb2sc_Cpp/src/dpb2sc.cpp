@@ -3529,7 +3529,7 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 	pktError = pkt.LoadString(board_response);
 
 	char daq_response[64];
-	uint16_t value;
+	char *value,*temp;
 
 	// Get Command field of the received response
 	int16_t cmdIdx = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
@@ -3539,8 +3539,10 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 		return 0;
 	}
 	if(!strcmp(cmd[0],"READ")){
-		while(pkt.GetNextFieldAsUINT16(value) != COPACKET_NOERR);
-		command_response_json(msg_id,(float) value, reply);
+		while(temp = pkt.GetNextField()) {
+			value = temp;
+		}
+		command_response_string_json(msg_id,value, reply);
 	}
 	else{ // If it is SET, we just return OK
 		command_response_string_json(msg_id,"OK",reply);
