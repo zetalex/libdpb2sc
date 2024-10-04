@@ -2823,15 +2823,26 @@ int populate_dig_hash_table(int table_size, const char **keys) {
 int get_hv_hash_table_command(char *key, char *value) {
 	struct cmd_uthash *s;
 	HASH_FIND_STR(hv_cmd_table,key,s);
-	strcpy(value,s->board_word);
-	return 0;
+	if(s != NULL){
+		strcpy(value,s->board_word);
+		return 0;
+	}
+	else{
+		return -EINVAL;
+	}
 }
 
 int get_lv_hash_table_command(char *key, char *value) {
 	struct cmd_uthash *s;
 	HASH_FIND_STR(lv_cmd_table,key,s);
 	strcpy(value,s->board_word);
-	return 0;
+	if(s != NULL){
+		strcpy(value,s->board_word);
+		return 0;
+	}
+	else{
+		return -EINVAL;
+	}
 }
 
 int get_dig_hash_table_command(char **cmd, int *value) {
@@ -2852,8 +2863,13 @@ int get_dig_hash_table_command(char **cmd, int *value) {
 	}
 	// Find the Digitizer command ID in the Uthash table
 	HASH_FIND_STR(dig_cmd_table,str_dpb_format,s);
-	*value = s->dig_cmd_num;
-	return 0;
+	if(s != NULL){
+		*value = s->dig_cmd_num;
+		return 0;
+	}
+	else{
+		return -EINVAL;
+	}
 }
 
 /**
@@ -3324,7 +3340,11 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 	int value1 = 0;
 	int value2 = 0;
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
-	get_dig_hash_table_command(cmd,&dig_cmd_id);
+	rc = get_dig_hash_table_command(cmd,&dig_cmd_id);
+	if(rc){
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_ERRO].CmdString);
+		return -EINVAL;
+	}
 
 	//Build COPacket
 	switch (dig_cmd_id){
@@ -3481,7 +3501,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
 			break;
 		default:
-			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
+			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_ERRO].CmdString);
 			break;
  
 	}
@@ -3615,6 +3635,7 @@ success:
  * @return 0 if correct, -ETIMEDOUT if no answer is received after several retries
  */
 int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
+	int rc = 0;
 	char chancode[8] = "CH:";
 	if(!strcmp(cmd[0],"READ")){
 		strcat(hvlvcmd,"MON,");
@@ -3634,7 +3655,11 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 			strcpy(opcode, "BCEN");
 		}
 		else{
-			get_lv_hash_table_command(cmd[2],opcode);
+			rc = get_lv_hash_table_command(cmd[2],opcode);
+			if(rc){
+				strcpy(hvlvcmd,"ERROR");
+				return -EINVAL;
+			}
 		}
 	}
 	else{
@@ -3648,7 +3673,12 @@ int hv_lv_command_translation(char *hvlvcmd, char **cmd, int words_n){
 			strcpy(opcode, "PW");
 		}
 		else {
-			get_hv_hash_table_command(cmd[2],opcode);
+			rc = get_hv_hash_table_command(cmd[2],opcode);
+			if(rc){
+				strcpy(hvlvcmd,"ERROR");
+				return -EINVAL;
+			}
+
 		}
 	}
 	strcat(hvlvcmd,opcode);
