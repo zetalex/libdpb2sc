@@ -25,6 +25,7 @@ extern "C" {
 
 #include "i2c.h"
 #include "linux/errno.h"
+#include <COPacketCmdHkDig.h>
 
 /************************** Main Struct Definition *****************************/
 
@@ -644,19 +645,78 @@ const char *dig_dpb_words[] = {
     NULL
 };
 
-const char *dig_monitor_mag_names[] = {
-	"bdsnum",
-	"boardtemp",
+const int dig_monitor_mag_board_codes[] = {
+    // Board monitoring
+    HKDIG_GET_GW_VER,
+    HKDIG_GET_SW_VER,
+    HKDIG_GET_BOARD_STATUS,
+    HKDIG_GET_BOARD_CNTRL,
+    HKDIG_GET_UPTIME,
+    HKDIG_GET_RMON_T,
+    HKDIG_GET_CLOCK,
+    HKDIG_GET_TLNK_LOCK,
+    HKDIG_GET_BOARD_3V3A,
+    HKDIG_GET_BOARD_12VA,
+    HKDIG_GET_BOARD_I12V,
+    HKDIG_GET_BOARD_5V0A,
+    HKDIG_GET_BOARD_5V0F,
+    HKDIG_GET_BOARD_C12V,
+    HKDIG_GET_BOARD_I5VF,
+    HKDIG_GET_BOARD_I3V3A,
+    HKDIG_GET_BOARD_I12VA,
+    HKDIG_GET_BOARD_TU40,
+    HKDIG_GET_BOARD_TU41,
+    HKDIG_GET_BOARD_TU45,
+	// BME280 commands
+	HKDIG_GET_BME_TCAL,				// Take Temperature calibration data
+	HKDIG_GET_BME_HCAL,				// Take Relative Humidity calibration data
+	HKDIG_GET_BME_PCAL,				// Take Pressure calibration data
+};
+const int dig_monitor_mag_chan_codes[] = {
+    // Channel monitoring
+    HKDIG_GET_THR_NUM,
+    HKDIG_GET_IT_NUM,
+    HKDIG_GET_DT_NUM,
+    HKDIG_GET_CHN_STATUS,
+    HKDIG_GET_CHN_CNTRL,
+    HKDIG_GET_PED_TYPE,
+
+
+};
+
+const char *dig_monitor_mag_board_names[] = {
+	"GWVer",
+    "SWVer",
+    "BDStatus",
+    "BDCntrl",
+    "BDUptime",
+    "RMONT",
+    "Clock",
+    "TLock",
+    "3V3A",
+    "12VA",
+    "I12V",
+    "5V0A",
+    "5V0F",
+    "C12V",
+    "I5VF",
+    "I3V3A",
+    "I12VA",
+    "TU40",
+    "TU41",
+    "TU45"
+    "boardtemp",
+    "relathumidity",
+    "pressure",
+};
+
+const char *dig_monitor_mag_chan_names[] = {
+	"disctres",
+    "inttime",
+    "deadtime",
     "status",
-    "voltage", 
-    "current" , 
-    "temperature",
-    "rampup" , 
-    "rampdown" ,
-    "trip", 
-    "chanerr",
-    "sdvolt",
-    "sdcurr"
+    "cntrl",
+    "pedtype"
 };
 
 // Detected Dig0 Serial Number

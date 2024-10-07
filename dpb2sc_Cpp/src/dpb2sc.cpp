@@ -1,7 +1,6 @@
 /************************** Libraries includes *****************************/
 // COPacket includes
 #include <common/protocols/COPacket/COPacket.hpp>
-#include <COPacketCmdHkDig.h>
 
 extern _COPacketCmdList HkDigCmdList;
 
