@@ -1793,6 +1793,33 @@ int parsing_mon_channel_status_into_object(json_object *jsfps,int sfp_num,const 
 	}
 	return 0;
 }
+
+/**
+ * Parses monitoring status data into a JSON array so as to include it in a JSON object
+ *
+ * @param jsfps JSON array in which the data will be stored
+ * @param sfp_num Number of measured channel (position in JSON array)
+ * @param var_name Name of the measured magnitude
+ * @param val Measured magnitude value in string format.
+ *
+ * @return 0
+ */
+int parsing_mon_channel_string_into_object(json_object *jsfps,int sfp_num,const char *var_name, char* val) {
+
+	struct json_object *jobj,*jstring = NULL;
+	jobj = json_object_array_get_idx(jsfps, sfp_num);
+	if(jobj == NULL){
+		jobj = json_object_new_object();
+		jstring = json_object_new_string(val);
+		json_object_object_add(jobj,var_name,jstring);
+		json_object_array_add(jsfps,jobj);
+	}
+	else{
+		jstring = json_object_new_string(val);
+		json_object_object_add(jobj,var_name,jstring);
+	}
+	return 0;
+}
 /**
  * Parses monitoring float data to include it directly in a JSON object
  *
@@ -3272,10 +3299,13 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		strcpy(result,"ERROR");
 		return -EACCES;
 	}
+
 	// Wait until acquiring non-blocking exclusive lock
 	while(flock(serial_port_fd, LOCK_EX | LOCK_NB) == -1) {
 		usleep(5000);
 	}
+
+
 
 	setup_serial_port(serial_port_fd);
 	write(serial_port_fd, cmd, strlen(cmd));
@@ -3307,7 +3337,6 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 			goto success;
 		}
 	}
-
 	//Send Critical error
 	close(serial_port_fd);
 	printf("Critical, character not received\n");
