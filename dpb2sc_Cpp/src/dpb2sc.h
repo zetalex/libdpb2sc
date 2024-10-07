@@ -646,7 +646,7 @@ const char *dig_dpb_words[] = {
     "READ PRESS",
     NULL
 };
-
+#define DIG_MON_BOARD_CODES_SIZE 23
 const int dig_monitor_mag_board_codes[] = {
     // Board monitoring
     HKDIG_GET_GW_VER,
@@ -674,6 +674,8 @@ const int dig_monitor_mag_board_codes[] = {
 	HKDIG_GET_BME_HCAL,				// Take Relative Humidity calibration data
 	HKDIG_GET_BME_PCAL,				// Take Pressure calibration data
 };
+
+#define DIG_MON_CHAN_CODES_SIZE 6
 const int dig_monitor_mag_chan_codes[] = {
     // Channel monitoring
     HKDIG_GET_THR_NUM,
@@ -706,7 +708,7 @@ const char *dig_monitor_mag_board_names[] = {
     "I12VA",
     "TU40",
     "TU41",
-    "TU45"
+    "TU45",
     "boardtemp",
     "relathumidity",
     "pressure",
