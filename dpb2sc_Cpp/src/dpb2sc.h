@@ -163,6 +163,8 @@ int gen_uuid(char *);
 #define SERIAL_PORT_TIMEOUT 20 //20 deciseconds
 #define SERIAL_PORT_RETRIES 5
 #define SFP_NUM 6
+#define DIGITIZER_0 0
+#define DIGITIZER_1 1
 /************************** Custom Errors Definitions *****************************/
 /** @defgroup err Custom Error Flags
  *  Shared Memory content

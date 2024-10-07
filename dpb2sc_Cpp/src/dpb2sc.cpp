@@ -3225,7 +3225,7 @@ end:
  * through its specific serial port. This function must allocate in the future a way to use
  * the data link to receive slow control data instead of the serial port
  *
- * @param dig_num digitizer number where the command will be sent to. 0 or 1, corresponding to ttyUL1 and ttyUL2 respectively
+ * @param dig_num digitizer number where the command will be sent to. 0 (DIGITIZER_0) or 1 (DIGITIZER_1), corresponding to ttyUL1 and ttyUL2 respectively
  * @param cmd valid digitizer formatted command
  * @param result result of the command
  *
@@ -3247,12 +3247,12 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 
 	switch (dig_num) {
-		case 0:
+		case DIGITIZER_0:
 		strcpy(board_dev,"/dev/ttyUL1");
 		strcpy(board_name,"DIG0");
 		sem_temp = &sem_dig0;
 		break;
-		case 1:
+		case DIGITIZER_1:
 		strcpy(board_dev,"/dev/ttyUL2");
 		strcpy(board_name,"DIG1");
 		sem_temp = &sem_dig1;
