@@ -16,6 +16,7 @@ extern "C" {
 int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 
 	int rc = 0;
+	int var_lock;
 
 	rc = init_semaphores();
 	if(rc)
@@ -36,6 +37,43 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		printf("Error\r\n");
 		return rc;
 	}
+
+	// try to create lock file in /var/lock
+	var_lock = open("/var/lock/LCK..ttyUL1", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+	if(var_lock < 0){
+		printf("Cannot lock file ttyUL1. Already in use by other process");
+		return errno;
+	}
+	write(var_lock, "%4d\n", getpid());
+	close(var_lock);
+
+
+	var_lock = open("/var/lock/LCK..ttyUL2", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+	if(var_lock < 0){
+		printf("Cannot lock file ttyUL2. Already in use by other process");
+		return errno;
+	}
+	write(var_lock, "%4d\n", getpid());
+	close(var_lock);
+
+	// try to create lock file in /var/lock
+	var_lock = open("/var/lock/LCK..ttyUL3", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+	if(var_lock < 0){
+		printf("Cannot lock file ttyUL3. Already in use by other process");
+		return errno;
+	}
+	write(var_lock, "%4d\n", getpid());
+	close(var_lock);
+
+
+	var_lock = open("/var/lock/LCK..ttyUL4", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+	if(var_lock < 0){
+		printf("Cannot lock file ttyUL4. Already in use by other process");
+		return errno;
+	}
+	write(var_lock, "%4d\n", getpid());
+	close(var_lock);
+
 	populate_lv_hash_table(LV_CMD_TABLE_SIZE,lv_daq_words,lv_board_words);
 	populate_hv_hash_table(HV_CMD_TABLE_SIZE,hv_daq_words,hv_board_words);
 	populate_dig_hash_table(DIG_STANDARD_CMD_TABLE_SIZE, dig_dpb_words);
@@ -137,10 +175,18 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    unexport_GPIO();
    zmq_socket_destroy();
    //Release all locks
+   do{
    unlink("/var/lock/LCK..ttyUL1");
+   }while(errno !=0);
+   do{
    unlink("/var/lock/LCK..ttyUL2");
+   }while(errno !=0);
+   do{
    unlink("/var/lock/LCK..ttyUL3");
+   }while(errno !=0);
+   do{
    unlink("/var/lock/LCK..ttyUL4");
+   }while(errno !=0);
    //Destroy all semaphores
    sem_destroy(&i2c_sync);
    sem_destroy(&file_sync);
@@ -3276,8 +3322,6 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	char error[128];
 	char board_dev[32];
 	char board_name[8];
-	char device_lock_file[64];
-	int var_lock;
 	sem_t *sem_temp;
 	strcpy(read_buf,"");
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
@@ -3286,13 +3330,11 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		case DIGITIZER_0:
 		strcpy(board_dev,"/dev/ttyUL1");
 		strcpy(board_name,"DIG0");
-		strcpy(device_lock_file,"/var/lock/LCK..ttyUL1");
 		sem_temp = &sem_dig0;
 		break;
 		case DIGITIZER_1:
 		strcpy(board_dev,"/dev/ttyUL2");
 		strcpy(board_name,"DIG1");
-		strcpy(device_lock_file,"/var/lock/LCK..ttyUL2");
 		sem_temp = &sem_dig1;
 		break;
 		default:
@@ -3315,15 +3357,6 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	while(flock(serial_port_fd, LOCK_EX | LOCK_NB) == -1) {
 		usleep(5000);
 	}
-
-	// try to create lock file in /var/lock
-	do{
-		var_lock = open(device_lock_file, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-		// device already locked -> keep looping
-		usleep(5000);
-	}while((var_lock < 0) && (errno == EEXIST));
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
 
 	setup_serial_port(serial_port_fd);
 	write(serial_port_fd, cmd, strlen(cmd));
@@ -3361,14 +3394,12 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	status_alarm_json(board_name,"Serial Port", 99,0,"critical");
 	strcpy(result,"ERROR IN Digitizer Reading");
 	// Release the three locking mechanisms
-	unlink(device_lock_file);
 	flock(serial_port_fd, LOCK_UN);
 	sem_post(sem_temp);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_fd);
 	// Release the three locking mechanisms
-	unlink(device_lock_file);
 	flock(serial_port_fd, LOCK_UN);
 	sem_post(sem_temp);
 	return 0;
@@ -3617,7 +3648,6 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int n;
 	char read_buf[128];
 	char error[128];
-	int var_lock;
 	strcpy(read_buf,"");
 
 	sem_wait(&sem_hvlv);
@@ -3636,23 +3666,6 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
 		usleep(5000);
 	}
-
-	// try to create lock file in /var/lock
-	do{
-		var_lock = open("/var/lock/LCK..ttyUL3", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-		// device already locked -> keep looping
-		usleep(5000);
-	}while((var_lock < 0) && (errno == EEXIST));
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
-
-	do{
-		var_lock = open("/var/lock/LCK..ttyUL4", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-		// device already locked -> keep looping
-		usleep(5000);
-	}while((var_lock < 0) && (errno == EEXIST));
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
 
 	setup_serial_port(serial_port_UL3);
 	write(serial_port_UL3, cmd, strlen(cmd));
@@ -3685,17 +3698,13 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	printf("Critical, character not received\n");
 	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
 	strcpy(result,"ERROR IN HV/LV Reading");
-	// Release the three locking mechanisms
-	unlink("/var/lock/LCK..ttyUL3"); // FIXME: Doesnt work if not using string literals
-	unlink("/var/lock/LCK..ttyUL4");
+	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_UL3);
-	// Release the three locking mechanisms
-	unlink("/var/lock/LCK..ttyUL3"); // FIXME: Doesnt work if not using string literals
-	unlink("/var/lock/LCK..ttyUL4");
+	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
 	return 0;
@@ -3922,68 +3931,68 @@ int setup_serial_port(int serial_port){
  */
 int hv_read_alarms(){
 	// // We just read the Status register from the HV
-	// char board_dev[16];
-	// char hvlvcmd[40];
-	// char buffer[8];
-	// char response[40];
-	// char mag_str[32];
-	// int rc = 0;
-	// int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
-	// strcpy(board_dev,"/dev/ttyUL3");
-	// //Get Timestamp
-	// uint64_t timestamp;
-	// timestamp = time(NULL);
+	char board_dev[16];
+	char hvlvcmd[40];
+	char buffer[8];
+	char response[40];
+	char mag_str[32];
+	int rc = 0;
+	int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
+	strcpy(board_dev,"/dev/ttyUL3");
+	//Get Timestamp
+	uint64_t timestamp;
+	timestamp = time(NULL);
 
-	// //Parse all channels
-	// for(int i = 0 ; i < 24; i++){
-	// 	strcpy(hvlvcmd,"$BD:1,$CMD:MON,CH:");
-	// 	sprintf(buffer, "%d",i);
-	// 	strcat(hvlvcmd,buffer);
-	// 	strcat(hvlvcmd,",PAR:STATUS\r\n");
-	// 	hv_lv_command_handling(board_dev,hvlvcmd,response);
-	// 	char *target = NULL;
-	// 	char *start, *end;
-	// 	if ( (start = strstr( response, "#CMD:OK,VAL:" ) )){
-	// 		start += strlen( "#CMD:OK,VAL:" );
-	// 		if ( (end = strstr( start, "\r\n" )) )
-	// 		{
-	// 			target = ( char * )malloc( end - start + 1 );
-	// 			if(target){
-	// 				memcpy( target, start, end - start );
-	// 				target[end - start] = '\0';
-	// 				strcpy(mag_str,target);
-	// 			}
-	// 			else{
-	// 				strcpy(mag_str,"ERROR");
-	// 			}
-	// 			free(target);
-	// 		}
-	// 		else {
-	// 			rc = -EINVAL;
-	// 			strcpy(mag_str,"ERROR");
-	// 			return rc;
-	// 		}
-	// 	}
-	// 	else {
-	// 			rc = -EINVAL;
-	// 			strcpy(mag_str,"ERROR");
-	// 			return rc;
-	// 	}
-	// 	//Get overcurrent, overvoltage, undervoltage and trip bit flags
-	// 	OVC_flag = atoi(mag_str) & BIT(3);
-	// 	if(OVC_flag)
-	// 		rc = status_alarm_json("HV","Overcurrent",i,timestamp,"critical");
-	// 	OVV_flag = atoi(mag_str) & BIT(4);
-	// 	if(OVV_flag)
-	// 		rc = status_alarm_json("HV","Overvoltage",i,timestamp,"critical");
-	// 	UNV_flag = atoi(mag_str) & BIT(5);
-	// 	if(UNV_flag)
-	// 		rc = status_alarm_json("HV","Undervoltage",i,timestamp,"critical");
-	// 	TRIP_flag = atoi(mag_str) & BIT(6);
-	// 	if(TRIP_flag)
-	// 		rc = status_alarm_json("HV","TRIP",i,timestamp,"critical");
-	// }
-	// return rc;
+	//Parse all channels
+	for(int i = 0 ; i < 24; i++){
+		strcpy(hvlvcmd,"$BD:1,$CMD:MON,CH:");
+		sprintf(buffer, "%d",i);
+		strcat(hvlvcmd,buffer);
+		strcat(hvlvcmd,",PAR:STATUS\r\n");
+		hv_lv_command_handling(board_dev,hvlvcmd,response);
+		char *target = NULL;
+		char *start, *end;
+		if ( (start = strstr( response, "#CMD:OK,VAL:" ) )){
+			start += strlen( "#CMD:OK,VAL:" );
+			if ( (end = strstr( start, "\r\n" )) )
+			{
+				target = ( char * )malloc( end - start + 1 );
+				if(target){
+					memcpy( target, start, end - start );
+					target[end - start] = '\0';
+					strcpy(mag_str,target);
+				}
+				else{
+					strcpy(mag_str,"ERROR");
+				}
+				free(target);
+			}
+			else {
+				rc = -EINVAL;
+				strcpy(mag_str,"ERROR");
+				return rc;
+			}
+		}
+		else {
+				rc = -EINVAL;
+				strcpy(mag_str,"ERROR");
+				return rc;
+		}
+		//Get overcurrent, overvoltage, undervoltage and trip bit flags
+		OVC_flag = atoi(mag_str) & BIT(3);
+		if(OVC_flag)
+			rc = status_alarm_json("HV","Overcurrent",i,timestamp,"critical");
+		OVV_flag = atoi(mag_str) & BIT(4);
+		if(OVV_flag)
+			rc = status_alarm_json("HV","Overvoltage",i,timestamp,"critical");
+		UNV_flag = atoi(mag_str) & BIT(5);
+		if(UNV_flag)
+			rc = status_alarm_json("HV","Undervoltage",i,timestamp,"critical");
+		TRIP_flag = atoi(mag_str) & BIT(6);
+		if(TRIP_flag)
+			rc = status_alarm_json("HV","TRIP",i,timestamp,"critical");
+	}
+	return rc;
 
 }
 /** @} */
