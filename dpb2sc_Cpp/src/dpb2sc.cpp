@@ -38,42 +38,6 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		return rc;
 	}
 
-	// try to create lock file in /var/lock
-	var_lock = open("/var/lock/LCK..ttyUL1", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-	if(var_lock < 0){
-		printf("Cannot lock file ttyUL1. Already in use by other process");
-		return errno;
-	}
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
-
-
-	var_lock = open("/var/lock/LCK..ttyUL2", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-	if(var_lock < 0){
-		printf("Cannot lock file ttyUL2. Already in use by other process");
-		return errno;
-	}
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
-
-	// try to create lock file in /var/lock
-	var_lock = open("/var/lock/LCK..ttyUL3", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-	if(var_lock < 0){
-		printf("Cannot lock file ttyUL3. Already in use by other process");
-		return errno;
-	}
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
-
-
-	var_lock = open("/var/lock/LCK..ttyUL4", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-	if(var_lock < 0){
-		printf("Cannot lock file ttyUL4. Already in use by other process");
-		return errno;
-	}
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
-
 	populate_lv_hash_table(LV_CMD_TABLE_SIZE,lv_daq_words,lv_board_words);
 	populate_hv_hash_table(HV_CMD_TABLE_SIZE,hv_daq_words,hv_board_words);
 	populate_dig_hash_table(DIG_STANDARD_CMD_TABLE_SIZE, dig_dpb_words);
@@ -174,19 +138,6 @@ int init_shared_memory() {
 void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    unexport_GPIO();
    zmq_socket_destroy();
-   //Release all locks
-   do{
-   unlink("/var/lock/LCK..ttyUL1");
-   }while(errno !=0);
-   do{
-   unlink("/var/lock/LCK..ttyUL2");
-   }while(errno !=0);
-   do{
-   unlink("/var/lock/LCK..ttyUL3");
-   }while(errno !=0);
-   do{
-   unlink("/var/lock/LCK..ttyUL4");
-   }while(errno !=0);
    //Destroy all semaphores
    sem_destroy(&i2c_sync);
    sem_destroy(&file_sync);
