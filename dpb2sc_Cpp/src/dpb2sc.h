@@ -588,7 +588,7 @@ char HV_SN[8];
 Digitizer Command Data.
 ****************************************************************************/
 
-#define DIG_STANDARD_CMD_TABLE_SIZE 54
+#define DIG_STANDARD_CMD_TABLE_SIZE 56
 
 const char *dig_dpb_words[] = {
 	"READ DISCTRES",
@@ -625,6 +625,8 @@ const char *dig_dpb_words[] = {
     "SET CLOCK",
     "READ DAQCLOCK",
     "READ TLNCLOCK",
+    "READ OUI",
+    "READ EID",
     "READ RMONT",
     "SET RMONT",
     "READ RMON",
@@ -647,7 +649,7 @@ const char *dig_dpb_words[] = {
     "READ PRESS",
     NULL
 };
-#define DIG_MON_BOARD_CODES_SIZE 23
+#define DIG_MON_BOARD_CODES_SIZE 25
 const int dig_monitor_mag_board_codes[] = {
     // Board monitoring
     HKDIG_GET_GW_VER,
@@ -658,6 +660,8 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_RMON_T,
     HKDIG_GET_CLOCK,
     HKDIG_GET_TLNK_LOCK,
+    HKDIG_GET_EEPROM_OUI,			// Returns EEPROM OUI code
+	HKDIG_GET_EEPROM_EID,
     HKDIG_GET_BOARD_3V3A,
     HKDIG_GET_BOARD_12VA,
     HKDIG_GET_BOARD_I12V,
@@ -698,6 +702,8 @@ const char *dig_monitor_mag_board_names[] = {
     "RMONT",
     "Clock",
     "TLock",
+    "eepromoui",
+    "eepromeid",
     "3V3A",
     "12VA",
     "I12V",

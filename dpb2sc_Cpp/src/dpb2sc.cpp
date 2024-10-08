@@ -3446,6 +3446,10 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		// Get TLink lock status
 		case HKDIG_GET_TLNK_LOCK:
 
+		// EEPROM commands
+		case HKDIG_GET_EEPROM_OUI:			// Returns EEPROM OUI code
+		case HKDIG_GET_EEPROM_EID:	
+
 		// Get Rate monitor interval
 		case HKDIG_GET_RMON_T:
 
