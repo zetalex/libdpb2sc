@@ -136,6 +136,12 @@ int init_shared_memory() {
 void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    unexport_GPIO();
    zmq_socket_destroy();
+   //Release all locks
+   unlink("/var/lock/LCK..ttyUL1");
+   unlink("/var/lock/LCK..ttyUL2");
+   unlink("/var/lock/LCK..ttyUL3");
+   unlink("/var/lock/LCK..ttyUL4");
+   //Destroy all semaphores
    sem_destroy(&i2c_sync);
    sem_destroy(&file_sync);
    sem_destroy(&alarm_sync);
@@ -143,6 +149,7 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    sem_destroy(&sem_hvlv);
    sem_destroy(&sem_dig0);
    sem_destroy(&sem_dig1);
+   //Stop I2C Sensors
    stop_I2cSensors(data);
    return;
 }
@@ -3304,7 +3311,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		return -EACCES;
 	}
 
-	// Wait until acquiring non-blocking exclusive lock
+	// Wait until acquiring non-blocking BSD exclusive lock
 	while(flock(serial_port_fd, LOCK_EX | LOCK_NB) == -1) {
 		usleep(5000);
 	}
@@ -3353,18 +3360,16 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	printf("Critical, character not received\n");
 	status_alarm_json(board_name,"Serial Port", 99,0,"critical");
 	strcpy(result,"ERROR IN Digitizer Reading");
-	flock(serial_port_fd, LOCK_UN);
 	// Release the three locking mechanisms
-	if (device_lock_file)
-		unlink(device_lock_file);
+	unlink(device_lock_file);
+	flock(serial_port_fd, LOCK_UN);
 	sem_post(sem_temp);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_fd);
 	// Release the three locking mechanisms
+	unlink(device_lock_file);
 	flock(serial_port_fd, LOCK_UN);
-	if (device_lock_file)
-		unlink(device_lock_file);
 	sem_post(sem_temp);
 	return 0;
 }
@@ -3612,6 +3617,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int n;
 	char read_buf[128];
 	char error[128];
+	int var_lock;
 	strcpy(read_buf,"");
 
 	sem_wait(&sem_hvlv);
@@ -3626,10 +3632,27 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		strcpy(result,"ERROR");
 		return -EACCES;
 	}
-	// Wait until acquiring non-blocking exclusive lock
+	// Wait until acquiring non-blocking BSD exclusive lock
 	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
 		usleep(5000);
 	}
+
+	// try to create lock file in /var/lock
+	do{
+		var_lock = open("/var/lock/LCK..ttyUL3", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+		// device already locked -> keep looping
+		usleep(5000);
+	}while((var_lock < 0) && (errno == EEXIST));
+	write(var_lock, "%4d\n", getpid());
+	close(var_lock);
+
+	do{
+		var_lock = open("/var/lock/LCK..ttyUL4", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+		// device already locked -> keep looping
+		usleep(5000);
+	}while((var_lock < 0) && (errno == EEXIST));
+	write(var_lock, "%4d\n", getpid());
+	close(var_lock);
 
 	setup_serial_port(serial_port_UL3);
 	write(serial_port_UL3, cmd, strlen(cmd));
@@ -3662,11 +3685,17 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	printf("Critical, character not received\n");
 	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
 	strcpy(result,"ERROR IN HV/LV Reading");
+	// Release the three locking mechanisms
+	unlink("/var/lock/LCK..ttyUL3"); // FIXME: Doesnt work if not using string literals
+	unlink("/var/lock/LCK..ttyUL4");
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_UL3);
+	// Release the three locking mechanisms
+	unlink("/var/lock/LCK..ttyUL3"); // FIXME: Doesnt work if not using string literals
+	unlink("/var/lock/LCK..ttyUL4");
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
 	return 0;
@@ -3892,69 +3921,69 @@ int setup_serial_port(int serial_port){
  * @return 0 if correct, negative number if failed to send JSON alarm
  */
 int hv_read_alarms(){
-	// We just read the Status register from the HV
-	char board_dev[16];
-	char hvlvcmd[40];
-	char buffer[8];
-	char response[40];
-	char mag_str[32];
-	int rc = 0;
-	int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
-	strcpy(board_dev,"/dev/ttyUL3");
-	//Get Timestamp
-	uint64_t timestamp;
-	timestamp = time(NULL);
+	// // We just read the Status register from the HV
+	// char board_dev[16];
+	// char hvlvcmd[40];
+	// char buffer[8];
+	// char response[40];
+	// char mag_str[32];
+	// int rc = 0;
+	// int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
+	// strcpy(board_dev,"/dev/ttyUL3");
+	// //Get Timestamp
+	// uint64_t timestamp;
+	// timestamp = time(NULL);
 
-	//Parse all channels
-	for(int i = 0 ; i < 24; i++){
-		strcpy(hvlvcmd,"$BD:1,$CMD:MON,CH:");
-		sprintf(buffer, "%d",i);
-		strcat(hvlvcmd,buffer);
-		strcat(hvlvcmd,",PAR:STATUS\r\n");
-		hv_lv_command_handling(board_dev,hvlvcmd,response);
-		char *target = NULL;
-		char *start, *end;
-		if ( (start = strstr( response, "#CMD:OK,VAL:" ) )){
-			start += strlen( "#CMD:OK,VAL:" );
-			if ( (end = strstr( start, "\r\n" )) )
-			{
-				target = ( char * )malloc( end - start + 1 );
-				if(target){
-					memcpy( target, start, end - start );
-					target[end - start] = '\0';
-					strcpy(mag_str,target);
-				}
-				else{
-					strcpy(mag_str,"ERROR");
-				}
-				free(target);
-			}
-			else {
-				rc = -EINVAL;
-				strcpy(mag_str,"ERROR");
-				return rc;
-			}
-		}
-		else {
-				rc = -EINVAL;
-				strcpy(mag_str,"ERROR");
-				return rc;
-		}
-		//Get overcurrent, overvoltage, undervoltage and trip bit flags
-		OVC_flag = atoi(mag_str) & BIT(3);
-		if(OVC_flag)
-			rc = status_alarm_json("HV","Overcurrent",i,timestamp,"critical");
-		OVV_flag = atoi(mag_str) & BIT(4);
-		if(OVV_flag)
-			rc = status_alarm_json("HV","Overvoltage",i,timestamp,"critical");
-		UNV_flag = atoi(mag_str) & BIT(5);
-		if(UNV_flag)
-			rc = status_alarm_json("HV","Undervoltage",i,timestamp,"critical");
-		TRIP_flag = atoi(mag_str) & BIT(6);
-		if(TRIP_flag)
-			rc = status_alarm_json("HV","TRIP",i,timestamp,"critical");
-	}
-	return rc;
+	// //Parse all channels
+	// for(int i = 0 ; i < 24; i++){
+	// 	strcpy(hvlvcmd,"$BD:1,$CMD:MON,CH:");
+	// 	sprintf(buffer, "%d",i);
+	// 	strcat(hvlvcmd,buffer);
+	// 	strcat(hvlvcmd,",PAR:STATUS\r\n");
+	// 	hv_lv_command_handling(board_dev,hvlvcmd,response);
+	// 	char *target = NULL;
+	// 	char *start, *end;
+	// 	if ( (start = strstr( response, "#CMD:OK,VAL:" ) )){
+	// 		start += strlen( "#CMD:OK,VAL:" );
+	// 		if ( (end = strstr( start, "\r\n" )) )
+	// 		{
+	// 			target = ( char * )malloc( end - start + 1 );
+	// 			if(target){
+	// 				memcpy( target, start, end - start );
+	// 				target[end - start] = '\0';
+	// 				strcpy(mag_str,target);
+	// 			}
+	// 			else{
+	// 				strcpy(mag_str,"ERROR");
+	// 			}
+	// 			free(target);
+	// 		}
+	// 		else {
+	// 			rc = -EINVAL;
+	// 			strcpy(mag_str,"ERROR");
+	// 			return rc;
+	// 		}
+	// 	}
+	// 	else {
+	// 			rc = -EINVAL;
+	// 			strcpy(mag_str,"ERROR");
+	// 			return rc;
+	// 	}
+	// 	//Get overcurrent, overvoltage, undervoltage and trip bit flags
+	// 	OVC_flag = atoi(mag_str) & BIT(3);
+	// 	if(OVC_flag)
+	// 		rc = status_alarm_json("HV","Overcurrent",i,timestamp,"critical");
+	// 	OVV_flag = atoi(mag_str) & BIT(4);
+	// 	if(OVV_flag)
+	// 		rc = status_alarm_json("HV","Overvoltage",i,timestamp,"critical");
+	// 	UNV_flag = atoi(mag_str) & BIT(5);
+	// 	if(UNV_flag)
+	// 		rc = status_alarm_json("HV","Undervoltage",i,timestamp,"critical");
+	// 	TRIP_flag = atoi(mag_str) & BIT(6);
+	// 	if(TRIP_flag)
+	// 		rc = status_alarm_json("HV","TRIP",i,timestamp,"critical");
+	// }
+	// return rc;
 
 }
 /** @} */

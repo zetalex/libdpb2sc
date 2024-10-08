@@ -10,7 +10,10 @@
         "string": "cpp",
         "cstdlib": "cpp",
         "stdlib.h": "c",
-        "cfloat": "cpp"
+        "cfloat": "cpp",
+        "*.ipp": "cpp",
+        "*.tcc": "cpp",
+        "list": "cpp"
     },
     "cSpell.language": "en-GB",
     "cSpell.words": [
