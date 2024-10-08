@@ -602,9 +602,9 @@ const char *dig_dpb_words[] = {
     "SET DEADTIME ALL",
     "SET CALIB ON",
     "SET CALIB OFF",
-    "READ CHSTATUS", 
+    "READ STATUS", 
     "READ CHCONTROL",
-    "SET CHSTATUS", // TODO: Ask Fabrizio
+    "SET STATUS", // TODO: Ask Fabrizio
     "SET FESTATUS ON",
     "SET FESTATUS OFF",
     "SET DAQSTATUS ON",
@@ -624,7 +624,7 @@ const char *dig_dpb_words[] = {
     "SET AURORARST",
     "SET CLOCK",
     "READ DAQCLOCK",
-    "READ TLNCLOCK",
+    "READ TLNLOCK",
     "READ OUI",
     "READ EID",
     "READ RMONT",

@@ -3561,7 +3561,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		break;
 		// Select clock
 		case HKDIG_SET_CLOCK:
-		if(!strcmp(cmd[4],"DPB"))
+		if(!strcmp(cmd[3],"DPB"))
 			value1 = 1;
 		else {
 			value1 = 0;
