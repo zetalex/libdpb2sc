@@ -3269,6 +3269,8 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	char error[128];
 	char board_dev[32];
 	char board_name[8];
+	char device_lock_file[64];
+	int var_lock;
 	sem_t *sem_temp;
 	strcpy(read_buf,"");
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
@@ -3277,11 +3279,13 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		case DIGITIZER_0:
 		strcpy(board_dev,"/dev/ttyUL1");
 		strcpy(board_name,"DIG0");
+		strcpy(device_lock_file,"/var/lock/LCK..ttyUL1");
 		sem_temp = &sem_dig0;
 		break;
 		case DIGITIZER_1:
 		strcpy(board_dev,"/dev/ttyUL2");
 		strcpy(board_name,"DIG1");
+		strcpy(device_lock_file,"/var/lock/LCK..ttyUL2");
 		sem_temp = &sem_dig1;
 		break;
 		default:
@@ -3305,7 +3309,14 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		usleep(5000);
 	}
 
-
+	// try to create lock file in /var/lock
+	do{
+		var_lock = open(device_lock_file, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+		// device already locked -> keep looping
+		usleep(5000);
+	}while((var_lock < 0) && (errno == EEXIST));
+	write(var_lock, "%4d\n", getpid());
+	close(var_lock);
 
 	setup_serial_port(serial_port_fd);
 	write(serial_port_fd, cmd, strlen(cmd));
@@ -3343,11 +3354,17 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	status_alarm_json(board_name,"Serial Port", 99,0,"critical");
 	strcpy(result,"ERROR IN Digitizer Reading");
 	flock(serial_port_fd, LOCK_UN);
+	// Release the three locking mechanisms
+	if (device_lock_file)
+		unlink(device_lock_file);
 	sem_post(sem_temp);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_fd);
+	// Release the three locking mechanisms
 	flock(serial_port_fd, LOCK_UN);
+	if (device_lock_file)
+		unlink(device_lock_file);
 	sem_post(sem_temp);
 	return 0;
 }
