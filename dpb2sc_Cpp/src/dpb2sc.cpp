@@ -3604,6 +3604,7 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 
 	char daq_response[64];
 	char *value,*temp;
+	float float_value;
 	// Get Command field of the received response
 	int16_t cmdIdx = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
 	if(cmdIdx == HKDIG_ERRO){
@@ -3615,7 +3616,25 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 		while(temp = pkt.GetNextField()) {
 			value = temp;
 		}
-		command_response_string_json(msg_id,value, reply);
+		switch (cmdIdx){
+			//Float
+					case HKDIG_GET_BOARD_3V3A:
+					case HKDIG_GET_BOARD_12VA:
+					case HKDIG_GET_BOARD_I12V:
+					case HKDIG_GET_BOARD_5V0A:
+					case HKDIG_GET_BOARD_5V0F:
+					case HKDIG_GET_BOARD_C12V:
+					case HKDIG_GET_BOARD_I5VF:
+					case HKDIG_GET_BOARD_I3V3A:
+					case HKDIG_GET_BOARD_I12VA:
+						float_value = atof(value);
+						float_value = float_value / 1000;
+						command_response_json(msg_id,float_value,reply);
+						break;
+					default:
+						command_response_string_json(msg_id,value, reply);
+						break;
+		}
 	}
 	else{ // If it is SET, we just return OK
 		command_response_string_json(msg_id,"OK",reply);
