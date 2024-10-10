@@ -4076,23 +4076,19 @@ int read_shm(int *channel, char *ev_type, char *ch_type){
  *
  * @return 0
  */
-int bme280_get_temp(char *data,char *cal,int *tf, float *temp){
+int bme280_get_temp(char *data,char *cal,int32_t *tf, float *temp){
 	
 	char temp_data[16];
 	char substr[5];
 	// Get temperature raw data and calibration from BME sampled data
 	strncpy(temp_data,data+6,6);
-	printf("Todo el dato: %s\n",data);
-	printf("Solo la temperature: %s\n",temp_data);
-	printf("Calibracion entero: %s\n",cal);
 
 	// Convert data and calibration
-	int data_int;
+	int32_t data_int;
 	unsigned short cal_T1;
 	signed short cal_T2;
 	signed short cal_T3;
 	sscanf(temp_data,"%x",&data_int);
-	printf("Temperatura raw numero: %d\n",data_int);
 	for(int i = 0; i < 3; i++){
 		// Switch endianness
 		substr[2] = cal[4*i];
@@ -4103,27 +4099,23 @@ int bme280_get_temp(char *data,char *cal,int *tf, float *temp){
 		switch(i){
 			case 0:
 			sscanf(substr,"%hx",&cal_T1);
-			printf("cal_T1: %hd\n",&cal_T1);
 			break;
 			case 1:
 			sscanf(substr,"%hx",&cal_T2);
-			printf("cal_T2: %hd\n",&cal_T2);
 			break;
 			case 2:
 			sscanf(substr,"%hx",&cal_T3);
-			printf("cal_T3: %hd\n",&cal_T3);
-
 			break;
 		}
 	}
 	data_int = data_int>>4;
 
 	// Perform the compensation calculations
-	int v1,v2;
-	v1 = ((((data_int>>3) - ((signed short)cal_T1<<1))) * ((signed short)cal_T2)) >> 11;
-  	v2 = (((((data_int>>4)-((signed short)cal_T1)) * ((data_int>>4)-((signed short)cal_T1))) >> 12) * ((signed short)cal_T3)) >> 14;
+	int32_t v1,v2;
+	v1 = ((((data_int>>3) - ((int32_t)cal_T1<<1))) * ((int32_t)cal_T2)) >> 11;
+  	v2 = (((((data_int>>4)-((int32_t)cal_T1)) * ((data_int>>4)-((int32_t)cal_T1))) >> 12) * ((int32_t)cal_T3)) >> 14;
   	tf[0] = v1+v2;
-	int temp_int = (tf[0]*5+128) >> 8;
+	int32_t temp_int = (tf[0]*5+128) >> 8;
   	temp[0] = (float) (temp_int*0.01);
 
 	return 0;
@@ -4139,7 +4131,7 @@ int bme280_get_temp(char *data,char *cal,int *tf, float *temp){
  *
  * @return 0
  */
-int bme280_get_press(char *data,char *cal,int tf,float *press){
+int bme280_get_press(char *data,char *cal,int32_t *tf,float *press){
 	
 	char press_data[16];
 	char substr[5];
@@ -4147,34 +4139,70 @@ int bme280_get_press(char *data,char *cal,int tf,float *press){
 	strncpy(press_data,data,6);
 
 	// Convert data and calibration
-	long data_int;
-	int cal_int[9];
+	int32_t data_int;
+	unsigned short cal_P1;
+	signed short cal_P2,cal_P3,cal_P4,cal_P5,cal_P6,cal_P7,cal_P8,cal_P9;
+
 	sscanf(press_data,"%x",&data_int);
 	for(int i = 0; i < 9; i++){
-		substr[0] = cal[4*i];
-		substr[1] = cal[4*i + 1];
-		substr[2] = cal[4*i + 2];
-		substr[3] = cal[4*i + 3];
+		// Switch endianness
+		substr[2] = cal[4*i];
+		substr[3] = cal[4*i + 1];
+		substr[0] = cal[4*i + 2];
+		substr[1] = cal[4*i + 3];
 		substr[4] = '\0';
-		sscanf(substr,"%x",&cal_int[i]);
+		switch(i){
+			case 0:
+			sscanf(substr,"%hx",&cal_P1);
+			break;
+			case 1:
+			sscanf(substr,"%hx",&cal_P2);
+			break;
+			case 2:
+			sscanf(substr,"%hx",&cal_P3);
+			break;
+			case 3:
+			sscanf(substr,"%hx",&cal_P4);
+			break;
+			case 4:
+			sscanf(substr,"%hx",&cal_P5);
+			break;
+			case 5:
+			sscanf(substr,"%hx",&cal_P6);
+			break;
+			case 6:
+			sscanf(substr,"%hx",&cal_P7);
+
+			break;
+			case 7:
+			sscanf(substr,"%hx",&cal_P8);
+			break;
+			case 8:
+			sscanf(substr,"%hx",&cal_P9);
+			break;
+		}
 	}
 	data_int = data_int>>4;
 
 	// Perform the compensation calculations
-	long v1_1,v2_1,v2_2,v2_3,v1_2,v1_3,p1,p2,v1_4,v2_4,p3;
-	v1_1 = tf-128000;
-	v2_1 = v1_1*v1_1*cal_int[5];
-	v2_2 = v2_1 + ((v1_1*cal_int[4])<<17);
-	v2_3 = v2_2 + (cal_int[3]<<35);
-	v1_2 = ((v1_1*v1_1*cal_int[2])>>8) + ((v1_1*cal_int[1])<<12);
-	v1_3 = ((((1<<47)+v1_2)*cal_int[0])>>33);
-	p1 = 1048576-data_int;
-	p2 = (((p1<<31)-v2_3)*3125);//v1_3
-	v1_4 = ((cal_int[8]*(p2>>13)*(p2>>13)) >> 25);
-	v2_4 = ((cal_int[7]*p2) >> 19);
-	p3 = ((p2+v1_4+v2_4)>>8) + (cal_int[6]<<4);
-
-  press[0] = (float) (p3/256.0/100.0);
+	int64_t v1_1,v2_1,v2_2,v2_3,v1_2,v1_3,p1,p2,v1_4,v2_4,p3;
+	v1_1 = ((int64_t)tf[0])-128000;
+	v2_1 = v1_1 * v1_1 * (int64_t)cal_P6;
+	v2_2 = v2_1 + ((v1_1*(int64_t)cal_P5)<<17);
+	v2_3 = v2_2 + (((int64_t)cal_P4)<<35);
+	v1_2 = ((v1_1 * v1_1 * (int64_t)cal_P3)>>8) + ((v1_1*(int64_t)cal_P2)<<12);
+	v1_3 = (((((int64_t)1)<<47)+v1_2))*((int64_t)cal_P1)>>33;
+	if(v1_3 == 0){
+		press[0] = 0;
+		return 0; // avoid exception due to divide by zero
+	}
+	p1 = (int64_t)(1048576-data_int);
+	p2 = (((p1<<31)-v2_3)*3125)/v1_3;
+	v1_4 = (((int64_t)cal_P9)*(p2>>13)*(p2>>13)) >> 25;
+	v2_4 = (((int64_t)cal_P8)*p2) >> 19;
+	p3 = ((p2+v1_4+v2_4)>>8) + (((int64_t)cal_P7)<<4);
+	uint32_t p4 = (uint32_t) p3;
+  	press[0] = (float) (p4/256.0);
 	return 0;
 }
 
@@ -4188,7 +4216,7 @@ int bme280_get_press(char *data,char *cal,int tf,float *press){
  *
  * @return 0
  */
-int bme280_get_relhum(char *data,char *cal,int tf,float *relhum){
+int bme280_get_relhum(char *data,char *cal,int32_t *tf,float *relhum){
 	
 	char relhum_data[16];
 	char substr[5];
@@ -4200,10 +4228,11 @@ int bme280_get_relhum(char *data,char *cal,int tf,float *relhum){
 	int cal_int[4];
 	sscanf(relhum_data,"%x",&data_int);
 	for(int i = 0; i < 4; i++){
-		substr[0] = cal[4*i];
-		substr[1] = cal[4*i + 1];
-		substr[2] = cal[4*i + 2];
-		substr[3] = cal[4*i + 3];
+		// Switch endianness
+		substr[2] = cal[4*i];
+		substr[3] = cal[4*i + 1];
+		substr[0] = cal[4*i + 2];
+		substr[1] = cal[4*i + 3];
 		substr[4] = '\0';
 		sscanf(substr,"%x",&cal_int[i]);
 	}
@@ -4211,7 +4240,7 @@ int bme280_get_relhum(char *data,char *cal,int tf,float *relhum){
 
 	// Perform the compensation calculations
 	int h1, h2_1, h2_2, h2, h3;
-	h1 = tf-76800;
+	h1 = tf[0]-76800;
 	h2_1 = ((((data_int<<14)-(cal_int[3]<<20)-(cal_int[4]*h1)) + 16384) >> 15);
 	h2_2 = (((((((h1*cal_int[5])>>10) * ((h1*cal_int[2])>>11) + 32768) >> 10) + 2097152) * cal_int[1] + 8192) >> 14);
 	h2 = h2_1*h2_2;

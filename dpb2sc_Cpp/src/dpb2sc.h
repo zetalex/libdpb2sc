@@ -155,9 +155,9 @@ int get_dig_hash_table_command(char **, int *);
 int inList(int, int*, int);
 void atexit_function();
 int gen_uuid(char *);
-int bme280_get_temp(char *,char *,int*, float *);
-int bme280_get_press(char *,char *,int,float *);
-int bme280_get_relhum(char *,char *,int,float *);
+int bme280_get_temp(char *,char *,int32_t *, float *);
+int bme280_get_press(char *,char *,int32_t *,float *);
+int bme280_get_relhum(char *,char *,int32_t *,float *);
 
 /******************************************************************************/
 /************************** Constant Definitions *****************************/
