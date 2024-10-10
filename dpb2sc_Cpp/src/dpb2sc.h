@@ -155,6 +155,9 @@ int get_dig_hash_table_command(char **, int *);
 int inList(int, int*, int);
 void atexit_function();
 int gen_uuid(char *);
+int bme280_get_temp(char *,char *,int*, float *);
+int bme280_get_press(char *,char *,int,float *);
+int bme280_get_relhum(char *,char *,int,float *);
 
 /******************************************************************************/
 /************************** Constant Definitions *****************************/
@@ -649,7 +652,7 @@ const char *dig_dpb_words[] = {
     "READ PRESS",
     NULL
 };
-#define DIG_MON_BOARD_CODES_SIZE 25
+#define DIG_MON_BOARD_CODES_SIZE 26
 const int dig_monitor_mag_board_codes[] = {
     // Board monitoring
     HKDIG_GET_GW_VER,
@@ -675,6 +678,7 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BOARD_TU41,
     HKDIG_GET_BOARD_TU45,
 	// BME280 commands
+    HKDIG_GET_BME_DATA,
 	HKDIG_GET_BME_TCAL,				// Take Temperature calibration data
 	HKDIG_GET_BME_HCAL,				// Take Relative Humidity calibration data
 	HKDIG_GET_BME_PCAL,				// Take Pressure calibration data
@@ -716,6 +720,7 @@ const char *dig_monitor_mag_board_names[] = {
     "TU40",
     "TU41",
     "TU45",
+    "bmedata",
     "boardtemp",
     "relathumidity",
     "pressure",
