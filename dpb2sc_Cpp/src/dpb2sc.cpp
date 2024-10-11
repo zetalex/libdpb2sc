@@ -4224,31 +4224,58 @@ int bme280_get_relhum(char *data,char *cal,int32_t *tf,float *relhum){
 	strncpy(relhum_data,data+12,4);
 
 	// Convert data and calibration
-	int data_int;
-	int cal_int[4];
+	uint32_t data_int;
+	unsigned char cal_H1, cal_H3;
+	signed char cal_H6;
+	signed short cal_H2, cal_H4, cal_H5;
+	signed short cal_H41, cal_H42, cal_H51, cal_H52;
 	sscanf(relhum_data,"%x",&data_int);
-	for(int i = 0; i < 4; i++){
 		// Switch endianness
-		substr[2] = cal[4*i];
-		substr[3] = cal[4*i + 1];
-		substr[0] = cal[4*i + 2];
-		substr[1] = cal[4*i + 3];
-		substr[4] = '\0';
-		sscanf(substr,"%x",&cal_int[i]);
-	}
+
+			substr[0] = cal[0]; //0xA1
+			substr[1] = cal[1];
+			substr[2] = '\0';
+			sscanf(substr,"%hhx",&cal_H1);
+			substr[2] = cal[2]; //0xE1
+			substr[3] = cal[3];
+			substr[0] = cal[4]; //0xE2
+			substr[1] = cal[5];
+			substr[4] = '\0';
+			sscanf(substr,"%hx",&cal_H2);
+			substr[0] = cal[6]; //0xE3
+			substr[1] = cal[7];
+			substr[2] = '\0';
+			sscanf(substr,"%hhx",&cal_H3);
+			substr[0] = cal[8]; //0xE4
+			substr[1] = cal[9];
+			substr[2] = '\0';
+			sscanf(substr,"%hhx",&cal_H41);
+			substr[0] = cal[10]; //0xE5
+			substr[1] = cal[11];
+			substr[2] = '\0';
+			sscanf(substr,"%hhx",&cal_H42);
+			cal_H4 = (cal_H41 << 4) + (cal_H42 & 0xF);
+			cal_H51 = cal_H42;
+			substr[0] = cal[12];  //0xE6
+			substr[1] = cal[13];
+			substr[2] = '\0';
+			sscanf(substr,"%hhx",&cal_H52);
+			cal_H5 = ((cal_H51 >> 4) & 0x0F) + ((cal_H52 << 4) & 0xF0);
+			substr[0] = cal[14];  //0xE7
+			substr[1] = cal[15];
+			substr[2] = '\0';
+			sscanf(substr,"%hhx",&cal_H6);
 	//data_int = data_int>>4;
 
 	// Perform the compensation calculations
-	int h1, h2_1, h2_2, h2, h3;
-	h1 = tf[0]-76800;
-	h2_1 = ((((data_int<<14)-(cal_int[3]<<20)-(cal_int[4]*h1)) + 16384) >> 15);
-	h2_2 = (((((((h1*cal_int[5])>>10) * ((h1*cal_int[2])>>11) + 32768) >> 10) + 2097152) * cal_int[1] + 8192) >> 14);
-	h2 = h2_1*h2_2;
-	h3 = h2 - (((((h2>>15)*(h2>>15)) >> 7) * cal_int[0]) >> 4);
-	h3 = fmax(h3,0);
-	h3 = fmin(h3,419430400);
+	int32_t h1, h2, h3;
+	h1 = (tf[0]-((int32_t)76800));
+	h2 = (((((data_int<<14)-(((int32_t)cal_H4)<<20)-(((int32_t)cal_H5)*h1)) + ((int32_t)16384)) >> 15) * (((((((h1*((int32_t)cal_H6))>>10) * (((h1*((int32_t)cal_H3))>>11) + ((int32_t)32768))) >> 10) + ((int32_t)2097152)) * ((int32_t)cal_H2) + 8192) >> 14));
+	h3 = (h2 - (((((h2>>15)*(h2>>15)) >> 7) * ((int32_t)cal_H1)) >> 4));
+	h3 = MAX(h3,0);
+	h3 = MIN(h3,419430400);
 
-	relhum[0] = (float) ((h3>>12)/1024.0);
+	relhum[0] = (float) (((uint32_t)h3>>12)/1024.0);
 
 	return 0;
 }
