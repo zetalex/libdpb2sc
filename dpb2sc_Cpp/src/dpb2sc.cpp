@@ -72,6 +72,59 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	populate_lv_hash_table(LV_CMD_TABLE_SIZE,lv_daq_words,lv_board_words);
 	populate_hv_hash_table(HV_CMD_TABLE_SIZE,hv_daq_words,hv_board_words);
 	populate_dig_hash_table(DIG_STANDARD_CMD_TABLE_SIZE, dig_dpb_words);
+
+	char digcmd[32];
+	char dig_response[64];
+	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
+	int32_t commands[3]= {HKDIG_GET_BME_TCAL,HKDIG_GET_BME_HCAL,HKDIG_GET_BME_PCAL};
+	char *temp;
+	// Get Calibration variables from digitizers. They are read only variables written by the BME280 manufacturer
+	if(dig0_connected){
+		for(int i = 0; i < 3; i++){
+			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[commands[i]].CmdString);
+			dig_command_handling(0, digcmd, dig_response);
+			pkt.LoadString(dig_response);
+			printf("%s\n",dig_response);
+			int32_t cmdIdx = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
+			switch(i){
+				case 0:
+				temp = pkt.GetNextField();
+				strcpy(dig0_calT,temp);
+				break;
+				case 1:
+				temp = pkt.GetNextField();
+				strcpy(dig0_calH,temp);
+				break;
+				case 2:
+				temp = pkt.GetNextField();
+				strcpy(dig0_calP,temp);
+				break;
+			}
+		}
+	}
+
+	if(dig1_connected){
+		for(int i = 0; i < 3; i++){
+			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[commands[i]].CmdString);
+			dig_command_handling(1, digcmd, dig_response);
+			pkt.LoadString(dig_response);
+			int32_t cmdIdx = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
+			switch(i){
+				case 0:
+				temp = pkt.GetNextField();
+				strcpy(dig1_calT,temp);
+				break;
+				case 1:
+				temp = pkt.GetNextField();
+				strcpy(dig1_calH,temp);
+				break;
+				case 2:
+				temp = pkt.GetNextField();
+				strcpy(dig1_calP,temp);
+				break;
+			}
+		}
+	}
 	return 0;
 }
 /**
@@ -3530,6 +3583,12 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_CHN_STATUS:
 
 		case HKDIG_GET_CHN_CNTRL:
+
+		// Set RMon interval
+		case HKDIG_SET_RMON_T:
+
+		// Return the rmon for this channel
+		case HKDIG_GET_RMON_N:
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
@@ -3538,10 +3597,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_THR_ALL:
 		case HKDIG_SET_IT_ALL:
 		case HKDIG_SET_DT_ALL:
-		// Set RMon interval
-		case HKDIG_SET_RMON_T:
-		// Return the rmon for this channel
-		case HKDIG_GET_RMON_N:
 
 		value1 = atoi(cmd[4]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
@@ -3603,8 +3658,26 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 	pktError = pkt.LoadString(board_response);
 
 	char daq_response[64];
+	char digcmd[32];
+	char bme_data[64];
+	char *bme_value;
 	char *value,*temp;
+	char *calT,*calH,*calP;
 	float float_value;
+	int  dig_num;
+	int32_t tf;
+	if(!strcmp(cmd[1],"DIG0")){
+		dig_num = DIGITIZER_0;
+		strcpy(calT,dig0_calT);
+		strcpy(calH,dig0_calH);
+		strcpy(calP,dig0_calP);
+	}
+	else{
+		dig_num = DIGITIZER_1;
+		strcpy(calT,dig1_calT);
+		strcpy(calH,dig1_calH);
+		strcpy(calP,dig1_calP);
+	}
 	// Get Command field of the received response
 	int16_t cmdIdx = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
 	if(cmdIdx == HKDIG_ERRO){
@@ -3631,13 +3704,40 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 						float_value = float_value / 1000;
 						command_response_json(msg_id,float_value,reply);
 						break;
+					// BME280 commands. Special case
+					case HKDIG_GET_BME_DATA:
+					case HKDIG_GET_BME_TCAL:
+					case HKDIG_GET_BME_HCAL:
+					case HKDIG_GET_BME_PCAL:
+						pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BME_DATA].CmdString);
+						dig_command_handling(dig_num,digcmd,bme_data);
+						bme280_get_temp(bme_data,calT,&tf,&float_value);
+						if(!strcmp("TEMP",cmd[2])){
+						command_response_json(msg_id,float_value,reply);
+						}
+						else{
+							if(!strcmp("RELHUM",cmd[2])){
+								bme280_get_relhum(bme_data,calH,&tf,&float_value);
+								command_response_json(msg_id,float_value,reply);
+							}
+							else{
+								bme280_get_press(bme_data,calP,&tf,&float_value);
+								command_response_json(msg_id,float_value,reply);
+							}
+						}
+						break;
 					default:
 						command_response_string_json(msg_id,value, reply);
 						break;
 		}
 	}
-	else{ // If it is SET, we just return OK
-		command_response_string_json(msg_id,"OK",reply);
+	else{ // If it is SET, we just return OK in case digitizer doesnt reply with an error
+		if(cmdIdx != HKDIG_ERRO){
+			command_response_string_json(msg_id,"OK",reply);
+		}
+		else{
+			command_response_string_json(msg_id,"ERROR",reply);
+		}
 	}
 
 	return 0;

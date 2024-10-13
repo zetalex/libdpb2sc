@@ -582,10 +582,10 @@ const char *hv_mag_names[] = {
     "sdcurr"
 };
 
-// Step down channels
+ /** @brief Step down channels */
 int hv_sd_channels[] = {0,1,6,7,12,13,18,19};
 
-// Detected HV Serial Number
+/** @brief  Detected HV Serial Number */
 char HV_SN[8];
 
 /******************************************************************************
@@ -653,7 +653,7 @@ const char *dig_dpb_words[] = {
     "READ PRESS",
     NULL
 };
-#define DIG_MON_BOARD_CODES_SIZE 26
+#define DIG_MON_BOARD_CODES_SIZE 23
 const int dig_monitor_mag_board_codes[] = {
     // Board monitoring
     HKDIG_GET_GW_VER,
@@ -679,10 +679,7 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BOARD_TU41,
     HKDIG_GET_BOARD_TU45,
 	// BME280 commands
-    HKDIG_GET_BME_DATA,
-	HKDIG_GET_BME_TCAL,				// Take Temperature calibration data
-	HKDIG_GET_BME_HCAL,				// Take Relative Humidity calibration data
-	HKDIG_GET_BME_PCAL,				// Take Pressure calibration data
+    HKDIG_GET_BME_DATA
 };
 
 #define DIG_MON_CHAN_CODES_SIZE 6
@@ -693,9 +690,7 @@ const int dig_monitor_mag_chan_codes[] = {
     HKDIG_GET_DT_NUM,
     HKDIG_GET_CHN_STATUS,
     HKDIG_GET_CHN_CNTRL,
-    HKDIG_GET_PED_TYPE,
-
-
+    HKDIG_GET_PED_TYPE
 };
 
 const char *dig_monitor_mag_board_names[] = {
@@ -721,10 +716,7 @@ const char *dig_monitor_mag_board_names[] = {
     "TU40",
     "TU41",
     "TU45",
-    "bmedata",
-    "boardtemp",
-    "relathumidity",
-    "pressure",
+    "bmedata"
 };
 
 const char *dig_monitor_mag_chan_names[] = {
@@ -736,10 +728,24 @@ const char *dig_monitor_mag_chan_names[] = {
     "pedtype"
 };
 
-// Detected Dig0 Serial Number
+/** @brief Detected Dig0 Serial Number */
 char DIG0_SN[32];
-// Detected Dig1 Serial Number
+/** @brief  Detected Dig1 Serial Number */
 char DIG1_SN[32];
+
+/** @brief Dig0 Calibration temperature */
+char dig0_calT[64];
+/** @brief Dig0 Calibration pressure */
+char dig0_calP[64];
+/** @brief Dig0 Calibration humidity */
+char dig0_calH[64];
+
+/** @brief Dig1 Calibration temperature */
+char dig1_calT[64];
+/** @brief Dig1 Calibration pressure */
+char dig1_calP[64];
+/** @brief Dig1 Calibration humidity */
+char dig1_calH[64];
 
 /******************************************************************************
 Hash Tables.
