@@ -80,9 +80,45 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	write_GPIO(LV_MAIN_CPU_GPIO_OFFSET,1);
 	write_GPIO(HV_MAIN_CPU_GPIO_OFFSET,1);
 
-	// Check if Dig0 and Dig1 are there
-	char buffer[40];
 	int serial_port_fd,n;
+	char buffer[40];
+	usleep(6000000);
+
+	// Check if HV and LV are there
+	serial_port_fd = open("/dev/ttyUL3",O_RDWR);
+	setup_serial_port(serial_port_fd);
+	write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:1,$CMD:MON,PAR:BDSNUM\r\n"));
+	usleep(1000000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	buffer[n] = '\0';
+	if(n){
+		for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
+			HV_SN[i-12] = buffer[i];
+		}
+		printf("HV has been detected: S/N %s \n",HV_SN);
+		hv_connected = 1;
+	}
+	write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
+	usleep(1000000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	buffer[n] = '\0';
+	if(n){
+		for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
+			LV_SN[i-12] = buffer[i];
+		}
+		printf("LV has been detected: S/N %s \n", LV_SN);
+		lv_connected = 1;
+	}
+
+	// Turn on the digitizers
+	usleep(1000000);
+	write(serial_port_fd, "$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
+	usleep(1000000);
+	write(serial_port_fd, "$BD:0,$CMD:SET,CH:6,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
+
+	close(serial_port_fd);
+	usleep(12000000);
+	// Check if Dig0 and Dig1 are there
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 
 	serial_port_fd = open("/dev/ttyUL1",O_RDWR);
@@ -121,33 +157,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	}
 	close(serial_port_fd);
 
-	// Check if HV and LV are there
-	serial_port_fd = open("/dev/ttyUL3",O_RDWR);
-	usleep(1000000);
-	setup_serial_port(serial_port_fd);
-	write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:1,$CMD:MON,PAR:BDSNUM\r\n"));
-	usleep(1000000);
-	n = read(serial_port_fd, buffer, sizeof(buffer));
-	buffer[n] = '\0';
-	if(n){
-		for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
-			HV_SN[i-12] = buffer[i];
-		}
-		printf("HV has been detected: S/N %s \n",HV_SN);
-		hv_connected = 1;
-	}
-	write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
-	usleep(1000000);
-	n = read(serial_port_fd, buffer, sizeof(buffer));
-	buffer[n] = '\0';
-	if(n){
-		for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
-			LV_SN[i-12] = buffer[i];
-		}
-		printf("LV has been detected: S/N %s \n", LV_SN);
-		lv_connected = 1;
-	}
-	close(serial_port_fd);
+	
 
 	char digcmd[32];
 	char dig_response[64];
@@ -159,7 +169,6 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[commands[i]].CmdString);
 			dig_command_handling(0, digcmd, dig_response);
 			pkt.LoadString(dig_response);
-			printf("%s\n",dig_response);
 			int32_t cmdIdx = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
 			switch(i){
 				case 0:
