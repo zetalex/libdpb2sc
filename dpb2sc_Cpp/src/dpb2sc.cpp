@@ -69,13 +69,88 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	write(var_lock, "%4d\n", getpid());
 	close(var_lock);
 
+	// Populate all electronics hash tables
 	populate_lv_hash_table(LV_CMD_TABLE_SIZE,lv_daq_words,lv_board_words);
 	populate_hv_hash_table(HV_CMD_TABLE_SIZE,hv_daq_words,hv_board_words);
 	populate_dig_hash_table(DIG_STANDARD_CMD_TABLE_SIZE, dig_dpb_words);
 
+	// Enable HV LV driver
+	write_GPIO(HVLV_DRV_ENABLE_GPIO_OFFSET,1);
+	//Enable Main CPUs of both HV and LV
+	write_GPIO(LV_MAIN_CPU_GPIO_OFFSET,1);
+	write_GPIO(HV_MAIN_CPU_GPIO_OFFSET,1);
+
+	// Check if Dig0 and Dig1 are there
+	char buffer[40];
+	int serial_port_fd,n;
+	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
+
+	serial_port_fd = open("/dev/ttyUL1",O_RDWR);
+	setup_serial_port(serial_port_fd);
+	pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+	write(serial_port_fd, buffer, strlen(buffer));
+	usleep(1000000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	if(n){
+		pkt.LoadString(buffer);
+		int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
+		uint16_t gw_ver;
+		pkt.GetNextFieldAsUINT16(gw_ver);
+		sprintf(DIG0_SN,"%d",gw_ver);
+		printf("Digitizer 0 has been detected: GW Version %s \n",DIG0_SN);
+		dig0_connected = 1;
+	}
+	close(serial_port_fd);
+	
+	serial_port_fd = open("/dev/ttyUL2",O_RDWR);
+	setup_serial_port(serial_port_fd);
+	pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+	write(serial_port_fd, buffer, strlen(buffer));
+	usleep(1000000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	if(n){
+		pkt.LoadString(buffer);
+		int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
+		if(cmd_id == HKDIG_GET_GW_VER){	
+			uint16_t gw_ver;
+			pkt.GetNextFieldAsUINT16(gw_ver);
+			sprintf(DIG1_SN,"%d",gw_ver);
+			printf("Digitizer 1 has been detected: GW Version %s \n",DIG1_SN);
+			dig1_connected = 1;
+		}
+	}
+	close(serial_port_fd);
+
+	// Check if HV and LV are there
+	serial_port_fd = open("/dev/ttyUL3",O_RDWR);
+	usleep(1000000);
+	setup_serial_port(serial_port_fd);
+	write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:1,$CMD:MON,PAR:BDSNUM\r\n"));
+	usleep(1000000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	buffer[n] = '\0';
+	if(n){
+		for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
+			HV_SN[i-12] = buffer[i];
+		}
+		printf("HV has been detected: S/N %s \n",HV_SN);
+		hv_connected = 1;
+	}
+	write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
+	usleep(1000000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	buffer[n] = '\0';
+	if(n){
+		for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
+			LV_SN[i-12] = buffer[i];
+		}
+		printf("LV has been detected: S/N %s \n", LV_SN);
+		lv_connected = 1;
+	}
+	close(serial_port_fd);
+
 	char digcmd[32];
 	char dig_response[64];
-	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 	int32_t commands[3]= {HKDIG_GET_BME_TCAL,HKDIG_GET_BME_HCAL,HKDIG_GET_BME_PCAL};
 	char *temp;
 	// Get Calibration variables from digitizers. They are read only variables written by the BME280 manufacturer
@@ -3662,7 +3737,7 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 	char bme_data[64];
 	char *bme_value;
 	char *value,*temp;
-	char *calT,*calH,*calP;
+	char calT[64],calH[64],calP[64];
 	float float_value;
 	int  dig_num;
 	int32_t tf;
@@ -4182,6 +4257,7 @@ int bme280_get_temp(char *data,char *cal,int32_t *tf, float *temp){
 	char substr[5];
 	// Get temperature raw data and calibration from BME sampled data
 	strncpy(temp_data,data+6,6);
+	temp_data[6] = '\0';
 
 	// Convert data and calibration
 	int32_t data_int;
@@ -4237,6 +4313,7 @@ int bme280_get_press(char *data,char *cal,int32_t *tf,float *press){
 	char substr[5];
 	// Get temperature raw data and calibration from BME sampled data
 	strncpy(press_data,data,6);
+	press_data[6] = '\0';
 
 	// Convert data and calibration
 	int32_t data_int;
@@ -4322,9 +4399,9 @@ int bme280_get_relhum(char *data,char *cal,int32_t *tf,float *relhum){
 	char substr[5];
 	// Get temperature raw data and calibration from BME sampled data
 	strncpy(relhum_data,data+12,4);
-
+	relhum_data[4] = '\0';
 	// Convert data and calibration
-	uint32_t data_int;
+	int32_t data_int;
 	unsigned char cal_H1, cal_H3;
 	signed char cal_H6;
 	signed short cal_H2, cal_H4, cal_H5;
@@ -4349,18 +4426,18 @@ int bme280_get_relhum(char *data,char *cal,int32_t *tf,float *relhum){
 			substr[0] = cal[8]; //0xE4
 			substr[1] = cal[9];
 			substr[2] = '\0';
-			sscanf(substr,"%hhx",&cal_H41);
+			sscanf(substr,"%hx",&cal_H41);
 			substr[0] = cal[10]; //0xE5
 			substr[1] = cal[11];
 			substr[2] = '\0';
-			sscanf(substr,"%hhx",&cal_H42);
-			cal_H4 = (cal_H41 << 4) + (cal_H42 & 0xF);
+			sscanf(substr,"%hx",&cal_H42);
+			cal_H4 = ((cal_H41 << 4)& 0xFF0) + (cal_H42 & 0xF);
 			cal_H51 = cal_H42;
 			substr[0] = cal[12];  //0xE6
 			substr[1] = cal[13];
 			substr[2] = '\0';
-			sscanf(substr,"%hhx",&cal_H52);
-			cal_H5 = ((cal_H51 >> 4) & 0x0F) + ((cal_H52 << 4) & 0xF0);
+			sscanf(substr,"%hx",&cal_H52);
+			cal_H5 = ((cal_H51 >> 4) & 0x0F) + ((cal_H52 << 4) & 0xFF0);
 			substr[0] = cal[14];  //0xE7
 			substr[1] = cal[15];
 			substr[2] = '\0';
