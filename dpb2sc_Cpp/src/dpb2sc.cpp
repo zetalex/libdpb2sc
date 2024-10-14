@@ -117,6 +117,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	write(serial_port_fd, "$BD:0,$CMD:SET,CH:6,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
 
 	close(serial_port_fd);
+	// FIXME: Wait for digitizers to be turned on (Very time consuming!)
 	usleep(12000000);
 	// Check if Dig0 and Dig1 are there
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
@@ -618,7 +619,7 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 		data->dev_sfp_A0[i].addr = 0x50;
 
 		// Second page address
-		strcpy(data->dev_sfp_A2[i].filename , "/dev/i2c-6");
+		strcpy(data->dev_sfp_A2[i].filename , sfp_i2c_locations[i]);
 		data->dev_sfp_A2[i].addr = 0x51;
 	}
 	strcpy(data->dev_pcb_temp.filename , "/dev/i2c-2");
@@ -651,7 +652,6 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 		timestamp = time(NULL);
 		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",1,timestamp,"critical");
 	}
-
 	rc = init_voltSensor(&data->dev_som_volt);
 	if (rc) {
 		timestamp = time(NULL);
@@ -1505,9 +1505,9 @@ int init_voltSensor (struct I2cDevice *dev) {
 	uint8_t manID_reg = INA3221_MANUF_ID_REG;
 	uint8_t devID_buf[2] = {0,0};
 	uint8_t devID_reg = INA3221_DIE_ID_REG;
-
 	rc = i2c_start(dev); //Start I2C device
 		if (rc) {
+			printf("Error inicializando volt sensor start\n");
 			return rc;
 		}
 	// Write Manufacturer ID address in register pointer
@@ -1517,8 +1517,10 @@ int init_voltSensor (struct I2cDevice *dev) {
 
 	// Read MSB and LSB of Manufacturer ID
 	rc = i2c_read(dev,manID_buf,2);
-	if(rc < 0)
+	if(rc < 0){
+			printf("Error inicializando volt sensor read\n");
 			return rc;
+	}
 	if(!((manID_buf[0] == 0x54) && (manID_buf[1] == 0x49))){ //Check Manufacturer ID to verify is the right component
 		printf("Manufacturer ID does not match the corresponding device: Voltage Sensor\r\n");
 		return -EINVAL;
