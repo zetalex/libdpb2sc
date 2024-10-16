@@ -3458,6 +3458,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	char    pkt_char = ' ';
     uint16_t index = 0;
 	int serial_port_fd;
+	uint16_t *alarm_flag;
 	int n;
 	char read_buf[128];
 	char error[128];
@@ -3472,11 +3473,13 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		strcpy(board_dev,"/dev/ttyUL1");
 		strcpy(board_name,"DIG0");
 		sem_temp = &sem_dig0;
+		alarm_flag = &UL1_flag;
 		break;
 		case DIGITIZER_1:
 		strcpy(board_dev,"/dev/ttyUL2");
 		strcpy(board_name,"DIG1");
 		sem_temp = &sem_dig1;
+		alarm_flag = &UL2_flag;
 		break;
 		default:
 		printf("Invalid digitizer number");
@@ -3516,7 +3519,9 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		else{
 			//Send Warning
 			printf("Warning, character not received\n");
-			status_alarm_json(board_name,"Serial Port", 99,0,"warning", "OFF");
+			if(!alarm_flag[0]){
+				status_alarm_json(board_name,"Serial Port", 99,0,"warning", "OFF");
+			}
 			count_fails_until_success++;
 			count_since_reset++;
 			i++;
@@ -3532,15 +3537,19 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	//Send Critical error
 	close(serial_port_fd);
 	printf("Critical, character not received\n");
-	status_alarm_json(board_name,"Serial Port", 99,0,"critical","OFF");
+	if(!alarm_flag[0]){
+		alarm_flag[0] = 1;
+		status_alarm_json(board_name,"Serial Port", 99,0,"critical","OFF");
+	}
 	strcpy(result,"ERROR IN Digitizer Reading");
-	// Release the three locking mechanisms
+	// Release the two locking mechanisms
 	flock(serial_port_fd, LOCK_UN);
 	sem_post(sem_temp);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_fd);
-	// Release the three locking mechanisms
+	// Release the two locking mechanisms
+	alarm_flag[0] = 0;  // Set back the alarm_flag to send any alarm in case of an error
 	flock(serial_port_fd, LOCK_UN);
 	sem_post(sem_temp);
 	return 0;
@@ -3857,12 +3866,23 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int serial_port_UL3;
 	int n;
+	uint16_t *alarm_flag;
 	char read_buf[128];
 	char error[128];
 	strcpy(read_buf,"");
 
 	sem_wait(&sem_hvlv);
-
+	
+	if(!strcmp(board_dev,"/dev/ttyUL3")){
+		alarm_flag = &UL3_flag;
+	}
+	else if(!strcmp(board_dev,"/dev/ttyUL4")){
+		alarm_flag = &UL4_flag;
+	}
+	else{
+		printf("Invalid HV/LV UART");
+		return -EINVAL;
+	}
 	//Open one device
 	serial_port_UL3 = open(board_dev,O_RDWR);
 	if (serial_port_UL3 < 0) {
@@ -3893,7 +3913,9 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		else{
 			//Send Warning
 			printf("Warning, character not received\n");
-			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning","OFF");
+			if(!alarm_flag[0]){
+				status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning","OFF");
+			}
 			count_fails_until_success++;
 			count_since_reset++;
 			i++;
@@ -3907,7 +3929,10 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	//Send Critical error
 	close(serial_port_UL3);
 	printf("Critical, character not received\n");
-	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
+	if(!alarm_flag[0]){
+		status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
+		alarm_flag[0] = 1;
+	}
 	strcpy(result,"ERROR IN HV/LV Reading");
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
@@ -3915,6 +3940,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	return -ETIMEDOUT;
 success:
 	close(serial_port_UL3);
+	alarm_flag[0] = 0;
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);

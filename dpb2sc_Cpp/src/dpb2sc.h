@@ -198,8 +198,8 @@ int count_fails_until_success = 0;
 int count_since_reset = 0;
 
 /************************** SFP Related Variables *****************************/
-/** @defgroup SFP_I2C SFP I2C File locations
- *  SFP I2C File locations Definitions
+/** @defgroup SFP_I2C SFP Related Variables
+ *  Definitions of SFP Variables
  *  @{
  */
 /** @brief Alarm mask */
@@ -210,6 +210,21 @@ uint8_t status_mask[6] = {0,0,0,0,0,0};
 const char *sfp_i2c_locations[6] = {"/dev/i2c-6","/dev/i2c-10","/dev/i2c-8","/dev/i2c-12","/dev/i2c-9","/dev/i2c-13"};
 /** @brief SFP connected array */
 int sfp_connected[SFP_NUM] = {0,0,0,0,0,0};
+/** @} */
+
+/************************** Serial Port Related Variables *****************************/
+/** @defgroup Serial_Vars Serial Port Related Variables
+ *  Definitions of Serial Port Variables
+ *  @{
+ */
+/** @brief Uart Lite 1 (Dig0) flag. Used for not sending many times the same alarm */
+uint16_t UL1_flag = 0;
+/** @brief Uart Lite 2 (Dig1) flag. Used for not sending many times the same alarm */
+uint16_t UL2_flag = 0;
+/** @brief Uart Lite 3 (RS485 Driver 0) flag. Used for not sending many times the same alarm */
+uint16_t UL3_flag = 0;
+/** @brief Uart Lite 4 (RS485 Driver 1) flag. Used for not sending many times the same alarm */
+uint16_t UL4_flag = 0;
 /** @} */
 /************************** GPIO Pins Definitions *****************************/
 /** @defgroup GPIO GPIO pins
