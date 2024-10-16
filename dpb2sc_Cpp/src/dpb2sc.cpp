@@ -637,25 +637,25 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 	rc = init_tempSensor(&data->dev_pcb_temp);
 	if (rc) {
 		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","PCB Temperature Sensor I2C Bus Status",99,timestamp,"critical");
+		rc = status_alarm_json("DPB","PCB Temperature Sensor I2C Bus Status",99,timestamp,"critical","OFF");
 	}
 
 	// INA 3221 voltage and current sensors
 	rc = init_voltSensor(&data->dev_sfp0_2_volt);
 	if (rc) {
 		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",0,timestamp,"critical");
+		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",0,timestamp,"critical","OFF");
 	}
 
 	rc = init_voltSensor(&data->dev_sfp3_5_volt);
 	if (rc) {
 		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",1,timestamp,"critical");
+		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",1,timestamp,"critical","OFF");
 	}
 	rc = init_voltSensor(&data->dev_som_volt);
 	if (rc) {
 		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",2,timestamp,"critical");
+		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",2,timestamp,"critical","OFF");
 	}
 	// SFP I2C buses
 	for (int i = 0; i < SFP_NUM; i++){
@@ -663,7 +663,7 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 
 	if (rc) {
 			timestamp = time(NULL);
-			rc = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"critical");
+			rc = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"critical","OFF");
 		}
 	}
 
@@ -1336,12 +1336,12 @@ int sfp_avago_status_interruptions(uint8_t status, int n){
 
 	if(((status & 0x02) != 0) & ((status_mask[n] & 0x02) == 0)){
 		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","SFP RX_LOS Status",n,timestamp,"critical");
+		rc = status_alarm_json("DPB","SFP RX_LOS Status",n,timestamp,"critical","ON");
 		status_mask[n] |= 0x02;
 	}
 	if(((status & 0x04) != 0) & ((status_mask[n] & 0x04) == 0)){
 		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","SFP TX_FAULT Status", n,timestamp,"critical");
+		rc = status_alarm_json("DPB","SFP TX_FAULT Status", n,timestamp,"critical","ON");
 		status_mask[n] |= 0x04;
 	}
 	return rc;
@@ -2131,11 +2131,12 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
  * @param board Name of the board where the alarm is asserted
  * @param timestamp Time when the event occurred
  * @param info_type Determines the reported event type (info,warning or critical)
+ * @param status "ON" or "OFF" to indicate which status should be sent
  *
  *
  * @return 0 or negative integer if validation fails
  */
-int status_alarm_json (const char *board,const char *chip, int chan,uint64_t timestamp, const char *info_type)
+int status_alarm_json (const char *board,const char *chip, int chan,uint64_t timestamp, const char *info_type, const char *status)
 {
 	sem_wait(&alarm_sync);
 	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
@@ -2158,16 +2159,8 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 	if (chan != 99){
 		jchan = json_object_new_int(chan);
 		json_object_object_add(jalarm_data,"channel", jchan);
-		if((strcmp(chip,"SFP RX_LOS Status")==0)|(strcmp(chip,"SFP TX_FAULT Status")==0)){
-			jstatus = json_object_new_string("ON");
-		}
-		else{
-			jstatus = json_object_new_string("OFF");
-		}
 	}
-	else{
-		jstatus = json_object_new_string("OFF");
-	}
+	jstatus = json_object_new_string(status);
 
 	json_object_object_add(jalarm_data,"value", jstatus);
 
@@ -2793,17 +2786,28 @@ int eth_down_alarm(const char *str,int *flag){
 		return rc;
 	}
 	if((flag[0] == 0) & (eth_status[0] == 1)){
-		flag[0] = eth_status[0];}
-	if((flag[0] == 1) & (eth_status[0] == 0)){
 		flag[0] = eth_status[0];
-		if(!(strcmp(str,"eth0"))){
+	if(!(strcmp(str,"eth0"))){
 			timestamp = time(NULL);
-			rc = status_alarm_json("DPB","Main Ethernet Link Status",99,timestamp,"critical");
+			rc = status_alarm_json("DPB","Main Ethernet Link Status",99,timestamp,"info","ON");
 			return rc;
 		}
 		else if(!(strcmp(str,"eth1"))){
 			timestamp = time(NULL);
-			rc = status_alarm_json("DPB","Backup Ethernet Link Status",99,timestamp,"critical");
+			rc = status_alarm_json("DPB","Backup Ethernet Link Status",99,timestamp,"info","ON");
+			return rc;
+		}	
+	}
+	if((flag[0] == 1) & (eth_status[0] == 0)){
+		flag[0] = eth_status[0];
+		if(!(strcmp(str,"eth0"))){
+			timestamp = time(NULL);
+			rc = status_alarm_json("DPB","Main Ethernet Link Status",99,timestamp,"critical","OFF");
+			return rc;
+		}
+		else if(!(strcmp(str,"eth1"))){
+			timestamp = time(NULL);
+			rc = status_alarm_json("DPB","Backup Ethernet Link Status",99,timestamp,"critical","OFF");
 			return rc;
 		}
 	}
@@ -2812,7 +2816,7 @@ int eth_down_alarm(const char *str,int *flag){
 /**
 * Checks from GPIO if Aurora Links status has changed from up to down and reports it if necessary
  *
- * @param aurora_link Choose main or backup link of Dig0 or Dig1 (O: Dig0 Main, 1:Dig0 Backup, 2:Dig1 Main, 3:Dig1 Backup)
+ * @param aurora_link Choose main or backup link of Dig0 or Dig1 (O: Dig0 Main, 1: Dig0 Backup, 2: Dig1 Main, 3: Dig1 Backup)
  * @param flag indicates current status of the link
  *
  * @return  0 if parameters are OK, if not negative integer
@@ -2857,17 +2861,28 @@ int aurora_down_alarm(int aurora_link, int *flag){
 		return rc;
 	}
 	if((flag[0] == 0) & (aurora_status[0] == 1)){
-		flag[0] = aurora_status[0];}
-	if((flag[0] == 1) & (aurora_status[0] == 0)){
 		flag[0] = aurora_status[0];
 		if(aurora_link<2){
 			timestamp = time(NULL);
-			rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical");
+			rc = status_alarm_json("DIG0",link_id,99,timestamp,"info", "ON");
 			return rc;
 		}
 		else{
 			timestamp = time(NULL);
-			rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical");
+			rc = status_alarm_json("DIG1",link_id,99,timestamp,"info", "ON");
+			return rc;
+		}
+	}
+	if((flag[0] == 1) & (aurora_status[0] == 0)){
+		flag[0] = aurora_status[0];
+		if(aurora_link<2){
+			timestamp = time(NULL);
+			rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical", "OFF");
+			return rc;
+		}
+		else{
+			timestamp = time(NULL);
+			rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical", "OFF");
 			return rc;
 		}
 	}
@@ -3474,7 +3489,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		//Send alarm
 		printf("Error opening Dig%d UART\n",dig_num);
 		sem_post(sem_temp);
-		status_alarm_json("DIG0","UART Lite 3", 99,0,"warning");
+		status_alarm_json("DIG0","UART Lite 3", 99,0,"warning", "OFF");
 		strcpy(result,"ERROR");
 		return -EACCES;
 	}
@@ -3501,7 +3516,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		else{
 			//Send Warning
 			printf("Warning, character not received\n");
-			status_alarm_json(board_name,"Serial Port", 99,0,"warning");
+			status_alarm_json(board_name,"Serial Port", 99,0,"warning", "OFF");
 			count_fails_until_success++;
 			count_since_reset++;
 			i++;
@@ -3517,7 +3532,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	//Send Critical error
 	close(serial_port_fd);
 	printf("Critical, character not received\n");
-	status_alarm_json(board_name,"Serial Port", 99,0,"critical");
+	status_alarm_json(board_name,"Serial Port", 99,0,"critical","OFF");
 	strcpy(result,"ERROR IN Digitizer Reading");
 	// Release the three locking mechanisms
 	flock(serial_port_fd, LOCK_UN);
@@ -3854,7 +3869,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		//Send alarm
 		printf("Error opening HV/LV UART\n");
 		sem_post(&sem_hvlv);
-		status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
+		status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning","OFF");
 		strcpy(result,"ERROR");
 		return -EACCES;
 	}
@@ -3878,7 +3893,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		else{
 			//Send Warning
 			printf("Warning, character not received\n");
-			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning");
+			status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning","OFF");
 			count_fails_until_success++;
 			count_since_reset++;
 			i++;
@@ -3892,7 +3907,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	//Send Critical error
 	close(serial_port_UL3);
 	printf("Critical, character not received\n");
-	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical");
+	status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
 	strcpy(result,"ERROR IN HV/LV Reading");
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
@@ -4177,16 +4192,16 @@ int hv_read_alarms(){
 		//Get overcurrent, overvoltage, undervoltage and trip bit flags
 		OVC_flag = atoi(mag_str) & BIT(3);
 		if(OVC_flag)
-			rc = status_alarm_json("HV","Overcurrent",i,timestamp,"critical");
+			rc = status_alarm_json("HV","Overcurrent",i,timestamp,"critical","ON");
 		OVV_flag = atoi(mag_str) & BIT(4);
 		if(OVV_flag)
-			rc = status_alarm_json("HV","Overvoltage",i,timestamp,"critical");
+			rc = status_alarm_json("HV","Overvoltage",i,timestamp,"critical","ON");
 		UNV_flag = atoi(mag_str) & BIT(5);
 		if(UNV_flag)
-			rc = status_alarm_json("HV","Undervoltage",i,timestamp,"critical");
+			rc = status_alarm_json("HV","Undervoltage",i,timestamp,"critical","ON");
 		TRIP_flag = atoi(mag_str) & BIT(6);
 		if(TRIP_flag)
-			rc = status_alarm_json("HV","TRIP",i,timestamp,"critical");
+			rc = status_alarm_json("HV","TRIP",i,timestamp,"critical","ON");
 	}
 	return rc;
 

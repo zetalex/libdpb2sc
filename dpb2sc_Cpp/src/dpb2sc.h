@@ -123,7 +123,7 @@ int parsing_mon_environment_data_into_object(json_object *, const char *, float)
 int parsing_mon_environment_status_into_object(json_object *, const char *, int);
 int parsing_mon_environment_string_into_object(json_object *,const char *, char *);
 int alarm_json (const char*, const char *, const char *, int , float ,uint64_t ,const char *);
-int status_alarm_json (const char *,const char *, int ,uint64_t ,const char *);
+int status_alarm_json (const char *,const char *, int ,uint64_t ,const char *, const char *);
 int command_response_json (int ,float,char *);
 int command_status_response_json (int ,int,char *);
 int json_schema_validate (const char *,const char *, const char *);
