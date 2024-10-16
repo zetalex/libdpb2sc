@@ -122,7 +122,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	// Check if Dig0 and Dig1 are there
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 
-	serial_port_fd = open("/dev/ttyUL1",O_RDWR);
+	serial_port_fd = open("/dev/ttyUL1",O_RDWR );
 	setup_serial_port(serial_port_fd);
 	pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
 	write(serial_port_fd, buffer, strlen(buffer));
@@ -3497,6 +3497,8 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		return -EACCES;
 	}
 
+	// Flush serial port before reading
+	tcflush(serial_port_fd,TCIOFLUSH);
 	// Wait until acquiring non-blocking BSD exclusive lock
 	while(flock(serial_port_fd, LOCK_EX | LOCK_NB) == -1) {
 		usleep(5000);
@@ -3872,7 +3874,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	strcpy(read_buf,"");
 
 	sem_wait(&sem_hvlv);
-	
+
 	if(!strcmp(board_dev,"/dev/ttyUL3")){
 		alarm_flag = &UL3_flag;
 	}
@@ -3893,6 +3895,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		strcpy(result,"ERROR");
 		return -EACCES;
 	}
+	tcflush(serial_port_UL3,TCIOFLUSH);
 	// Wait until acquiring non-blocking BSD exclusive lock
 	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
 		usleep(5000);
@@ -4509,5 +4512,104 @@ int bme280_get_relhum(char *data,char *cal,int32_t *tf,float *relhum){
 	return 0;
 }
 
+
+int check_board_presence(){
+
+	int serial_port_fd,n;
+	char buffer[40];
+
+	// Check if HV and LV are there
+	sem_wait(&sem_hvlv);
+	serial_port_fd = open("/dev/ttyUL3",O_RDWR | O_NONBLOCK);
+	setup_serial_port(serial_port_fd);
+	tcflush(serial_port_fd,TCIOFLUSH);
+	write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:1,$CMD:MON,PAR:BDSNUM\r\n"));
+	usleep(200000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	buffer[n] = '\0';
+	if(n > 0){
+		if(!hv_connected){
+		printf("Hotplug event: HV has been detected: S/N %s \n",HV_SN);
+		status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
+		hv_connected = 1;
+		}
+	}
+	else{
+		if(hv_connected){
+			status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
+		}
+		hv_connected = 0;
+	}
+	tcflush(serial_port_fd,TCIOFLUSH);
+	write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
+	usleep(200000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	buffer[n] = '\0';
+	if(n > 0){
+		if(!lv_connected){
+			printf("Hotplug event: LV has been detected: S/N %s \n", LV_SN);
+			status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
+			lv_connected = 1;
+		}
+	}
+	else{
+		if(lv_connected){
+			status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
+		}
+		lv_connected = 0;
+	}
+	tcflush(serial_port_fd,TCIOFLUSH);
+	close(serial_port_fd);
+	sem_post(&sem_hvlv);
+
+	// Check if Dig0 and Dig1 are there
+	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
+
+	serial_port_fd = open("/dev/ttyUL1",O_RDWR | O_NONBLOCK);
+	setup_serial_port(serial_port_fd);
+	tcflush(serial_port_fd,TCIOFLUSH);
+	pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+	write(serial_port_fd, buffer, strlen(buffer));
+	usleep(100000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	buffer[n] = '\0';
+	if(n > 0){
+		if(!dig0_connected){
+			printf("Hotplug event: Digitizer 0 has been detected\n");
+			status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
+			dig0_connected = 1;
+		}
+	}
+	else{
+		if(dig0_connected){
+			status_alarm_json("DIG0","Serial Port", 99,0,"critical","OFF");
+		}
+		dig0_connected = 0;
+	}
+	close(serial_port_fd);
+	serial_port_fd = open("/dev/ttyUL2",O_RDWR | O_NONBLOCK);
+	setup_serial_port(serial_port_fd);
+	tcflush(serial_port_fd,TCIOFLUSH);
+	pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+	write(serial_port_fd, buffer, strlen(buffer));
+	usleep(100000);
+	n = read(serial_port_fd, buffer, sizeof(buffer));
+	buffer[n] = '\0';
+	if(n > 0){
+		if(!dig1_connected){
+			printf("Hotplug event: Digitizer 1 has been detected\n");
+			status_alarm_json("DIG1","Serial Port", 99,0,"info","ON");
+			dig1_connected = 1;
+		}
+	}
+	else{
+		if(dig1_connected){
+			status_alarm_json("DIG1","Serial Port", 99,0,"critical","OFF");
+		}
+		dig1_connected = 0;
+	}
+	close(serial_port_fd);
+	return 0;
+}
 /** @} */
 }

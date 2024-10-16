@@ -159,6 +159,7 @@ int gen_uuid(char *);
 int bme280_get_temp(char *,char *,int32_t *, float *);
 int bme280_get_press(char *,char *,int32_t *,float *);
 int bme280_get_relhum(char *,char *,int32_t *,float *);
+int check_board_presence();
 
 /******************************************************************************/
 /************************** Constant Definitions *****************************/
@@ -189,7 +190,6 @@ int dig0_main_flag = 1;
 int dig1_main_flag = 1;
 int dig0_backup_flag = 1;
 int dig1_backup_flag = 1;
-// TODO Periodic Scan of HV,LV and digitizers to see if they are available  
 int lv_connected = 0;
 int hv_connected = 0;
 int dig0_connected = 0;
