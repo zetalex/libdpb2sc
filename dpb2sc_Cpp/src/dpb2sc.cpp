@@ -74,8 +74,12 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	populate_hv_hash_table(HV_CMD_TABLE_SIZE,hv_daq_words,hv_board_words);
 	populate_dig_hash_table(DIG_STANDARD_CMD_TABLE_SIZE, dig_dpb_words);
 
+	// Enable RS485 driver to ttyUL3
+	write_GPIO(HVLV_RS485_PRI_PWR_EN_GPIO_OFFSET,1);
+	write_GPIO(HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,0);
+	usleep(500000);
 	// Enable HV LV driver
-	write_GPIO(HVLV_DRV_ENABLE_GPIO_OFFSET,1);
+	write_GPIO(HVLV_DRV_ENABLE_PRI_GPIO_OFFSET,1);
 	//Enable Main CPUs of both HV and LV
 	write_GPIO(LV_MAIN_CPU_GPIO_OFFSET,1);
 	write_GPIO(HV_MAIN_CPU_GPIO_OFFSET,1);
@@ -490,7 +494,7 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
 int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, float val){
 	FILE *offset,*scale;
 
-		char buffer [sizeof(chan)*8+1];
+		char buffer [32];
 		char offset_str[128];
 		char thres_str[128];
 		char scale_str[128];
@@ -534,7 +538,7 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 				offset = fopen(offset_str,"r");
 				if(offset==NULL){
 					fclose(scale);
-					printf("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
+					printf("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
 					return -1;
 				}
 				if(strcmp("rising",ev_type)){
@@ -548,7 +552,6 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 
 				char *offset_string = static_cast<char *>(malloc(fsize + 1));
 				fread(offset_string, fsize, 1, offset);
-
 				fseek(scale, 0, SEEK_END);
 				fsize = ftell(scale);
 				fseek(scale, 0, SEEK_SET);  /* same as rewind(f); */
@@ -563,7 +566,6 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 				aux = (1024*val)/atof(scale_string);
 
 			    adc_code =  (int) aux - atof(offset_string);
-
 			}
 			else if(!strcmp("voltage",ch_type)){
 				if((strcmp("rising",ev_type))&(strcmp("falling",ev_type))){
@@ -3872,7 +3874,6 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	char read_buf[128];
 	char error[128];
 	strcpy(read_buf,"");
-
 	sem_wait(&sem_hvlv);
 
 	if(!strcmp(board_dev,"/dev/ttyUL3")){
