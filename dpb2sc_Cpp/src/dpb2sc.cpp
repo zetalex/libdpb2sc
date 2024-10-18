@@ -74,8 +74,12 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	populate_hv_hash_table(HV_CMD_TABLE_SIZE,hv_daq_words,hv_board_words);
 	populate_dig_hash_table(DIG_STANDARD_CMD_TABLE_SIZE, dig_dpb_words);
 
+	// Enable RS485 driver to ttyUL3
+	write_GPIO(HVLV_RS485_PRI_PWR_EN_GPIO_OFFSET,1);
+	write_GPIO(HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,0);
+	usleep(500000);
 	// Enable HV LV driver
-	write_GPIO(HVLV_DRV_ENABLE_GPIO_OFFSET,1);
+	write_GPIO(HVLV_DRV_ENABLE_PRI_GPIO_OFFSET,1);
 	//Enable Main CPUs of both HV and LV
 	write_GPIO(LV_MAIN_CPU_GPIO_OFFSET,1);
 	write_GPIO(HV_MAIN_CPU_GPIO_OFFSET,1);
