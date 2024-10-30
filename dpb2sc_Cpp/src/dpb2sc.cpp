@@ -561,11 +561,12 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 
 				fclose(scale);
 				fclose(offset);
-				free(scale_string);
-				free(offset_string);
 				aux = (1024*val)/atof(scale_string);
 
 			    adc_code =  (int) aux - atof(offset_string);
+
+				free(scale_string);
+				free(offset_string);
 			}
 			else if(!strcmp("voltage",ch_type)){
 				if((strcmp("rising",ev_type))&(strcmp("falling",ev_type))){
