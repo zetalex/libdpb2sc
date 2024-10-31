@@ -968,7 +968,15 @@ int mcp9844_read_alarms(struct DPB_I2cSensors *data) {
  *  Each SFP has an EEPROM memory that can be accessed through I2C. These functions provide several functions to read every relevant slow control variable from this EEPROM
  *  @{
  */
-
+/**
+ * Initialize SFP EEPROM all pages
+ *
+ * @param n	Number of SFP (from 0 to 5)
+ * @param dev I2C Sensors struct with all SFP information
+ *
+ * @return Negative integer if initialization fails.If not, returns 0 and the SFP is initialized as I2C device
+ *
+ */
 int init_I2C_SFP(int n, struct DPB_I2cSensors *data){
 	// Check SFP powered on
 	int rc = 0;
@@ -991,6 +999,37 @@ int init_I2C_SFP(int n, struct DPB_I2cSensors *data){
 		}
 	return 0;
 }
+
+/**
+ * Checks if the SFPs are still connected by checking the I2C bus
+ *
+ * @param data I2C Sensors struct with all SFP information
+ *
+ * @return Negative integer if initialization fails.If not, returns 0 and the SFP is initialized as I2C device
+ *
+ */
+int check_sfp_presence(struct DPB_I2cSensors *data){
+	// Check SFP i2C buses in all of them 
+	int rc = 0;
+	struct I2cDevice dev;
+	uint64_t timestamp = time(NULL);
+	for(int i = 0; i < SFP_NUM; i++){
+		dev = data->dev_sfp_A0[i];
+		rc = checksum_check(&dev, SFP_PHYS_DEV,63);
+		if(rc && sfp_connected[i]){
+			printf("Hotplug event: SFP %d DISCONNECTED:\n",i);
+			sfp_connected[i] = 0;
+			rc = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"critical","OFF");
+		}
+		if(!rc && !sfp_connected[i]){
+			printf("Hotplug event: SFP %d has been detected:\n",i);
+			sfp_connected[i] = 1;
+			rc = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"info","ON");
+		}
+	}
+	return 0;
+}
+
 /**
  * Initialize SFP EEPROM page 1 as an I2C device
  *
@@ -3171,7 +3210,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				}
 				else{
 					bool_set=((strcmp(cmd[4],"ON") == 0)?(0):(1));
-					rc = write_GPIO(SFP0_TX_DIS+sfp_num,bool_set);
+					rc = write_GPIO(SFP0_PWR_ENA+sfp_num,bool_set);
 					if(rc){
 						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 						goto end;
@@ -4514,7 +4553,12 @@ int bme280_get_relhum(char *data,char *cal,int32_t *tf,float *relhum){
 	return 0;
 }
 
-
+/**
+ * Checks that the High Voltage, Low Voltage and both Digitizers board are connected 
+ * In case they are not, no slow control tasks will be performed on them. This function is made to be run periodically
+ *
+ * @return always 0. There is one variable for each board that indicates if it is connected.
+ */
 int check_board_presence(){
 
 	int serial_port_fd,n;

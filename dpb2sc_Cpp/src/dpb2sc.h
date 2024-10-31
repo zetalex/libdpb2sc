@@ -100,6 +100,7 @@ int mcp9844_set_config(struct DPB_I2cSensors *,uint8_t *,uint8_t *);
 int mcp9844_interruptions(struct DPB_I2cSensors *, uint8_t );
 int mcp9844_read_alarms(struct DPB_I2cSensors *);
 int init_I2C_SFP(int, struct DPB_I2cSensors *);
+int check_sfp_presence(struct DPB_I2cSensors *);
 int sfp_avago_read_temperature(struct DPB_I2cSensors *,int , float *);
 int sfp_avago_read_voltage(struct DPB_I2cSensors *,int , float *);
 int sfp_avago_read_lbias_current(struct DPB_I2cSensors *,int, float *);
