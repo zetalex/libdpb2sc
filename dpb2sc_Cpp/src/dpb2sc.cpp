@@ -1011,30 +1011,27 @@ int init_I2C_SFP(int n, struct DPB_I2cSensors *data){
 int check_sfp_presence(struct DPB_I2cSensors *data){
 	// Check SFP i2C buses in all of them
 	sem_wait(&i2c_sync); 
-	int rc = 0;
+	int rc_check = 0;
+	int rc_status = 0;
 	struct I2cDevice dev;
 	uint64_t timestamp = time(NULL);
 	for(int i = 0; i < SFP_NUM; i++){
 		dev = data->dev_sfp_A0[i];
-		rc = checksum_check(&dev, SFP_PHYS_DEV,63);
-		if(rc && sfp_connected[i]){
+		rc_check = checksum_check(&dev, SFP_PHYS_DEV,63);
+		if(rc_check && sfp_connected[i]){
 			printf("Hotplug event: SFP %d DISCONNECTED:\n",i);
 			sfp_connected[i] = 0;
-			rc = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"critical","OFF");
-			// Reset I2C mux to avoid stuck bus
-			write_GPIO(I2C_MUX_RESET,1);
-			usleep(100);
-			write_GPIO(I2C_MUX_RESET,0);
+			rc_status = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"critical","OFF");
 		}
-		if(!rc && !sfp_connected[i]){
+		else if(!rc_check && !sfp_connected[i]){
 			printf("Hotplug event: SFP %d has been detected:\n",i);
 			sfp_connected[i] = 1;
-			rc = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"info","ON");
-			// Reset I2C mux to avoid stuck bus
-			write_GPIO(I2C_MUX_RESET,1);
-			usleep(100);
-			write_GPIO(I2C_MUX_RESET,0);
+			rc_status = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"info","ON");
 		}
+		// Reset I2C mux to avoid stuck bus
+		write_GPIO(I2C_MUX_RESET,1);
+		usleep(100);
+		write_GPIO(I2C_MUX_RESET,0);
 	}
 	// Reset I2C mux to avoid stuck bus
 	write_GPIO(I2C_MUX_RESET,1);
@@ -3223,7 +3220,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					goto end;
 				}
 				else{
-					bool_set=((strcmp(cmd[4],"ON") == 0)?(0):(1));
+					bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
 					rc = write_GPIO(SFP0_PWR_ENA+sfp_num,bool_set);
 					if(rc){
 						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
