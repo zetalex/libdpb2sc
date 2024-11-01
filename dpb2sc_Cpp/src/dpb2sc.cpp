@@ -4597,6 +4597,8 @@ int check_board_presence(){
 		}
 		hv_connected = 0;
 	}
+	close(serial_port_fd);
+	serial_port_fd = open("/dev/ttyUL4",O_RDWR | O_NONBLOCK);
 	tcflush(serial_port_fd,TCIOFLUSH);
 	write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
 	usleep(200000);
