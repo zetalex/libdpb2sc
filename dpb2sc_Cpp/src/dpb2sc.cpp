@@ -135,11 +135,13 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	if(n){
 		pkt.LoadString(buffer);
 		int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
-		uint16_t gw_ver;
-		pkt.GetNextFieldAsUINT16(gw_ver);
-		sprintf(DIG0_SN,"%d",gw_ver);
-		printf("Digitizer 0 has been detected: GW Version %s \n",DIG0_SN);
-		dig0_connected = 1;
+		if(cmd_id == HKDIG_GET_GW_VER){	
+			uint16_t gw_ver;
+			pkt.GetNextFieldAsUINT16(gw_ver);
+			sprintf(DIG0_SN,"%d",gw_ver);
+			printf("Digitizer 0 has been detected: GW Version %s \n",DIG0_SN);
+			dig0_connected = 1;
+		}
 	}
 	close(serial_port_fd);
 	
@@ -4632,9 +4634,13 @@ int check_board_presence(){
 	buffer[n] = '\0';
 	if(n > 0){
 		if(!dig0_connected){
-			printf("Hotplug event: Digitizer 0 has been detected\n");
-			status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
-			dig0_connected = 1;
+			pkt.LoadString(buffer);
+			int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
+			if(cmd_id == HKDIG_GET_GW_VER){	
+				printf("Hotplug event: Digitizer 0 has been detected\n");
+				status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
+				dig0_connected = 1;
+			}
 		}
 	}
 	else{
@@ -4654,9 +4660,13 @@ int check_board_presence(){
 	buffer[n] = '\0';
 	if(n > 0){
 		if(!dig1_connected){
-			printf("Hotplug event: Digitizer 1 has been detected\n");
-			status_alarm_json("DIG1","Serial Port", 99,0,"info","ON");
-			dig1_connected = 1;
+			pkt.LoadString(buffer);
+			int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
+			if(cmd_id == HKDIG_GET_GW_VER){	
+				printf("Hotplug event: Digitizer 1 has been detected\n");
+				status_alarm_json("DIG1","Serial Port", 99,0,"info","ON");
+				dig1_connected = 1;
+			}
 		}
 	}
 	else{
