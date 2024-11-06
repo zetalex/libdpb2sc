@@ -3671,7 +3671,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_EEPROM_EID:	
 
 		// Get Rate monitor interval
-		case HKDIG_GET_RMON_T:
+		case HKDIG_GET_RMON_PER:
 
 
 		// Get uptime in seconds
@@ -3752,10 +3752,14 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_CHN_CNTRL:
 
 		// Set RMon interval
-		case HKDIG_SET_RMON_T:
+		case HKDIG_SET_RMON_PER:
 
 		// Return the rmon for this channel
-		case HKDIG_GET_RMON_N:
+		case HKDIG_GET_RMON_ADC_N:			// Get ADC rate monitor value for channel N
+		case HKDIG_GET_RMON_TDC_N:			// Get TDC rate monitor value for channel N
+		case HKDIG_GET_RMON_FMT_N:			// Get FMT rate monitor value for channel N
+		case HKDIG_GET_RMON_MUX_N:			// Get board MUX rate monitor for channel N
+
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
@@ -3940,10 +3944,13 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		return -EINVAL;
 	}
 	//Open one device
+	errno = 0;
 	serial_port_UL3 = open(board_dev,O_RDWR);
 	if (serial_port_UL3 < 0) {
 		//Send alarm
-		printf("Error opening HV/LV UART\n");
+		char error_buffer[64];
+		strerror_r(errno,error_buffer,sizeof(error_buffer));
+		printf("Error opening HV/LV UART %s\n",error_buffer);
 		sem_post(&sem_hvlv);
 		status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning","OFF");
 		strcpy(result,"ERROR");
@@ -3991,6 +3998,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		alarm_flag[0] = 1;
 	}
 	strcpy(result,"ERROR IN HV/LV Reading");
+	printf("HV/LV Timedout in command %s\n",cmd);
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
@@ -3998,6 +4006,9 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 success:
 	close(serial_port_UL3);
 	alarm_flag[0] = 0;
+	cmd[strlen(cmd)-1] = '0';
+	cmd[strlen(cmd)-2] = '0';
+	printf("HV/LV Successful in command %s with response %s\n",cmd,result);
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
