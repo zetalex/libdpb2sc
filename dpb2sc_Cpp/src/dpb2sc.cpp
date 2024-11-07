@@ -3725,6 +3725,11 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		// Get pressure calibration data
 		case HKDIG_GET_BME_PCAL:
+
+		case HKDIG_GET_RMON_MUX_N:			// Get board MUX rate monitor for channel N
+
+		case HKDIG_GET_RMON_RST_N:
+		
 			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
 			break;
 
@@ -3758,7 +3763,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_RMON_ADC_N:			// Get ADC rate monitor value for channel N
 		case HKDIG_GET_RMON_TDC_N:			// Get TDC rate monitor value for channel N
 		case HKDIG_GET_RMON_FMT_N:			// Get FMT rate monitor value for channel N
-		case HKDIG_GET_RMON_MUX_N:			// Get board MUX rate monitor for channel N
 
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
