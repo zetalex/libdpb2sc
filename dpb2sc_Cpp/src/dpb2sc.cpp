@@ -3829,6 +3829,7 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 
 	COPacketResponse_type	pktError=COPACKET_NOERR;
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
+	CCOPacket pkt_bme(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 	
 	pktError = pkt.LoadString(board_response);
 
@@ -3880,25 +3881,33 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 						command_response_json(msg_id,float_value,reply);
 						break;
 					// BME280 commands. Special case
-					case HKDIG_GET_BME_DATA:
 					case HKDIG_GET_BME_TCAL:
 					case HKDIG_GET_BME_HCAL:
 					case HKDIG_GET_BME_PCAL:
 						pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_GET_BME_DATA].CmdString);
 						dig_command_handling(dig_num,digcmd,bme_data);
-						bme280_get_temp(bme_data,calT,&tf,&float_value);
-						if(!strcmp("TEMP",cmd[2])){
-						command_response_json(msg_id,float_value,reply);
-						}
-						else{
-							if(!strcmp("RELHUM",cmd[2])){
-								bme280_get_relhum(bme_data,calH,&tf,&float_value);
-								command_response_json(msg_id,float_value,reply);
+						pktError = pkt_bme.LoadString(bme_data);
+						// Get the cmdIdx
+						cmdIdx = pkt_bme.GetNextFiedlAsCOMMAND(HkDigCmdList);
+						if(cmdIdx == HKDIG_GET_BME_DATA){
+							bme_value = pkt_bme.GetNextField();
+							bme280_get_temp(bme_value,calT,&tf,&float_value);
+							if(!strcmp("TEMP",cmd[2])){
+							command_response_json(msg_id,float_value,reply);
 							}
 							else{
-								bme280_get_press(bme_data,calP,&tf,&float_value);
-								command_response_json(msg_id,float_value,reply);
+								if(!strcmp("RELHUM",cmd[2])){
+									bme280_get_relhum(bme_value,calH,&tf,&float_value);
+									command_response_json(msg_id,float_value,reply);
+								}
+								else{
+									bme280_get_press(bme_value,calP,&tf,&float_value);
+									command_response_json(msg_id,float_value,reply);
+								}
 							}
+						}
+						else{
+							command_response_string_json(msg_id,"ERROR",reply);
 						}
 						break;
 					default:
