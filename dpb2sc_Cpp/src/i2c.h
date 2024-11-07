@@ -10,6 +10,13 @@ extern "C" {
 #ifndef SRC_I2C_H_
 #define SRC_I2C_H_
 
+#ifdef DEBUG
+    #define DEBUG_PRINTF(...) printf("DEBUG: " __VA_ARGS__)
+#else
+    #define DEBUG_PRINTF(...) do {} while (0)
+#endif
+
+
 /*
  * Configuration for the I2C device.
  */

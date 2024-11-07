@@ -105,7 +105,7 @@ int i2c_readn_reg(struct I2cDevice* dev, uint8_t reg, uint8_t *buf, size_t buf_l
 	 */
 	rc = i2c_write(dev, &reg, 1);
 	if (rc <= 0) {
-		printf("%s: failed to write i2c register address\r\n", __func__);
+		DEBUG_PRINTF("%s: failed to write i2c register address\r\n", __func__);
 		return rc;
 	}
 
@@ -114,7 +114,7 @@ int i2c_readn_reg(struct I2cDevice* dev, uint8_t reg, uint8_t *buf, size_t buf_l
 	 */
 	rc = i2c_read(dev, buf, buf_len);
 	if (rc <= 0) {
-		printf("%s: failed to read i2c register data\r\n", __func__);
+		DEBUG_PRINTF("%s: failed to read i2c register data\r\n", __func__);
 		return rc;
 	}
 
@@ -156,7 +156,7 @@ int i2c_writen_reg(struct I2cDevice* dev, uint8_t reg, uint8_t *buf, size_t buf_
 	 */
 	rc = i2c_write(dev, full_buf, full_buf_len);
 	if (rc <= 0) {
-		printf("%s: failed to write i2c register address and data\r\n", __func__);
+		DEBUG_PRINTF("%s: failed to write i2c register address and data\r\n", __func__);
 		goto fail_send;
 	}
 

@@ -28,6 +28,12 @@ extern "C" {
 #include "linux/errno.h"
 #include <COPacketCmdHkDig.h>
 
+#ifdef DEBUG
+    #define DEBUG_PRINTF(...) printf("DEBUG: " __VA_ARGS__)
+#else
+    #define DEBUG_PRINTF(...) do {} while (0)
+#endif
+
 /************************** Main Struct Definition *****************************/
 
 struct DPB_I2cSensors{
@@ -612,7 +618,7 @@ char HV_SN[8];
 Digitizer Command Data.
 ****************************************************************************/
 
-#define DIG_STANDARD_CMD_TABLE_SIZE 56
+#define DIG_STANDARD_CMD_TABLE_SIZE 60
 
 const char *dig_dpb_words[] = {
 	"READ DISCTRES",
@@ -653,7 +659,11 @@ const char *dig_dpb_words[] = {
     "READ EID",
     "READ RMONT",
     "SET RMONT",
-    "READ RMON",
+    "READ RMONADC",
+    "READ RMONTDC",
+    "READ RMONFMT",
+    "READ RMONMUX",
+    "READ RMONRST",
     "SET RMONRUN",
     "READ 3V3A",
     "READ 12VA",
@@ -673,7 +683,7 @@ const char *dig_dpb_words[] = {
     "READ PRESS",
     NULL
 };
-#define DIG_MON_BOARD_CODES_SIZE 23
+#define DIG_MON_BOARD_CODES_SIZE 25
 const int dig_monitor_mag_board_codes[] = {
     // Board monitoring
     HKDIG_GET_GW_VER,
@@ -681,7 +691,9 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BOARD_STATUS,
     HKDIG_GET_BOARD_CNTRL,
     HKDIG_GET_UPTIME,
-    HKDIG_GET_RMON_T,
+    HKDIG_GET_RMON_PER,
+    HKDIG_GET_RMON_MUX_N,
+    HKDIG_GET_RMON_RST_N,
     HKDIG_GET_CLOCK,
     HKDIG_GET_TLNK_LOCK,
     HKDIG_GET_EEPROM_OUI,			// Returns EEPROM OUI code
@@ -702,7 +714,7 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BME_DATA
 };
 
-#define DIG_MON_CHAN_CODES_SIZE 6
+#define DIG_MON_CHAN_CODES_SIZE 9
 const int dig_monitor_mag_chan_codes[] = {
     // Channel monitoring
     HKDIG_GET_THR_NUM,
@@ -710,7 +722,10 @@ const int dig_monitor_mag_chan_codes[] = {
     HKDIG_GET_DT_NUM,
     HKDIG_GET_CHN_STATUS,
     HKDIG_GET_CHN_CNTRL,
-    HKDIG_GET_PED_TYPE
+    HKDIG_GET_PED_TYPE,
+    HKDIG_GET_RMON_ADC_N,
+    HKDIG_GET_RMON_TDC_N,
+    HKDIG_GET_RMON_FMT_N
 };
 
 const char *dig_monitor_mag_board_names[] = {
@@ -720,6 +735,8 @@ const char *dig_monitor_mag_board_names[] = {
     "BDCntrl",
     "BDUptime",
     "RMONT",
+    "RMONMUX",
+    "RMONRST",
     "Clock",
     "TLock",
     "eepromoui",
@@ -745,7 +762,10 @@ const char *dig_monitor_mag_chan_names[] = {
     "deadtime",
     "status",
     "cntrl",
-    "pedtype"
+    "pedtype",
+    "rmonadc",
+    "rmontdc",
+    "rmonfmt"
 };
 
 /** @brief Detected Dig0 Serial Number */
