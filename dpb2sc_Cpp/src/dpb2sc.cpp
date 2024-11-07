@@ -24,17 +24,17 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	get_GPIO_base_address(&GPIO_BASE_ADDRESS);
 	rc = zmq_socket_init(); //Initialize ZMQ Sockets
 	if (rc) {
-		printf("Error\r\n");
+		DEBUG_PRINTF("Error\r\n");
 		return rc;
 	}
 	rc = init_I2cSensors(data); //Initialize i2c sensors
 	if (rc) {
-		printf("Error\r\n");
+		DEBUG_PRINTF("Error\r\n");
 		return rc;
 	}
 	rc = init_shared_memory();
 	if (rc) {
-		printf("Error\r\n");
+		DEBUG_PRINTF("Error\r\n");
 		return rc;
 	}
 
@@ -229,37 +229,37 @@ int init_semaphores(){
 
 	rc = sem_init(&sem_valid,1,1);
 	if(rc){
-		printf("Error initialising semaphore valid\n");
+		DEBUG_PRINTF("Error initialising semaphore valid\n");
 		return rc;
 	}
 	rc = sem_init(&file_sync,1,1);
 	if(rc){
-		printf("Error initialising semaphore for GPIO files\n");
+		DEBUG_PRINTF("Error initialising semaphore for GPIO files\n");
 		return rc;
 	}
 	sem_init(&i2c_sync,1,1);
 	if(rc){
-		printf("Error initialising semaphore for I2C Devices\n");
+		DEBUG_PRINTF("Error initialising semaphore for I2C Devices\n");
 		return rc;
 	}
 	sem_init(&alarm_sync,1,1);
 	if(rc){
-		printf("Error initialising semaphore for Alarm files\n");
+		DEBUG_PRINTF("Error initialising semaphore for Alarm files\n");
 		return rc;
 	}
 	rc = sem_init(&sem_hvlv,1,1);
 	if(rc){
-		printf("Error initialising semaphore HV LV\n");
+		DEBUG_PRINTF("Error initialising semaphore HV LV\n");
 		return rc;
 	}
 	rc = sem_init(&sem_dig0,1,1);
 	if(rc){
-		printf("Error initialising semaphore Dig0\n");
+		DEBUG_PRINTF("Error initialising semaphore Dig0\n");
 		return rc;
 	}
 	rc = sem_init(&sem_dig1,1,1);
 	if(rc){
-		printf("Error initialising semaphore Dig1\n");
+		DEBUG_PRINTF("Error initialising semaphore Dig1\n");
 		return rc;
 	}
 	return rc;
@@ -376,7 +376,7 @@ int xlnx_ams_read_temp(int *chan, int n, float *res){
 		scale = fopen(scale_str,"r");
 
 		if((raw==NULL)|(offset==NULL)|(scale==NULL)){
-			printf("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
+			DEBUG_PRINTF("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
 			fclose(raw);
 			fclose(offset);
 			fclose(scale);
@@ -450,7 +450,7 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
 		scale = fopen(scale_str,"r");
 
 		if((raw==NULL)|(scale==NULL)){
-			printf("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
+			DEBUG_PRINTF("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
 			fclose(raw);
 			fclose(scale);
 			return -1;
@@ -527,7 +527,7 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 		thres = open(thres_str, O_WRONLY);
 
 		if((scale==NULL)|(thres < 0)){
-			printf("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
+			DEBUG_PRINTF("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
 			fclose(scale);
 			return -1;
 			}
@@ -540,7 +540,7 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 				offset = fopen(offset_str,"r");
 				if(offset==NULL){
 					fclose(scale);
-					printf("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
+					DEBUG_PRINTF("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
 					return -1;
 				}
 				if(strcmp("rising",ev_type)){
@@ -675,12 +675,12 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 	// PCB Temperature set temperature limits
 		rc = mcp9844_set_limits(data,0,60);
 	if (rc) {
-		printf("Failed to set MCP9844 Upper Limit\r\n");
+		DEBUG_PRINTF("Failed to set MCP9844 Upper Limit\r\n");
 	}
 
 	rc = mcp9844_set_limits(data,2,80);
 	if (rc) {
-		printf("Failed to set MCP9844 Critical Limit\r\n");
+		DEBUG_PRINTF("Failed to set MCP9844 Critical Limit\r\n");
 	}
 	return 0;
 }
@@ -1562,7 +1562,7 @@ int init_voltSensor (struct I2cDevice *dev) {
 	uint8_t devID_reg = INA3221_DIE_ID_REG;
 	rc = i2c_start(dev); //Start I2C device
 		if (rc) {
-			printf("Error inicializando volt sensor start\n");
+			DEBUG_PRINTF("Error inicializando volt sensor start\n");
 			return rc;
 		}
 	// Write Manufacturer ID address in register pointer
@@ -1573,7 +1573,7 @@ int init_voltSensor (struct I2cDevice *dev) {
 	// Read MSB and LSB of Manufacturer ID
 	rc = i2c_read(dev,manID_buf,2);
 	if(rc < 0){
-			printf("Error inicializando volt sensor read\n");
+			DEBUG_PRINTF("Error inicializando volt sensor read\n");
 			return rc;
 	}
 	if(!((manID_buf[0] == 0x54) && (manID_buf[1] == 0x49))){ //Check Manufacturer ID to verify is the right component
@@ -2167,7 +2167,7 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 	const char *serialized_json = json_object_to_json_string(jalarm_data);
 	int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
 	if (rc) {
-		printf("Error validating JSON Schema\r\n");
+		DEBUG_PRINTF("Error validating JSON Schema\r\n");
 		return rc;
 	}
 	else{
@@ -2222,7 +2222,7 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 	const char *serialized_json = json_object_to_json_string(jalarm_data);
 	int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
 	if (0) {
-		printf("Error validating JSON Schema\r\n");
+		DEBUG_PRINTF("Error validating JSON Schema\r\n");
 		return -1;
 	}
 	else{
@@ -2282,7 +2282,7 @@ int command_response_json (int msg_id, float val, char* cmd_reply)
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
-		printf("Error\r\n");
+		DEBUG_PRINTF("Error\r\n");
 		return rc;
 	}
 	strcpy(cmd_reply,serialized_json);
@@ -2353,7 +2353,7 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
-		printf("Error\r\n");
+		DEBUG_PRINTF("Error\r\n");
 		return rc;
 	}
 	strcpy(cmd_reply,serialized_json);
@@ -2408,7 +2408,7 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 	const char *serialized_json = json_object_to_json_string(jcmd_data2);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
-		printf("Error\r\n");
+		DEBUG_PRINTF("Error\r\n");
 		return rc;
 	}
 	strcpy(cmd_reply,serialized_json);
@@ -2471,7 +2471,7 @@ int json_schema_validate (const char *schema,const char *json_string, const char
 		close(pipefd[0]);
 		close(pipefd[1]);
 		sem_post(&sem_valid);
-		printf("Failed to run command\n" );
+		DEBUG_PRINTF("Failed to run command\n" );
 		return -1;
 	}
 	close(pipefd[1]);
@@ -2484,7 +2484,7 @@ int json_schema_validate (const char *schema,const char *json_string, const char
 
 	data = regexec(&r1, path, 0, NULL, 0);
 	if(data){
-		printf("Error: JSON schema not valid\n" );
+		DEBUG_PRINTF("Error: JSON schema not valid\n" );
 		regfree(&r1);
 		sem_post(&sem_valid);
 		return -EINVAL;
@@ -2837,7 +2837,7 @@ int eth_down_alarm(const char *str,int *flag){
 
 	rc = eth_link_status(str,&eth_status[0]);
 	if (rc) {
-		printf("Error\r\n");
+		DEBUG_PRINTF("Error\r\n");
 		return rc;
 	}
 	if((flag[0] == 0) & (eth_status[0] == 1)){
@@ -2912,7 +2912,7 @@ int aurora_down_alarm(int aurora_link, int *flag){
 
 	rc = read_GPIO(address,&aurora_status[0]);
 	if (rc) {
-		printf("Error\r\n");
+		DEBUG_PRINTF("Error\r\n");
 		return rc;
 	}
 	if((flag[0] == 0) & (aurora_status[0] == 1)){
@@ -3537,7 +3537,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		alarm_flag = &UL2_flag;
 		break;
 		default:
-		printf("Invalid digitizer number");
+		DEBUG_PRINTF("Invalid digitizer number");
 		return -EINVAL;
 	}
 	sem_wait(sem_temp);
@@ -3545,7 +3545,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	serial_port_fd = open(board_dev,O_RDWR);
 	if (serial_port_fd < 0) {
 		//Send alarm
-		printf("Error opening Dig%d UART\n",dig_num);
+		DEBUG_PRINTF("Error opening Dig%d UART\n",dig_num);
 		sem_post(sem_temp);
 		status_alarm_json("DIG0","UART Lite 3", 99,0,"warning", "OFF");
 		strcpy(result,"ERROR");
@@ -3575,7 +3575,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		}
 		else{
 			//Send Warning
-			printf("Warning, character not received\n");
+			DEBUG_PRINTF("Warning, character not received\n");
 			if(!alarm_flag[0]){
 				status_alarm_json(board_name,"Serial Port", 99,0,"warning", "OFF");
 			}
@@ -3593,7 +3593,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	}
 	//Send Critical error
 	close(serial_port_fd);
-	printf("Critical, character not received\n");
+	DEBUG_PRINTF("Critical, character not received\n");
 	if(!alarm_flag[0]){
 		alarm_flag[0] = 1;
 		status_alarm_json(board_name,"Serial Port", 99,0,"critical","OFF");
@@ -3940,7 +3940,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		alarm_flag = &UL4_flag;
 	}
 	else{
-		printf("Invalid HV/LV UART");
+		DEBUG_PRINTF("Invalid HV/LV UART");
 		return -EINVAL;
 	}
 	//Open one device
@@ -3950,7 +3950,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		//Send alarm
 		char error_buffer[64];
 		strerror_r(errno,error_buffer,sizeof(error_buffer));
-		printf("Error opening HV/LV UART %s\n",error_buffer);
+		DEBUG_PRINTF("Error opening HV/LV UART %s\n",error_buffer);
 		sem_post(&sem_hvlv);
 		status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning","OFF");
 		strcpy(result,"ERROR");
@@ -3976,7 +3976,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		}
 		else{
 			//Send Warning
-			printf("Warning, character not received\n");
+			DEBUG_PRINTF("Warning, character not received\n");
 			if(!alarm_flag[0]){
 				status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning","OFF");
 			}
@@ -3992,13 +3992,13 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	}
 	//Send Critical error
 	close(serial_port_UL3);
-	printf("Critical, character not received\n");
+	DEBUG_PRINTF("Critical, character not received\n");
 	if(!alarm_flag[0]){
 		status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
 		alarm_flag[0] = 1;
 	}
 	strcpy(result,"ERROR IN HV/LV Reading");
-	printf("HV/LV Timedout in command %s\n",cmd);
+	DEBUG_PRINTF("HV/LV Timedout in command %s\n",cmd);
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
@@ -4008,7 +4008,7 @@ success:
 	alarm_flag[0] = 0;
 	cmd[strlen(cmd)-1] = '0';
 	cmd[strlen(cmd)-2] = '0';
-	printf("HV/LV Successful in command %s with response %s\n",cmd,result);
+	DEBUG_PRINTF("HV/LV Successful in command %s with response %s\n",cmd,result);
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
@@ -4187,7 +4187,7 @@ int setup_serial_port(int serial_port){
 
 	struct termios tty;
 	if(tcgetattr(serial_port, &tty) != 0) {
-    	printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
+    	DEBUG_PRINTF("Error %i from tcgetattr: %s\n", errno, strerror(errno));
 		return -1;
 	}
 	tty.c_cflag &= ~PARENB; // Clear parity bit, disabling parity (most common)
@@ -4214,7 +4214,7 @@ int setup_serial_port(int serial_port){
 	cfsetospeed(&tty, B115200);
 
 	if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
-    	printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+    	DEBUG_PRINTF("Error %i from tcsetattr: %s\n", errno, strerror(errno));
 		return -1;
 	}
 

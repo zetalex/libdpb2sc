@@ -28,6 +28,12 @@ extern "C" {
 #include "linux/errno.h"
 #include <COPacketCmdHkDig.h>
 
+#ifdef DEBUG
+    #define DEBUG_PRINTF(...) printf("DEBUG: " __VA_ARGS__)
+#else
+    #define DEBUG_PRINTF(...) do {} while (0)
+#endif
+
 /************************** Main Struct Definition *****************************/
 
 struct DPB_I2cSensors{

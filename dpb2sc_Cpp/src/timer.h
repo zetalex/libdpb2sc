@@ -10,6 +10,12 @@ extern "C" {
 #include <pthread.h>
 #include <unistd.h>
 
+#ifdef DEBUG
+    #define DEBUG_PRINTF(...) printf("DEBUG: " __VA_ARGS__)
+#else
+    #define DEBUG_PRINTF(...) do {} while (0)
+#endif
+
 
 struct periodic_info {
 	int sig;
