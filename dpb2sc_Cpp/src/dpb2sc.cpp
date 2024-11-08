@@ -2044,12 +2044,24 @@ int parsing_mon_channel_string_into_object(json_object *jsfps,int sfp_num,const 
 	jobj = json_object_array_get_idx(jsfps, sfp_num);
 	if(jobj == NULL){
 		jobj = json_object_new_object();
+		if(val != NULL){
 		jstring = json_object_new_string(val);
+		}
+		else{
+			strcpy(val,"ERROR");
+			jstring = json_object_new_string(val);
+		}
 		json_object_object_add(jobj,var_name,jstring);
 		json_object_array_add(jsfps,jobj);
 	}
 	else{
+		if(val != NULL){
 		jstring = json_object_new_string(val);
+		}
+		else{
+			strcpy(val,"ERROR");
+			jstring = json_object_new_string(val);
+		}
 		json_object_object_add(jobj,var_name,jstring);
 	}
 	return 0;
@@ -2109,7 +2121,13 @@ int parsing_mon_environment_status_into_object(json_object *jobj,const char *var
 int parsing_mon_environment_string_into_object(json_object *jobj,const char *var_name, char* val_str) {
 
 	struct json_object *jstring = NULL;
-	jstring = json_object_new_string(val_str);
+	if(val_str != NULL){
+		jstring = json_object_new_string(val_str);
+		}
+		else{
+			strcpy(val_str,"ERROR");
+			jstring = json_object_new_string(val_str);
+		}
 	json_object_object_add(jobj,var_name,jstring);
 	return 0;
 }
