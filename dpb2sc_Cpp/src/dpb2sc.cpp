@@ -2064,8 +2064,9 @@ int parsing_mon_channel_string_into_object(json_object *jsfps,int sfp_num,const 
 		jstring = json_object_new_string(val);
 		}
 		else{
-			strcpy(val,"ERROR");
-			jstring = json_object_new_string(val);
+			char temp[8];
+			strcpy(temp,"ERROR");
+			jstring = json_object_new_string(temp);
 		}
 		json_object_object_add(jobj,var_name,jstring);
 	}
