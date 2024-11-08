@@ -2048,8 +2048,9 @@ int parsing_mon_channel_string_into_object(json_object *jsfps,int sfp_num,const 
 		jstring = json_object_new_string(val);
 		}
 		else{
-			strcpy(val,"ERROR");
-			jstring = json_object_new_string(val);
+			char temp[8];
+			strcpy(temp,"ERROR");
+			jstring = json_object_new_string(temp);
 		}
 		json_object_object_add(jobj,var_name,jstring);
 		json_object_array_add(jsfps,jobj);
@@ -2124,10 +2125,11 @@ int parsing_mon_environment_string_into_object(json_object *jobj,const char *var
 	if(val_str != NULL){
 		jstring = json_object_new_string(val_str);
 		}
-		else{
-			strcpy(val_str,"ERROR");
-			jstring = json_object_new_string(val_str);
-		}
+	else{
+		char temp[8];
+		strcpy(temp,"ERROR");
+		jstring = json_object_new_string(temp);
+	}
 	json_object_object_add(jobj,var_name,jstring);
 	return 0;
 }
