@@ -3603,7 +3603,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		status_alarm_json(board_name,"Serial Port", 99,0,"critical","OFF");
 	}
 	strcpy(result,"ERROR IN Digitizer Reading");
-	DEBUG_PRINTF("HV/LV Timedout in command %s\n",cmd);
+	DEBUG_PRINTF("Digitizer Timedout in command %s\n",cmd);
 	// Release the two locking mechanisms
 	flock(serial_port_fd, LOCK_UN);
 	sem_post(sem_temp);
