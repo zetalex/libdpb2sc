@@ -76,7 +76,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 
 	// Enable RS485 driver to ttyUL3
 	write_GPIO(HVLV_RS485_PRI_PWR_EN_GPIO_OFFSET,1);
-	write_GPIO(HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,0);
+	write_GPIO(HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,1);
 	usleep(500000);
 	// Enable HV LV driver
 	write_GPIO(HVLV_DRV_ENABLE_PRI_GPIO_OFFSET,1);
