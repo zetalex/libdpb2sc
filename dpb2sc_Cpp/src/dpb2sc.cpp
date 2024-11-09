@@ -3900,7 +3900,14 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 					case HKDIG_GET_BOARD_I3V3A:
 					case HKDIG_GET_BOARD_I12VA:
 						float_value = atof(value);
-						float_value = float_value / 1000;
+						float_value = float_value / 1000;  // Convert from mA to A or from mV to V
+						command_response_json(msg_id,float_value,reply);
+						break;
+					case HKDIG_GET_BOARD_TU40:
+					case HKDIG_GET_BOARD_TU41:
+					case HKDIG_GET_BOARD_TU45:
+						float_value = atof(value);
+						float_value = float_value / 100;  // Convert to degrees
 						command_response_json(msg_id,float_value,reply);
 						break;
 					// BME280 commands. Special case
