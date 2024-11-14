@@ -4653,8 +4653,9 @@ int dig_get_calib_values(int dig_num){
 	char dig_response[64];
 	int32_t commands[3]= {HKDIG_GET_BME_TCAL,HKDIG_GET_BME_HCAL,HKDIG_GET_BME_PCAL};
 	char *temp;
-	char *press;
-	char *hum;
+	char calT[64];
+	char calH[64];
+	char calP[64];
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 	
 	// Get Calibration variables from digitizers. They are read only variables written by the BME280 manufacturer
@@ -4666,29 +4667,29 @@ int dig_get_calib_values(int dig_num){
 		switch(i){
 			case 0:
 			temp = pkt.GetNextField();
+			strcpy(calT,temp);
 			break;
 			case 1:
-			hum = pkt.GetNextField();
+			temp = pkt.GetNextField();
+			strcpy(calH,temp);
 			break;
 			case 2:
-			press = pkt.GetNextField();
+			temp = pkt.GetNextField();
+			strcpy(calP,temp);
 			break;
 		}
 	}
 
 	switch(dig_num){
 		case DIGITIZER_0:
-			strcpy(dig0_calT,temp);
-			strcpy(dig0_calH,hum);
-			strcpy(dig0_calP,press);
-			printf("%s\n",dig0_calT);
-			printf("%s\n",dig0_calH);
-			printf("%s\n",dig0_calP);
+			strcpy(dig0_calT,calT);
+			strcpy(dig0_calH,calH);
+			strcpy(dig0_calP,calP);
 			break;
 		case DIGITIZER_1:
-			strcpy(dig1_calT,temp);
-			strcpy(dig1_calH,hum);
-			strcpy(dig1_calP,press);
+			strcpy(dig1_calT,calT);
+			strcpy(dig1_calH,calH);
+			strcpy(dig1_calP,calP);
 			break;
 		default:
 			return -EINVAL;
