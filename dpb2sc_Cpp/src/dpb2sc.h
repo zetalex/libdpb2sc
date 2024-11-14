@@ -755,9 +755,9 @@ const char *dig_monitor_mag_board_names[] = {
     "I5VF",
     "I3V3A",
     "I12VA",
-    "TU40",
-    "TU41",
-    "TU45",
+    "TFE",
+    "TFPGA",
+    "TPWR",
     "bmedata"
 };
 
