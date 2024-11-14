@@ -3652,6 +3652,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 	int value2 = 0;
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 	rc = get_dig_hash_table_command(cmd,&dig_cmd_id);
+	DEBUG_PRINTF("Retrieved command from dig hash table: %d",dig_cmd_id);
 	if(rc){
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_ERRO].CmdString);
 		return -EINVAL;
