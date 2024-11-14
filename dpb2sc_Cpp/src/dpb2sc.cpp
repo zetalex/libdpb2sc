@@ -76,7 +76,14 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 
 	// Enable RS485 driver to ttyUL3
 	write_GPIO(HVLV_RS485_PRI_PWR_EN_GPIO_OFFSET,1);
+
+	// Enable RS485 driver to ttyUL4 also in case the bus is not shared
+	#ifdef HVLV_NORESISTORS
+	write_GPIO(HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,1);
+	#else
 	write_GPIO(HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,0);
+	#endif
+
 	usleep(500000);
 	// Enable HV LV driver
 	write_GPIO(HVLV_DRV_ENABLE_PRI_GPIO_OFFSET,1);
@@ -4541,6 +4548,13 @@ int check_hv_lv_presence(){
 		}
 		hv_connected = 0;
 	}
+
+	#ifdef HVLV_NORESISTORS
+	close(serial_port_fd);
+	serial_port_fd = open("/dev/ttyUL4",O_RDWR | O_NONBLOCK);
+	setup_serial_port(serial_port_fd);
+	#endif
+
 	tcflush(serial_port_fd,TCIOFLUSH);
 	write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
 	usleep(1000000);
