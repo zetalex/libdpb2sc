@@ -145,6 +145,7 @@ int aurora_down_alarm(int ,int *);
 int zmq_socket_init ();
 int zmq_socket_destroy();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
+int dig_get_calib_values(int);
 int dig_command_handling(int, char *, char *);
 int dig_command_translation(char *, char **, int);
 int dig_command_response(char *, char *, int, char **);
@@ -166,7 +167,8 @@ int gen_uuid(char *);
 int bme280_get_temp(char *,char *,int32_t *, float *);
 int bme280_get_press(char *,char *,int32_t *,float *);
 int bme280_get_relhum(char *,char *,int32_t *,float *);
-int check_board_presence();
+int check_digs_presence();
+int check_hv_lv_presence();
 
 /******************************************************************************/
 /************************** Constant Definitions *****************************/
