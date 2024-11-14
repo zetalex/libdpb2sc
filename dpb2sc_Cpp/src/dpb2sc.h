@@ -618,7 +618,7 @@ char HV_SN[8];
 Digitizer Command Data.
 ****************************************************************************/
 
-#define DIG_STANDARD_CMD_TABLE_SIZE 60
+#define DIG_STANDARD_CMD_TABLE_SIZE 63
 
 const char *dig_dpb_words[] = {
 	"READ DISCTRES",
@@ -677,6 +677,9 @@ const char *dig_dpb_words[] = {
     "READ TFE",
     "READ TFPGA",
     "READ TPWR",
+    "READ TFER",
+    "READ TFPGAR",
+    "READ TPWRR",
     "READ BME",
     "READ TEMP",
     "READ RELHUM",
