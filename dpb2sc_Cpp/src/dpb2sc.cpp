@@ -4601,7 +4601,7 @@ int check_digs_presence(){
 	serial_port_fd = open("/dev/ttyUL1",O_RDWR | O_NONBLOCK);
 	setup_serial_port(serial_port_fd);
 	tcflush(serial_port_fd,TCIOFLUSH);
-	pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+	// Check digitizer with empty command to see if errno is received. If anything else than COPACKET error is received, the digitizer firmware is not compatible
 	strcpy(buffer,"$#");
 	write(serial_port_fd, buffer, strlen(buffer));
 	usleep(100000);
@@ -4639,6 +4639,8 @@ int check_digs_presence(){
 	serial_port_fd = open("/dev/ttyUL2",O_RDWR | O_NONBLOCK);
 	setup_serial_port(serial_port_fd);
 	tcflush(serial_port_fd,TCIOFLUSH);
+
+	// Check with empty command to see if errno is received. If anything else than COPACKET error is received, the digitizer firmware is not compatible
 	strcpy(buffer,"$#");
 	write(serial_port_fd, buffer, strlen(buffer));
 	usleep(100000);
