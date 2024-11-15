@@ -4602,6 +4602,7 @@ int check_digs_presence(){
 	setup_serial_port(serial_port_fd);
 	tcflush(serial_port_fd,TCIOFLUSH);
 	pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+	strcpy(buffer,"$#");
 	write(serial_port_fd, buffer, strlen(buffer));
 	usleep(100000);
 	n = read(serial_port_fd, buffer, sizeof(buffer));
@@ -4610,7 +4611,11 @@ int check_digs_presence(){
 		if(!dig0_connected){
 			pkt.LoadString(buffer);
 			int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
-			if(cmd_id == HKDIG_GET_GW_VER){	
+			if(cmd_id == HKDIG_ERRO){
+				pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+				write(serial_port_fd, buffer, strlen(buffer));
+				usleep(100000);
+				n = read(serial_port_fd, buffer, sizeof(buffer));	
 				uint16_t gw_ver;
 				pkt.GetNextFieldAsUINT16(gw_ver);
 				sprintf(DIG0_SN,"%d",gw_ver);
@@ -4618,6 +4623,9 @@ int check_digs_presence(){
 				status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
 				dig0_connected = 1;
 				dig_get_calib_values(DIGITIZER_0);
+			}
+			else{
+				printf("WARNING: Digitizer 0 is using a non compatible firmware\n");
 			}
 		}
 	}
@@ -4631,7 +4639,7 @@ int check_digs_presence(){
 	serial_port_fd = open("/dev/ttyUL2",O_RDWR | O_NONBLOCK);
 	setup_serial_port(serial_port_fd);
 	tcflush(serial_port_fd,TCIOFLUSH);
-	pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+	strcpy(buffer,"$#");
 	write(serial_port_fd, buffer, strlen(buffer));
 	usleep(100000);
 	n = read(serial_port_fd, buffer, sizeof(buffer));
@@ -4640,7 +4648,10 @@ int check_digs_presence(){
 		if(!dig1_connected){
 			pkt.LoadString(buffer);
 			int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
-			if(cmd_id == HKDIG_GET_GW_VER){
+			if(cmd_id == HKDIG_ERRO){
+				pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+				write(serial_port_fd, buffer, strlen(buffer));
+				usleep(100000);
 				uint16_t gw_ver;
 				pkt.GetNextFieldAsUINT16(gw_ver);
 				sprintf(DIG1_SN,"%d",gw_ver);	
@@ -4648,6 +4659,9 @@ int check_digs_presence(){
 				status_alarm_json("DIG1","Serial Port", 99,0,"info","ON");
 				dig1_connected = 1;
 				dig_get_calib_values(DIGITIZER_1);
+			}
+			else{
+				printf("WARNING: Digitizer 1 is using a non compatible firmware\n");
 			}
 		}
 	}
