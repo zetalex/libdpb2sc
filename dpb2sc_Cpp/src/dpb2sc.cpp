@@ -1,6 +1,7 @@
 /************************** Libraries includes *****************************/
 // COPacket includes
 #include <common/protocols/COPacket/COPacket.hpp>
+#include "daq_inter_obj.h"
 
 extern _COPacketCmdList HkDigCmdList;
 
@@ -22,11 +23,19 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	if(rc)
 		return rc;
 	get_GPIO_base_address(&GPIO_BASE_ADDRESS);
-	rc = zmq_socket_init(); //Initialize ZMQ Sockets
-	if (rc) {
-		DEBUG_PRINTF("Error\r\n");
-		return rc;
-	}
+	#ifdef DAQ_MODE
+		std::string dev_name;
+		dev_name = DAQ_Inter.GetDeviceName();
+		const char *dev_name_c = dev_name.c_str();
+		printf("Interface successfully built with device %s",dev_name_c);
+		DAQ_Inter.sc_vars["Status"]->SetValue("Initialising"); //setting status message
+	#else
+		rc = zmq_socket_init(); //Initialize ZMQ Sockets
+		if (rc) {
+			DEBUG_PRINTF("Error\r\n");
+			return rc;
+		}
+	#endif
 	rc = init_I2cSensors(data); //Initialize i2c sensors
 	if (rc) {
 		DEBUG_PRINTF("Error\r\n");
@@ -107,6 +116,9 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	// FIXME: Wait for digitizers to be turned on (Very time consuming!)
 	usleep(12000000);
 	check_digs_presence();
+	#ifdef DAQ_MODE
+		DAQ_Inter.sc_vars["Status"]->SetValue("Ready");
+	#endif
 	return 0;
 }
 /**
