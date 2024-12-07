@@ -731,7 +731,7 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BME_DATA
 };
 
-#define DIG_MON_CHAN_CODES_SIZE 9
+#define DIG_MON_CHAN_CODES_SIZE 11
 const int dig_monitor_mag_chan_codes[] = {
     // Channel monitoring
     HKDIG_GET_THR_NUM,
@@ -742,7 +742,9 @@ const int dig_monitor_mag_chan_codes[] = {
     HKDIG_GET_PED_TYPE,
     HKDIG_GET_RMON_ADC_N,
     HKDIG_GET_RMON_TDC_N,
-    HKDIG_GET_RMON_FMT_N
+    HKDIG_GET_RMON_FMT_N,
+    HKDIG_GET_CHN_LG_CHG,
+    HKDIG_GET_CHN_HG_CHG
 };
 
 const char *dig_monitor_mag_board_names[] = {
@@ -782,7 +784,9 @@ const char *dig_monitor_mag_chan_names[] = {
     "pedtype",
     "rmonadc",
     "rmontdc",
-    "rmonfmt"
+    "rmonfmt",
+    "lgchg",
+    "hgchg"
 };
 
 /** @brief Detected Dig0 Serial Number */
