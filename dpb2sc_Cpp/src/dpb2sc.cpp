@@ -3678,7 +3678,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_RMON_ADC_N:			// Get ADC rate monitor value for channel N
 		case HKDIG_GET_RMON_TDC_N:			// Get TDC rate monitor value for channel N
 		case HKDIG_GET_RMON_FMT_N:			// Get FMT rate monitor value for channel N
-
+		case HKDIG_GET_CHN_LG_CHG:
+    	case HKDIG_GET_CHN_HG_CHG:
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;

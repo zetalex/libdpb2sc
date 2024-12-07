@@ -620,7 +620,7 @@ char HV_SN[8];
 Digitizer Command Data.
 ****************************************************************************/
 
-#define DIG_STANDARD_CMD_TABLE_SIZE 63
+#define DIG_STANDARD_CMD_TABLE_SIZE 75
 
 const char *dig_dpb_words[] = {
 	"READ DISCTRES",
@@ -634,6 +634,16 @@ const char *dig_dpb_words[] = {
     "SET DEADTIME ALL",
     "SET CALIB ON",
     "SET CALIB OFF",
+    "SET CALIBPULSE",
+    "SET CALIBPWR",
+    "SET CALIBLEN",
+    "SET CALIBAMP",
+    "READ CALIBAMP",
+    "SET CALIBPDN",
+    "SET CALIBMUTE",
+    "SET CALIBSEN",
+    "READ LG",
+    "READ HG",
     "READ STATUS", 
     "READ CHCONTROL",
     "SET STATUS", // TODO: Ask Fabrizio
@@ -648,6 +658,8 @@ const char *dig_dpb_words[] = {
     "SET TDCRST",
     "SET PEDTYPE",
     "READ PEDTYPE",
+    "SET ODSEL",
+    "READ ODSEL",
     "READ GWVER",
     "READ SWVER",
     "READ BDSTATUS",
