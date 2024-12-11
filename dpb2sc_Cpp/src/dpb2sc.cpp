@@ -3557,7 +3557,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_TDC_RST:
 		// Reset Aurora link, both primary and secondary
 		case HKDIG_RST_AURORA_LINK:
-		case HKDIG_GET_PED_TYPE:
 		case HKDIG_GET_GW_VER:
 
 		// Disable all FE clearing bit in Board control register
@@ -3653,6 +3652,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_THR_NUM:
 		case HKDIG_GET_IT_NUM:
 		case HKDIG_GET_DT_NUM:
+		case HKDIG_GET_PED_TYPE:
 		case HKDIG_EN_CAL_N:// Enable channel calibration input
 		// Disable calibration input for channel n
 		case HKDIG_DIS_CAL_N:
