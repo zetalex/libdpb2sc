@@ -3559,6 +3559,13 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_RST_AURORA_LINK:
 		case HKDIG_GET_GW_VER:
 
+		// Calibration board commands
+		case HKDIG_TRG_CAL_PULSE:
+		case HKDIG_GET_CAL_PLS_AMP:
+
+		// OD Commands
+		case HKDIG_GET_OD_SEL_REG:
+		
 		// Disable all FE clearing bit in Board control register
 		case HKDIG_STOP_FE_ALL:
 		// Enable all FE setting bit in Board control register
@@ -3670,6 +3677,17 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_CHN_STATUS:
 
 		case HKDIG_GET_CHN_CNTRL:
+
+		// Calibration board commands
+		case HKDIG_SET_CAL_POWER:
+		case HKDIG_SET_CAL_PLS_LEN:
+		case HKDIG_SET_CAL_PLS_AMP:
+		case HKDIG_SET_CAL_NPDN:
+		case HKDIG_SET_CAL_MUTE:
+		case HKDIG_SET_CAL_PLSEN:
+
+		// OD Commands
+		case HKDIG_SET_OD_SEL_REG:
 
 		// Set RMon interval
 		case HKDIG_SET_RMON_PER:
