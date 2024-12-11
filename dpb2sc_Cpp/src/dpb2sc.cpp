@@ -2305,7 +2305,6 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 	snprintf(msg_date, sizeof(msg_date), "%d-%d-%dT%d:%d:%d.%dZ",year,mon,day,hour,min,sec,msec);
 
 	gen_uuid(uuid);
-	printf("%s\n",val);
 	json_object *jmsg_id2 = json_object_new_int(msg_id);
 	json_object *jmsg_time2 = json_object_new_string(msg_date);
 	json_object *jmsg_type2 = json_object_new_string("Command reply");
@@ -3565,7 +3564,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		// OD Commands
 		case HKDIG_GET_OD_SEL_REG:
-		
+
 		// Disable all FE clearing bit in Board control register
 		case HKDIG_STOP_FE_ALL:
 		// Enable all FE setting bit in Board control register
