@@ -2305,7 +2305,7 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 	snprintf(msg_date, sizeof(msg_date), "%d-%d-%dT%d:%d:%d.%dZ",year,mon,day,hour,min,sec,msec);
 
 	gen_uuid(uuid);
-
+	printf("%s\n",val);
 	json_object *jmsg_id2 = json_object_new_int(msg_id);
 	json_object *jmsg_time2 = json_object_new_string(msg_date);
 	json_object *jmsg_type2 = json_object_new_string("Command reply");
@@ -4595,8 +4595,8 @@ int check_digs_presence(){
 	int serial_port_fd,n;
 	char buffer[40];
 
-
-		// Check if Dig0 and Dig1 are there
+	sem_wait(&sem_dig0);
+	// Check if Dig0 and Dig1 are there
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 
 	serial_port_fd = open("/dev/ttyUL1",O_RDWR | O_NONBLOCK);
@@ -4608,6 +4608,7 @@ int check_digs_presence(){
 	usleep(100000);
 	n = read(serial_port_fd, buffer, sizeof(buffer));
 	buffer[n] = '\0';
+	sem_post(&sem_dig0);
 	if(n > 0){
 		if(!dig0_connected){
 			pkt.LoadString(buffer);
@@ -4637,6 +4638,8 @@ int check_digs_presence(){
 		dig0_connected = 0;
 	}
 	close(serial_port_fd);
+
+	sem_wait(&sem_dig1);
 	serial_port_fd = open("/dev/ttyUL2",O_RDWR | O_NONBLOCK);
 	setup_serial_port(serial_port_fd);
 	tcflush(serial_port_fd,TCIOFLUSH);
@@ -4647,6 +4650,7 @@ int check_digs_presence(){
 	usleep(100000);
 	n = read(serial_port_fd, buffer, sizeof(buffer));
 	buffer[n] = '\0';
+	sem_post(&sem_dig1);
 	if(n > 0){
 		if(!dig1_connected){
 			pkt.LoadString(buffer);
@@ -4675,7 +4679,6 @@ int check_digs_presence(){
 		dig1_connected = 0;
 	}
 	close(serial_port_fd);
-
 	return 0;
 }
 
