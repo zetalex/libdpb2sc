@@ -1876,7 +1876,7 @@ int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,const ch
 		sprintf(buffer, "%lf", (double) val);
 		jdouble = json_object_new_double_s((double) val,buffer);
 		json_object_object_add(jobj,var_name,jdouble);
-		json_object_array_add(jsfps,jobj);
+		json_object_array_put_idx(jsfps,sfp_num,jobj);
 	}
 	else{
 		sprintf(buffer, "%lf", (double) val);
