@@ -2639,8 +2639,6 @@ int poll_GPIO(int address){
     poll_gpio.events = POLL_GPIO;
     poll_gpio.revents = 0;
 
-	lseek(GPIO_val, 0, SEEK_SET);
-    read(GPIO_val, &value, 1); // read GPIO value
 	poll_ret = poll(&poll_gpio, 1, 0);
 
 	if(!poll_ret) {
