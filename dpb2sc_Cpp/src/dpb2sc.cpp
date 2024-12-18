@@ -2624,6 +2624,7 @@ int poll_GPIO(int address){
     char dir[8] = "in";
     int GPIO_val, poll_ret,rc;
 	struct pollfd poll_gpio;
+	char value;
 
 	int add = address + GPIO_BASE_ADDRESS;
 
@@ -2664,16 +2665,18 @@ int poll_GPIO(int address){
 
 	poll_ret = poll(&poll_gpio, 1, 0);
 
-	if((poll_gpio.revents) & (POLL_GPIO)){
-		rc = -ALARMTRG;
-	}
-	else if(!poll_ret) {
+	if(!poll_ret) {
 		rc = 0;
+	}
+	else if((poll_gpio.revents) & (POLL_GPIO)){
+		lseek(GPIO_val, 0, SEEK_SET);
+        read(GPIO_val, &value, 1); // read GPIO value
+		rc = -ALARMTRG;
 	}
 	else{
 		rc = -1;
 	}
-
+	close(GPIO_val);
     // Building second command
     snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
 
@@ -3407,7 +3410,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 					goto end;
 				}
-				rc = command_response_json (msg_id,!val_read[0],cmd_reply);
+				rc = command_response_json (msg_id,val_read[0],cmd_reply);
 				goto end;
 			}
 			if(strcmp(cmd[2],"VOLT") == 0){
