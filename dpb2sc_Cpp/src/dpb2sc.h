@@ -281,19 +281,11 @@ uint16_t UL4_flag = 0;
  *  GPIO pins definition
  *  @{
  */
-/** @brief Number of GPIO pins used */
-#define GPIO_PINS_SIZE 34
+
 /** @brief Total GPIOs used */
 #define TOTAL_GPIO_NUMBER 72
 
 /** @brief GPIO pins definition */
-#define DIG0_MAIN_AURORA_LINK 40
-#define DIG0_BACKUP_AURORA_LINK 41
-#define DIG1_MAIN_AURORA_LINK 42
-#define DIG1_BACKUP_AURORA_LINK 43
-#define DMA_ENABLE 57
-#define DMA_SOURCE 49
-#define PLL_LOL_N 45  
 #define SFP0_PWR_ENA 0
 #define SFP1_PWR_ENA 1
 #define SFP2_PWR_ENA 2
@@ -312,11 +304,18 @@ uint16_t UL4_flag = 0;
 #define SFP3_RX_LOS 26
 #define SFP4_RX_LOS 30
 #define SFP5_RX_LOS 34
+#define DIG0_MAIN_AURORA_LINK 40
+#define DIG0_BACKUP_AURORA_LINK 41
+#define DIG1_MAIN_AURORA_LINK 42
+#define DIG1_BACKUP_AURORA_LINK 43
+#define PLL_LOL_N 45 
+#define DMA_SOURCE 49 
+#define DMA_ENABLE 57
 #define I2C_MUX_RESET 67
 
 
 /******************************************************************************
-* HV and LV GPIOs for CPUs enables
+* HV and LV GPIOs for CPUs enables and RS485 Drivers
 ****************************************************************************/
 #define LV_MAIN_CPU_GPIO_OFFSET             52
 #define LV_BACKUP_CPU_GPIO_OFFSET           53
@@ -327,43 +326,6 @@ uint16_t UL4_flag = 0;
 #define HVLV_RS485_PRI_PWR_EN_GPIO_OFFSET   68
 #define HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET   69
 
-/** @brief GPIO pins list */
-const int GPIO_PINS[GPIO_PINS_SIZE] = {
-    DIG0_MAIN_AURORA_LINK,
-    DIG0_BACKUP_AURORA_LINK,
-    DIG1_MAIN_AURORA_LINK,
-    DIG1_BACKUP_AURORA_LINK,
-    SFP0_PWR_ENA,
-    SFP1_PWR_ENA,
-    SFP2_PWR_ENA,
-    SFP3_PWR_ENA,
-    SFP4_PWR_ENA,
-    SFP5_PWR_ENA,
-    SFP0_TX_DIS,
-    SFP1_TX_DIS,
-    SFP2_TX_DIS,
-    SFP3_TX_DIS,
-    SFP4_TX_DIS,
-    SFP5_TX_DIS,
-    SFP0_RX_LOS,
-    SFP1_RX_LOS,
-    SFP2_RX_LOS,
-    SFP3_RX_LOS,
-    SFP4_RX_LOS,
-    SFP5_RX_LOS,
-    PLL_LOL_N,
-    I2C_MUX_RESET,
-    LV_MAIN_CPU_GPIO_OFFSET,           
-    LV_BACKUP_CPU_GPIO_OFFSET,         
-    HV_MAIN_CPU_GPIO_OFFSET,           
-    HV_BACKUP_CPU_GPIO_OFFSET,         
-    HVLV_DRV_ENABLE_PRI_GPIO_OFFSET,   
-    HVLV_DRV_ENABLE_SEC_GPIO_OFFSET,   
-    HVLV_RS485_PRI_PWR_EN_GPIO_OFFSET,
-    HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,
-    DMA_ENABLE,
-    DMA_SOURCE 
-};
 /** @} */
 /******************************************************************************
 * Temperature Sensor Register Set - Temperature value, alarm value and alarm flags.

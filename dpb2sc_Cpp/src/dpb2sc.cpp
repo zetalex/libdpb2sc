@@ -2731,8 +2731,8 @@ void unexport_GPIO(){
 	for(int j=0; j<i; j++){
 		num_str = strtok(arr[j],"gpio");
 		GPIO_num = atoi(num_str);
-		for(int l=0; l<GPIO_PINS_SIZE; l++){
-			if(GPIO_num == (GPIO_PINS[l]+ GPIO_BASE_ADDRESS)){
+		for(int l=0; l<TOTAL_GPIO_NUMBER; l++){
+			if(GPIO_num == (l+ GPIO_BASE_ADDRESS)){
 				snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/gpio/unexport", GPIO_num);
 				system(cmd);
 				break;
