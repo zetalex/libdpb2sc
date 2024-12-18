@@ -2661,16 +2661,12 @@ int poll_GPIO(int address){
     poll_gpio.events = POLL_GPIO;
     poll_gpio.revents = 0;
 
-	lseek(GPIO_val, 0, SEEK_SET);  /* same as rewind(f); */
-
 	poll_ret = poll(&poll_gpio, 1, 0);
 
 	if(!poll_ret) {
 		rc = 0;
 	}
 	else if((poll_gpio.revents) & (POLL_GPIO)){
-		lseek(GPIO_val, 0, SEEK_SET);
-        read(GPIO_val, &value, 1); // read GPIO value
 		rc = -ALARMTRG;
 	}
 	else{
