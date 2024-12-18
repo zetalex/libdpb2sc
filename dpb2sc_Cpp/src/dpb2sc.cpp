@@ -23,6 +23,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	if(rc)
 		return rc;
 	get_GPIO_base_address(&GPIO_BASE_ADDRESS);
+	init_GPIO();
 	rc = zmq_socket_init(); //Initialize ZMQ Sockets
 	if (rc) {
 		DEBUG_PRINTF("Error\r\n");
@@ -221,6 +222,25 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    //Stop I2C Sensors
    stop_I2cSensors(data);
    return;
+}
+
+int init_GPIO(){
+	char GPIO_dir[64] = "/sys/class/gpio/";
+	regex_t r1;
+
+	int data = 0;
+	int i = 0;
+	char *arr[32];
+	char *num_str;
+	char cmd[64];
+	int GPIO_num;
+	for(int l=0; l<GPIO_PINS_SIZE; l++){
+		GPIO_num = (GPIO_PINS[l]+ GPIO_BASE_ADDRESS);
+		snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/gpio/export", GPIO_num);
+		system(cmd);
+
+	}
+	return 0;
 }
 
 /** @} */
@@ -2507,14 +2527,6 @@ int write_GPIO(int address, int value){
     val[0] = value + '0';
 	int add = address + GPIO_BASE_ADDRESS;
 
-    // Building first command
-    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
-
-    // Building GPIO sysfs file
-    if (system(cmd1) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
     snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/direction", add);
     snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
 
@@ -2526,14 +2538,6 @@ int write_GPIO(int address, int value){
     fwrite(val,sizeof(val), 1,fd2);
     fclose(fd2);
 
-    // Building second command
-    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
-
-    //Removing GPIO sysfs file
-    if (system(cmd2) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
 	sem_post(&file_sync);
 	return 0;
 }
@@ -2558,15 +2562,6 @@ int read_GPIO(int address,int *value){
     FILE *GPIO_val;
 
 	int add = address + GPIO_BASE_ADDRESS;
-    // Building first command
-    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
-
-
-    // Building GPIO sysfs file
-    if (system(cmd1) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
     snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/direction", add);
     snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
 
@@ -2594,14 +2589,6 @@ int read_GPIO(int address,int *value){
 	fclose(GPIO_val);
 	free(value_string);
 
-    // Building second command
-    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
-
-    //Removing GPIO sysfs file
-    if (system(cmd2) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
 	sem_post(&file_sync);
 	return 0;
 }
@@ -2628,15 +2615,6 @@ int poll_GPIO(int address){
 
 	int add = address + GPIO_BASE_ADDRESS;
 
-    // Building first command
-    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
-
-
-    // Building GPIO sysfs file
-    if (system(cmd1) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
     snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/direction", add);
     snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
 
@@ -2661,6 +2639,8 @@ int poll_GPIO(int address){
     poll_gpio.events = POLL_GPIO;
     poll_gpio.revents = 0;
 
+	lseek(GPIO_val, 0, SEEK_SET);
+    read(GPIO_val, &value, 1); // read GPIO value
 	poll_ret = poll(&poll_gpio, 1, 0);
 
 	if(!poll_ret) {
@@ -2673,14 +2653,7 @@ int poll_GPIO(int address){
 		rc = -1;
 	}
 	close(GPIO_val);
-    // Building second command
-    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
 
-    //Removing GPIO sysfs file
-    if (system(cmd2) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
 	sem_post(&file_sync);
 	return rc;
 }
@@ -2708,28 +2681,12 @@ int write_GPIO_edge(int address, char* edge){
 	}
 	int add = address + GPIO_BASE_ADDRESS;
 
-    // Building first command
-    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
-
-    // Building GPIO sysfs file
-    if (system(cmd1) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
     snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/edge", add);
 
     fd1 = fopen(dir_add,"w");
     fwrite(dir, sizeof(dir), 1,fd1);
     fclose(fd1);
 
-    // Building second command
-    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
-
-    //Removing GPIO sysfs file
-    if (system(cmd2) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
 	sem_post(&file_sync);
 	return 0;
 }
