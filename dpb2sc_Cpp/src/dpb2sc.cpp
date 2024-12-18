@@ -2961,10 +2961,10 @@ int pll_not_locked_alarm(){
 	if(rc == -ALARMTRG){
 		timestamp = time(NULL);
 		if(pll_locked_val){
-			rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"critical", "OFF");
+			rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"info", "ON");
 		}
 		else {
-			rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"info", "ON");
+			rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"critical", "OFF");
 		}
 	}
 	return 0;
