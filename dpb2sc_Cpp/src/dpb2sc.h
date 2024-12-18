@@ -282,13 +282,15 @@ uint16_t UL4_flag = 0;
  *  @{
  */
 /** @brief Number of GPIO pins used */
-#define GPIO_PINS_SIZE 32
+#define GPIO_PINS_SIZE 34
 
 /** @brief GPIO pins definition */
 #define DIG0_MAIN_AURORA_LINK 40
 #define DIG0_BACKUP_AURORA_LINK 41
 #define DIG1_MAIN_AURORA_LINK 42
 #define DIG1_BACKUP_AURORA_LINK 43
+#define DMA_ENABLE 57
+#define DMA_SOURCE 49
 #define PLL_LOL_N 45  
 #define SFP0_PWR_ENA 0
 #define SFP1_PWR_ENA 1
@@ -356,7 +358,9 @@ const int GPIO_PINS[GPIO_PINS_SIZE] = {
     HVLV_DRV_ENABLE_PRI_GPIO_OFFSET,   
     HVLV_DRV_ENABLE_SEC_GPIO_OFFSET,   
     HVLV_RS485_PRI_PWR_EN_GPIO_OFFSET,
-    HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET 
+    HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,
+    DMA_ENABLE,
+    DMA_SOURCE 
 };
 /** @} */
 /******************************************************************************
