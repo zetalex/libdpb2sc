@@ -204,6 +204,14 @@ int init_shared_memory() {
  * @return void
  */
 void dpbsc_lib_close(struct DPB_I2cSensors *data) {
+	// Close alarm fd
+   close(dig0_aurora_main_fd);
+   close(dig0_aurora_backup_fd);
+   close(dig1_aurora_main_fd);
+   close(dig1_aurora_backup_fd);
+   close(pll_locked_fd);
+
+   //Unexport all GPIOs
    unexport_GPIO();
    zmq_socket_destroy();
    // Release all locks
@@ -225,8 +233,6 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
 }
 
 int init_GPIO(){
-	char GPIO_dir[64] = "/sys/class/gpio/";
-	regex_t r1;
 
 	int data = 0;
 	int i = 0;
@@ -240,6 +246,13 @@ int init_GPIO(){
 		system(cmd);
 
 	}
+
+	// Open alarms fd forever
+	dig0_aurora_main_fd = open("/sys/class/gpio/gpio452/value",O_RDONLY);
+	dig0_aurora_backup_fd = open("/sys/class/gpio/gpio453/value",O_RDONLY);
+	dig1_aurora_main_fd = open("/sys/class/gpio/gpio454/value",O_RDONLY);
+	dig1_aurora_backup_fd = open("/sys/class/gpio/gpio455/value",O_RDONLY);
+	pll_locked_fd = open("/sys/class/gpio/gpio457/value",O_RDONLY);
 	return 0;
 }
 
@@ -2600,7 +2613,7 @@ int read_GPIO(int address,int *value){
  *
  * @return 0 if worked correctly, if not returns a negative integer.
  */
-int poll_GPIO(int address){
+int poll_GPIO(int GPIO_val, int address, int *val_num){
 
 	sem_wait(&file_sync);
 	char cmd1[64];
@@ -2609,9 +2622,10 @@ int poll_GPIO(int address){
 	char val_add[64];
     FILE *fd1;
     char dir[8] = "in";
-    int GPIO_val, poll_ret,rc;
+    int poll_ret,rc;
 	struct pollfd poll_gpio;
-	char value;
+	char value[4];
+	uint64_t timestamp;
 
 	int add = address + GPIO_BASE_ADDRESS;
 
@@ -2627,12 +2641,6 @@ int poll_GPIO(int address){
     fwrite(dir, sizeof(dir), 1,fd1);
     fclose(fd1);
 
-    GPIO_val = open(val_add,O_RDONLY);
-	if(GPIO_val == NULL){
-        sem_post(&file_sync);
-        return -EINVAL;
-    }
-
 	// file descriptor from SW is being polled
     poll_gpio.fd = GPIO_val; 
     // poll events in GPIO 
@@ -2646,11 +2654,14 @@ int poll_GPIO(int address){
 	}
 	else if((poll_gpio.revents) & (POLL_GPIO)){
 		rc = -ALARMTRG;
+		lseek(GPIO_val, 0, SEEK_SET);
+        read(GPIO_val, value, 1); // read GPIO value
+		value[1] = '\0';
+		val_num[0] = atoi(value);
 	}
 	else{
 		rc = -1;
 	}
-	close(GPIO_val);
 
 	sem_post(&file_sync);
 	return rc;
@@ -2682,7 +2693,7 @@ int write_GPIO_edge(int address, char* edge){
     snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/edge", add);
 
     fd1 = fopen(dir_add,"w");
-    fwrite(dir, sizeof(dir), 1,fd1);
+    fwrite(edge, sizeof(edge), 1,fd1);
     fclose(fd1);
 
 	sem_post(&file_sync);
@@ -2875,6 +2886,7 @@ int aurora_down_alarm(int aurora_link, int *flag){
 
 	int aurora_status[1];
 	int rc = 0;
+	int rc_poll = 0;
 	int address = 0;
 	uint64_t timestamp ;
 	char link_id[64] = "Aurora Main Link Status";
@@ -2888,32 +2900,33 @@ int aurora_down_alarm(int aurora_link, int *flag){
 	case 0:
 		address = DIG0_MAIN_AURORA_LINK;
 		strcpy(link_id, "Aurora Main Link Status");
+		rc_poll = poll_GPIO(dig0_aurora_main_fd,DIG0_MAIN_AURORA_LINK,&dig0_aurora_main_val);
+		aurora_status[0] = dig0_aurora_main_val;
 		break;
 	case 1:
 		address = DIG0_BACKUP_AURORA_LINK;
 		strcpy(link_id, "Aurora Backup Link Status");
+		rc_poll = poll_GPIO(dig0_aurora_backup_fd,DIG0_BACKUP_AURORA_LINK,&dig0_aurora_backup_val);
+		aurora_status[0] = dig0_aurora_backup_val;
 		break;
 	case 2:
 		address = DIG1_MAIN_AURORA_LINK;
 		strcpy(link_id, "Aurora Main Link Status");
+		rc_poll = poll_GPIO(dig1_aurora_main_fd,DIG1_MAIN_AURORA_LINK,&dig1_aurora_main_val);
+		aurora_status[0] = dig1_aurora_main_val;
 		break;
 	case 3:
 		address = DIG1_BACKUP_AURORA_LINK;
 		strcpy(link_id, "Aurora Backup Link Status");
+		rc_poll = poll_GPIO(dig1_aurora_backup_fd,DIG1_BACKUP_AURORA_LINK,&dig1_aurora_backup_val);
+		aurora_status[0] = dig1_aurora_backup_val;
 		break;
 	default:
 		return -EINVAL;
 	}
 
-	rc = poll_GPIO(address);
-	if(rc == -ALARMTRG){
-		rc = read_GPIO(address,&aurora_status[0]);
-		if (rc) {
-			DEBUG_PRINTF("Error\r\n");
-			return rc;
-		}
-		if((flag[0] == 0) & (aurora_status[0] == 1)){
-			flag[0] = aurora_status[0];
+	if(rc_poll == -ALARMTRG){
+		if(aurora_status[0] == 1){
 			if(aurora_link<2){
 				timestamp = time(NULL);
 				rc = status_alarm_json("DIG0",link_id,99,timestamp,"info", "ON");
@@ -2925,8 +2938,7 @@ int aurora_down_alarm(int aurora_link, int *flag){
 				return rc;
 			}
 		}
-		else if((flag[0] == 1) & (aurora_status[0] == 0)){
-			flag[0] = aurora_status[0];
+		else if(aurora_status[0] == 0){
 			if(aurora_link<2){
 				timestamp = time(NULL);
 				rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical", "OFF");
@@ -2938,18 +2950,6 @@ int aurora_down_alarm(int aurora_link, int *flag){
 				return rc;
 			}
 		}
-		else {
-			if(aurora_link<2){
-				timestamp = time(NULL);
-				rc = status_alarm_json("DIG0","Aurora Link Flap",99,timestamp,"critical", "falling");
-				return rc;
-			}
-			else{
-				timestamp = time(NULL);
-				rc = status_alarm_json("DIG1","Aurora Link Flap",99,timestamp,"critical", "falling");
-				return rc;
-			}
-		}
 	}
 	return 0;
 }
@@ -2957,12 +2957,14 @@ int aurora_down_alarm(int aurora_link, int *flag){
 int pll_not_locked_alarm(){
 	int rc;
 	uint64_t timestamp ;
-	rc = poll_GPIO(PLL_LOL_N);
+	rc = poll_GPIO(pll_locked_fd,PLL_LOL_N,&pll_locked_val);
 	if(rc == -ALARMTRG){
 		timestamp = time(NULL);
-		rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"critical", "OFF");
-		if(rc){
-			return rc;
+		if(pll_locked_val){
+			rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"critical", "OFF");
+		}
+		else {
+			rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"info", "ON");
 		}
 	}
 	return 0;
@@ -3356,12 +3358,12 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				}
 			}
 			if(strcmp(cmd[2],"PLLLOCK") == 0){
-				rc = read_GPIO(PLL_LOL_N,bool_read);
+				//rc = poll_GPIO(pll_locked_fd,PLL_LOL_N,bool_read);
 				if(rc){
 					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 					goto end;
 				}
-				rc = command_response_json (msg_id,val_read[0],cmd_reply);
+				rc = command_status_response_json (msg_id,pll_locked_val,cmd_reply);
 				goto end;
 			}
 			if(strcmp(cmd[2],"VOLT") == 0){

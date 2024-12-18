@@ -138,8 +138,8 @@ int json_schema_validate (const char *,const char *, const char *);
 int get_GPIO_base_address(int *);
 int write_GPIO(int , int );
 int write_GPIO_edge(int, char*);
-int read_GPIO(int ,int *);
-int poll_GPIO(int);
+int read_GPIO(int, int *);
+int poll_GPIO(int, int, int *);
 void unexport_GPIO();
 int eth_link_status (const char *,int *);
 int eth_link_status_config (char *, int );
@@ -184,6 +184,41 @@ int check_hv_lv_presence();
 #define SFP_NUM 6
 #define DIGITIZER_0 0
 #define DIGITIZER_1 1
+
+/************************** Alarms File Descriptors *****************************/
+/** @defgroup alarmsfd Alarms File Descriptors
+ *  Some file descriptors for alarms as universal variables
+ *  @{
+ */
+/** @brief Dig0 Main Aurora Link up */
+int dig0_aurora_main_fd;
+/** @brief Dig0 Backup Aurora Link up */
+int dig0_aurora_backup_fd;
+/** @brief Dig1 Main Aurora Link up */
+int dig1_aurora_main_fd;
+/** @brief Dig1 Backup Aurora Link up */
+int dig1_aurora_backup_fd;
+/** @brief PLL Locked */
+int pll_locked_fd;
+/** @} */
+
+/************************** Alarms File Values *****************************/
+/** @defgroup alarmsfd Alarms File Values
+ *  Values for some GPIOs as universal variables
+ *  @{
+ */
+/** @brief Dig0 Main Aurora Link up */
+int dig0_aurora_main_val;
+/** @brief Dig0 Backup Aurora Link up */
+int dig0_aurora_backup_val;
+/** @brief Dig1 Main Aurora Link up */
+int dig1_aurora_main_val;
+/** @brief Dig1 Backup Aurora Link up */
+int dig1_aurora_backup_val;
+/** @brief PLL Locked */
+int pll_locked_val;
+/** @} */
+
 /************************** Custom Errors Definitions *****************************/
 /** @defgroup err Custom Error Flags
  *  Shared Memory content
