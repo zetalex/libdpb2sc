@@ -2712,7 +2712,7 @@ void unexport_GPIO(){
 
 	int data = 0;
 	int i = 0;
-	char *arr[32];
+	char *arr[64];
 	char *num_str;
 	char cmd[64];
 	int GPIO_num;
