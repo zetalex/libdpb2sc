@@ -283,6 +283,8 @@ uint16_t UL4_flag = 0;
  */
 /** @brief Number of GPIO pins used */
 #define GPIO_PINS_SIZE 34
+/** @brief Total GPIOs used */
+#define TOTAL_GPIO_NUMBER 72
 
 /** @brief GPIO pins definition */
 #define DIG0_MAIN_AURORA_LINK 40

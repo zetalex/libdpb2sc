@@ -240,8 +240,8 @@ int init_GPIO(){
 	char *num_str;
 	char cmd[64];
 	int GPIO_num;
-	for(int l=0; l<GPIO_PINS_SIZE; l++){
-		GPIO_num = (GPIO_PINS[l]+ GPIO_BASE_ADDRESS);
+	for(int l=0; l<TOTAL_GPIO_NUMBER; l++){
+		GPIO_num = (l + GPIO_BASE_ADDRESS);
 		snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/gpio/export", GPIO_num);
 		system(cmd);
 
