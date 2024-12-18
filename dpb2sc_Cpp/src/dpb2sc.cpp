@@ -6,6 +6,7 @@ extern _COPacketCmdList HkDigCmdList;
 
 extern "C" {
 #include "dpb2sc.h"
+#include <poll.h>
 
 /************************** Init and Close functions ******************************/
 /** @defgroup init_close Init and close functions
@@ -2245,9 +2246,9 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 		jval = json_object_new_string("ON");
 	else if(val == 0)
 		jval = json_object_new_string("OFF");
-	else if (val == -2)
+	else if (val == -ERRSET)
 		jval = json_object_new_string("ERROR: SET operation not successful");
-	else if (val == -3)
+	else if (val == -ERRREAD)
 		jval = json_object_new_string("ERROR: READ operation not successful");
 	else
 		jval = json_object_new_string("ERROR: Command not valid");
@@ -2538,7 +2539,7 @@ int write_GPIO(int address, int value){
 }
 
 /**
- * Gets GPIO base address
+ * Reads from a GPIO address and stores the result in value
  *
  * @param address GPIO address offset (from base address calculated from get_base_address) where the desired value is stored
  * @param value pointer where the read value will be stored
@@ -2592,6 +2593,135 @@ int read_GPIO(int address,int *value){
 	value[0] = (int) atof(value_string);
 	fclose(GPIO_val);
 	free(value_string);
+
+    // Building second command
+    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
+
+    //Removing GPIO sysfs file
+    if (system(cmd2) == -1) {
+		sem_post(&file_sync);
+        return -EINVAL;
+    }
+	sem_post(&file_sync);
+	return 0;
+}
+
+/**
+ * Polls from a GPIO address to see if the value changed
+ *
+ * @param address GPIO address offset (from base address calculated from get_base_address) where the desired value is stored
+ *
+ * @return 0 if worked correctly, if not returns a negative integer.
+ */
+int poll_GPIO(int address){
+
+	sem_wait(&file_sync);
+	char cmd1[64];
+	char cmd2[64];
+	char dir_add[64];
+	char val_add[64];
+    FILE *fd1;
+    char dir[8] = "in";
+    int GPIO_val, poll_ret,rc;
+	struct pollfd poll_gpio;
+
+	int add = address + GPIO_BASE_ADDRESS;
+
+    // Building first command
+    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
+
+
+    // Building GPIO sysfs file
+    if (system(cmd1) == -1) {
+		sem_post(&file_sync);
+        return -EINVAL;
+    }
+    snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/direction", add);
+    snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
+
+
+    fd1 = fopen(dir_add,"w");
+	if(fd1 == NULL){
+        sem_post(&file_sync);
+        return -EINVAL;
+    }
+    fwrite(dir, sizeof(dir), 1,fd1);
+    fclose(fd1);
+
+    GPIO_val = open(val_add,O_RDONLY);
+	if(GPIO_val == NULL){
+        sem_post(&file_sync);
+        return -EINVAL;
+    }
+
+	// file descriptor from SW is being polled
+    poll_gpio.fd = GPIO_val; 
+    // poll events in GPIO 
+    poll_gpio.events = POLL_GPIO;
+    poll_gpio.revents = 0;
+
+	lseek(GPIO_val, 0, SEEK_SET);  /* same as rewind(f); */
+
+	poll_ret = poll(&poll_gpio, 1, 0);
+
+	if((poll_gpio.revents) & (POLL_GPIO)){
+		rc = -ALARMTRG;
+	}
+	else if(!poll_ret) {
+		rc = 0;
+	}
+	else{
+		rc = -1;
+	}
+
+    // Building second command
+    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
+
+    //Removing GPIO sysfs file
+    if (system(cmd2) == -1) {
+		sem_post(&file_sync);
+        return -EINVAL;
+    }
+	sem_post(&file_sync);
+	return rc;
+}
+
+/**
+ * Writes edge for interrupt triggering into a given GPIO address
+ *
+ * @param address GPIO address offset (from base address calculated from get_base_address) where the value is going to be written
+ * @param edge value which will be written (falling, rising,both or none)
+ *
+ * @return 0 if worked correctly, if not returns a negative integer.
+ */
+int write_GPIO_edge(int address, char* edge){
+
+	sem_wait(&file_sync);
+	char cmd1[64];
+	char cmd2[64];
+	char dir_add[64];
+    FILE *fd1;
+    char dir[8] = "out";
+
+    if(strcmp(edge,"falling") && strcmp(edge,"rising") && strcmp(edge,"both") && strcmp(edge,"none")){
+		sem_post(&file_sync);
+    	return -EINVAL;
+	}
+	int add = address + GPIO_BASE_ADDRESS;
+
+    // Building first command
+    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
+
+    // Building GPIO sysfs file
+    if (system(cmd1) == -1) {
+		sem_post(&file_sync);
+        return -EINVAL;
+    }
+    snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/edge", add);
+
+    fd1 = fopen(dir_add,"w");
+    fwrite(dir, sizeof(dir), 1,fd1);
+    fclose(fd1);
 
     // Building second command
     snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
@@ -2821,34 +2951,63 @@ int aurora_down_alarm(int aurora_link, int *flag){
 		return -EINVAL;
 	}
 
-	rc = read_GPIO(address,&aurora_status[0]);
-	if (rc) {
-		DEBUG_PRINTF("Error\r\n");
-		return rc;
+	rc = poll_GPIO(address);
+	if(rc == -ALARMTRG){
+		rc = read_GPIO(address,&aurora_status[0]);
+		if (rc) {
+			DEBUG_PRINTF("Error\r\n");
+			return rc;
+		}
+		if((flag[0] == 0) & (aurora_status[0] == 1)){
+			flag[0] = aurora_status[0];
+			if(aurora_link<2){
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG0",link_id,99,timestamp,"info", "ON");
+				return rc;
+			}
+			else{
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG1",link_id,99,timestamp,"info", "ON");
+				return rc;
+			}
+		}
+		else if((flag[0] == 1) & (aurora_status[0] == 0)){
+			flag[0] = aurora_status[0];
+			if(aurora_link<2){
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical", "OFF");
+				return rc;
+			}
+			else{
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical", "OFF");
+				return rc;
+			}
+		}
+		else {
+			if(aurora_link<2){
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG0","Aurora Link Flap",99,timestamp,"critical", "falling");
+				return rc;
+			}
+			else{
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG1","Aurora Link Flap",99,timestamp,"critical", "falling");
+				return rc;
+			}
+		}
 	}
-	if((flag[0] == 0) & (aurora_status[0] == 1)){
-		flag[0] = aurora_status[0];
-		if(aurora_link<2){
-			timestamp = time(NULL);
-			rc = status_alarm_json("DIG0",link_id,99,timestamp,"info", "ON");
-			return rc;
-		}
-		else{
-			timestamp = time(NULL);
-			rc = status_alarm_json("DIG1",link_id,99,timestamp,"info", "ON");
-			return rc;
-		}
-	}
-	if((flag[0] == 1) & (aurora_status[0] == 0)){
-		flag[0] = aurora_status[0];
-		if(aurora_link<2){
-			timestamp = time(NULL);
-			rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical", "OFF");
-			return rc;
-		}
-		else{
-			timestamp = time(NULL);
-			rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical", "OFF");
+	return 0;
+}
+
+int pll_not_locked_alarm(){
+	int rc;
+	uint64_t timestamp ;
+	rc = poll_GPIO(PLL_LOL_N);
+	if(rc == -ALARMTRG){
+		timestamp = time(NULL);
+		rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"critical", "OFF");
+		if(rc){
 			return rc;
 		}
 	}
@@ -3241,6 +3400,15 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					rc = command_status_response_json (msg_id,99,cmd_reply);
 					goto end;
 				}
+			}
+			if(strcmp(cmd[2],"PLLLOCK") == 0){
+				rc = read_GPIO(PLL_LOL_N,bool_read);
+				if(rc){
+					rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+					goto end;
+				}
+				rc = command_response_json (msg_id,!val_read[0],cmd_reply);
+				goto end;
 			}
 			if(strcmp(cmd[2],"VOLT") == 0){
 				if(strcmp(cmd[0],"READ") == 0){

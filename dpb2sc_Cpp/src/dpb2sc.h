@@ -136,12 +136,15 @@ int command_status_response_json (int ,int,char *);
 int json_schema_validate (const char *,const char *, const char *);
 int get_GPIO_base_address(int *);
 int write_GPIO(int , int );
+int write_GPIO_edge(int, char*);
 int read_GPIO(int ,int *);
+int poll_GPIO(int);
 void unexport_GPIO();
 int eth_link_status (const char *,int *);
 int eth_link_status_config (char *, int );
 int eth_down_alarm(const char *,int *);
 int aurora_down_alarm(int ,int *);
+int pll_not_locked_alarm();
 int zmq_socket_init ();
 int zmq_socket_destroy();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
@@ -186,11 +189,13 @@ int check_hv_lv_presence();
  *  @{
  */
 /** @brief Error command not valid */
-#define EINCMD 1
+#define EINCMD 35
 /** @brief Error SET commnad not successful */
-#define ERRSET 2
+#define ERRSET 36
 /** @brief Error READ command not successful */
-#define ERRREAD 3
+#define ERRREAD 37
+/** @brief Alarm triggered */
+#define ALARMTRG 38
 /** @} */
 /************************** Global Flags Definitions *****************************/
 int eth0_flag = 1;
@@ -241,13 +246,14 @@ uint16_t UL4_flag = 0;
  *  @{
  */
 /** @brief Number of GPIO pins used */
-#define GPIO_PINS_SIZE 22
+#define GPIO_PINS_SIZE 24
 
 /** @brief GPIO pins definition */
 #define DIG0_MAIN_AURORA_LINK 40
 #define DIG0_BACKUP_AURORA_LINK 41
 #define DIG1_MAIN_AURORA_LINK 42
 #define DIG1_BACKUP_AURORA_LINK 43
+#define PLL_LOL_N 45  
 #define SFP0_PWR_ENA 0
 #define SFP1_PWR_ENA 1
 #define SFP2_PWR_ENA 2
@@ -291,7 +297,9 @@ const int GPIO_PINS[GPIO_PINS_SIZE] = {
     SFP2_RX_LOS,
     SFP3_RX_LOS,
     SFP4_RX_LOS,
-    SFP5_RX_LOS
+    SFP5_RX_LOS,
+    PLL_LOL_N,
+    I2C_MUX_RESET
 };
 
 
@@ -447,6 +455,7 @@ const int GPIO_PINS[GPIO_PINS_SIZE] = {
 *GPIO base address
 ****************************************************************************/
 int GPIO_BASE_ADDRESS = 0;
+#define POLL_GPIO POLLPRI | POLLERR 
 /******************************************************************************
 *Shared Memory.
 ****************************************************************************/
