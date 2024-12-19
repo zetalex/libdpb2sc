@@ -231,7 +231,13 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    stop_I2cSensors(data);
    return;
 }
-
+/**
+ * Handles the export of every single GPIO used for this library. This function is specific to the GPIOs instantiated in the DPB Zynq MPSoC and in use. Using TOTAL_GPIO_NUMBER and GPIO_BASE_ADDRESS to take care of this
+ *
+ * @param void
+ *
+ * @return void
+ */
 int init_GPIO(){
 
 	int data = 0;
@@ -2609,7 +2615,9 @@ int read_GPIO(int address,int *value){
 /**
  * Polls from a GPIO address to see if the value changed
  *
+ * @param GPIO_val File descriptor. This function needs to pass the file descriptor already opened from the outside and will not be closed when this function returns. This is done to ensure that polling catches the events generated during the whole execution flow
  * @param address GPIO address offset (from base address calculated from get_base_address) where the desired value is stored
+ * @param val__num if there is a new event, the value of the GPIO is saved into the variable that is pointed by val_num
  *
  * @return 0 if worked correctly, if not returns a negative integer.
  */
@@ -2953,7 +2961,13 @@ int aurora_down_alarm(int aurora_link, int *flag){
 	}
 	return 0;
 }
-
+/**
+* Checks from GPIO if PLL is locked (Si5345 on carrier). The lock monitoring variable is changed if some event has happened
+ *
+ * @param void
+ *
+ * @return  always 0
+ */
 int pll_not_locked_alarm(){
 	int rc;
 	uint64_t timestamp ;
