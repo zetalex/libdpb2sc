@@ -275,6 +275,8 @@ uint16_t UL2_flag = 0;
 uint16_t UL3_flag = 0;
 /** @brief Uart Lite 4 (RS485 Driver 1) flag. Used for not sending many times the same alarm */
 uint16_t UL4_flag = 0;
+/** @brief hv lv sleep delay for waiting before returning from the function in microseconds*/
+int hv_lv_sleep_delay = 0;
 /** @} */
 /************************** GPIO Pins Definitions *****************************/
 /** @defgroup GPIO GPIO pins

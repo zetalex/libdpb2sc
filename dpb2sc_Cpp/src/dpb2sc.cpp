@@ -4090,12 +4090,14 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	}
 	strcpy(result,"ERROR IN HV/LV Reading");
 	DEBUG_PRINTF("HV/LV Timedout in command %s\n",cmd);
+	usleep(hv_lv_sleep_delay);
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_UL3);
+	usleep(hv_lv_sleep_delay);
 	alarm_flag[0] = 0;
 	cmd[strlen(cmd)-1] = '0';
 	cmd[strlen(cmd)-2] = '0';
