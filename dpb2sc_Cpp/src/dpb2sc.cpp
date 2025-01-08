@@ -90,9 +90,11 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	// Enable HV LV Primary driver only
 	write_GPIO(HVLV_DRV_ENABLE_PRI_GPIO_OFFSET,1);
 	write_GPIO(HVLV_DRV_ENABLE_SEC_GPIO_OFFSET,0);
+	usleep(1000000);
 	// Disable Backup CPUs of both HV and LV
 	write_GPIO(LV_BACKUP_CPU_GPIO_OFFSET,0);
 	write_GPIO(HV_BACKUP_CPU_GPIO_OFFSET,0);
+	usleep(1000000);
 	//Enable Main CPUs of both HV and LV
 	write_GPIO(LV_MAIN_CPU_GPIO_OFFSET,1);
 	write_GPIO(HV_MAIN_CPU_GPIO_OFFSET,1);
