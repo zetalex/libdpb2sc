@@ -7,6 +7,7 @@ extern _COPacketCmdList HkDigCmdList;
 
 extern "C" {
 #include "dpb2sc.h"
+#include <poll.h>
 
 /************************** Init and Close functions ******************************/
 /** @defgroup init_close Init and close functions
@@ -23,6 +24,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	if(rc)
 		return rc;
 	get_GPIO_base_address(&GPIO_BASE_ADDRESS);
+	init_GPIO();
 	#ifdef DAQ_MODE
 		std::string dev_name;
 		dev_name = DAQ_Inter.GetDeviceName();
@@ -94,8 +96,14 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	#endif
 
 	usleep(500000);
-	// Enable HV LV driver
+	// Enable HV LV Primary driver only
 	write_GPIO(HVLV_DRV_ENABLE_PRI_GPIO_OFFSET,1);
+	write_GPIO(HVLV_DRV_ENABLE_SEC_GPIO_OFFSET,0);
+	usleep(1000000);
+	// Disable Backup CPUs of both HV and LV
+	write_GPIO(LV_BACKUP_CPU_GPIO_OFFSET,0);
+	write_GPIO(HV_BACKUP_CPU_GPIO_OFFSET,0);
+	usleep(1000000);
 	//Enable Main CPUs of both HV and LV
 	write_GPIO(LV_MAIN_CPU_GPIO_OFFSET,1);
 	write_GPIO(HV_MAIN_CPU_GPIO_OFFSET,1);
@@ -214,6 +222,15 @@ int init_shared_memory() {
  * @return void
  */
 void dpbsc_lib_close(struct DPB_I2cSensors *data) {
+	// Close alarm fd
+   close(dig0_aurora_main_fd);
+   close(dig0_aurora_backup_fd);
+   close(dig1_aurora_main_fd);
+   close(dig1_aurora_backup_fd);
+   close(pll_locked_fd);
+   close(tdm_locked_fd);
+
+   //Unexport all GPIOs
    unexport_GPIO();
    zmq_socket_destroy();
    // Release all locks
@@ -232,6 +249,37 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    //Stop I2C Sensors
    stop_I2cSensors(data);
    return;
+}
+/**
+ * Handles the export of every single GPIO used for this library. This function is specific to the GPIOs instantiated in the DPB Zynq MPSoC and in use. Using TOTAL_GPIO_NUMBER and GPIO_BASE_ADDRESS to take care of this
+ *
+ * @param void
+ *
+ * @return void
+ */
+int init_GPIO(){
+
+	int data = 0;
+	int i = 0;
+	char *arr[32];
+	char *num_str;
+	char cmd[64];
+	int GPIO_num;
+	for(int l=0; l<TOTAL_GPIO_NUMBER; l++){
+		GPIO_num = (l + GPIO_BASE_ADDRESS);
+		snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/gpio/export", GPIO_num);
+		system(cmd);
+
+	}
+
+	// Open alarms fd forever
+	dig0_aurora_main_fd = open("/sys/class/gpio/gpio452/value",O_RDONLY);
+	dig0_aurora_backup_fd = open("/sys/class/gpio/gpio453/value",O_RDONLY);
+	dig1_aurora_main_fd = open("/sys/class/gpio/gpio454/value",O_RDONLY);
+	dig1_aurora_backup_fd = open("/sys/class/gpio/gpio455/value",O_RDONLY);
+	pll_locked_fd = open("/sys/class/gpio/gpio457/value",O_RDONLY);
+	tdm_locked_fd = open("/sys/class/gpio/gpio458/value",O_RDONLY);
+	return 0;
 }
 
 /** @} */
@@ -1888,7 +1936,7 @@ int parsing_mon_channel_data_into_object(json_object *jsfps,int sfp_num,const ch
 		sprintf(buffer, "%lf", (double) val);
 		jdouble = json_object_new_double_s((double) val,buffer);
 		json_object_object_add(jobj,var_name,jdouble);
-		json_object_array_add(jsfps,jobj);
+		json_object_array_put_idx(jsfps,sfp_num,jobj);
 	}
 	else{
 		sprintf(buffer, "%lf", (double) val);
@@ -2257,9 +2305,9 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 		jval = json_object_new_string("ON");
 	else if(val == 0)
 		jval = json_object_new_string("OFF");
-	else if (val == -2)
+	else if (val == -ERRSET)
 		jval = json_object_new_string("ERROR: SET operation not successful");
-	else if (val == -3)
+	else if (val == -ERRREAD)
 		jval = json_object_new_string("ERROR: READ operation not successful");
 	else
 		jval = json_object_new_string("ERROR: Command not valid");
@@ -2317,7 +2365,6 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 	snprintf(msg_date, sizeof(msg_date), "%d-%d-%dT%d:%d:%d.%dZ",year,mon,day,hour,min,sec,msec);
 
 	gen_uuid(uuid);
-
 	json_object *jmsg_id2 = json_object_new_int(msg_id);
 	json_object *jmsg_time2 = json_object_new_string(msg_date);
 	json_object *jmsg_type2 = json_object_new_string("Command reply");
@@ -2519,14 +2566,6 @@ int write_GPIO(int address, int value){
     val[0] = value + '0';
 	int add = address + GPIO_BASE_ADDRESS;
 
-    // Building first command
-    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
-
-    // Building GPIO sysfs file
-    if (system(cmd1) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
     snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/direction", add);
     snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
 
@@ -2538,20 +2577,12 @@ int write_GPIO(int address, int value){
     fwrite(val,sizeof(val), 1,fd2);
     fclose(fd2);
 
-    // Building second command
-    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
-
-    //Removing GPIO sysfs file
-    if (system(cmd2) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
 	sem_post(&file_sync);
 	return 0;
 }
 
 /**
- * Gets GPIO base address
+ * Reads from a GPIO address and stores the result in value
  *
  * @param address GPIO address offset (from base address calculated from get_base_address) where the desired value is stored
  * @param value pointer where the read value will be stored
@@ -2570,15 +2601,6 @@ int read_GPIO(int address,int *value){
     FILE *GPIO_val;
 
 	int add = address + GPIO_BASE_ADDRESS;
-    // Building first command
-    snprintf(cmd1, 64, "echo %d > /sys/class/gpio/export", add);
-
-
-    // Building GPIO sysfs file
-    if (system(cmd1) == -1) {
-		sem_post(&file_sync);
-        return -EINVAL;
-    }
     snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/direction", add);
     snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
 
@@ -2606,14 +2628,102 @@ int read_GPIO(int address,int *value){
 	fclose(GPIO_val);
 	free(value_string);
 
-    // Building second command
-    snprintf(cmd2, 64, "echo %d > /sys/class/gpio/unexport", add);
+	sem_post(&file_sync);
+	return 0;
+}
 
-    //Removing GPIO sysfs file
-    if (system(cmd2) == -1) {
-		sem_post(&file_sync);
+/**
+ * Polls from a GPIO address to see if the value changed
+ *
+ * @param GPIO_val File descriptor. This function needs to pass the file descriptor already opened from the outside and will not be closed when this function returns. This is done to ensure that polling catches the events generated during the whole execution flow
+ * @param address GPIO address offset (from base address calculated from get_base_address) where the desired value is stored
+ * @param val__num if there is a new event, the value of the GPIO is saved into the variable that is pointed by val_num
+ *
+ * @return 0 if worked correctly, if not returns a negative integer.
+ */
+int poll_GPIO(int GPIO_val, int address, int *val_num){
+
+	sem_wait(&file_sync);
+	char cmd1[64];
+	char cmd2[64];
+	char dir_add[64];
+	char val_add[64];
+    FILE *fd1;
+    char dir[8] = "in";
+    int poll_ret,rc;
+	struct pollfd poll_gpio;
+	char value[4];
+	uint64_t timestamp;
+
+	int add = address + GPIO_BASE_ADDRESS;
+
+    snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/direction", add);
+    snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
+
+
+    fd1 = fopen(dir_add,"w");
+	if(fd1 == NULL){
+        sem_post(&file_sync);
         return -EINVAL;
     }
+    fwrite(dir, sizeof(dir), 1,fd1);
+    fclose(fd1);
+
+	// file descriptor from SW is being polled
+    poll_gpio.fd = GPIO_val; 
+    // poll events in GPIO 
+    poll_gpio.events = POLL_GPIO;
+    poll_gpio.revents = 0;
+
+	poll_ret = poll(&poll_gpio, 1, 0);
+
+	if(!poll_ret) {
+		rc = 0;
+	}
+	else if((poll_gpio.revents) & (POLL_GPIO)){
+		rc = -ALARMTRG;
+		lseek(GPIO_val, 0, SEEK_SET);
+        read(GPIO_val, value, 1); // read GPIO value
+		value[1] = '\0';
+		val_num[0] = atoi(value);
+	}
+	else{
+		rc = -1;
+	}
+
+	sem_post(&file_sync);
+	return rc;
+}
+
+/**
+ * Writes edge for interrupt triggering into a given GPIO address
+ *
+ * @param address GPIO address offset (from base address calculated from get_base_address) where the value is going to be written
+ * @param edge value which will be written (falling, rising,both or none)
+ *
+ * @return 0 if worked correctly, if not returns a negative integer.
+ */
+int write_GPIO_edge(int address, char* edge){
+
+	sem_wait(&file_sync);
+	char cmd1[64];
+	char cmd2[64];
+	char dir_add[64];
+    FILE *fd1;
+    char dir[8] = "out";
+
+    if(strcmp(edge,"falling") && strcmp(edge,"rising") && strcmp(edge,"both") && strcmp(edge,"none")){
+		sem_post(&file_sync);
+    	return -EINVAL;
+	}
+	int add = address + GPIO_BASE_ADDRESS;
+
+    snprintf(dir_add, 64, "/sys/class/gpio/gpio%d/edge", add);
+
+    fd1 = fopen(dir_add,"w");
+    fwrite(edge, sizeof(edge), 1,fd1);
+    fclose(fd1);
+
 	sem_post(&file_sync);
 	return 0;
 }
@@ -2630,7 +2740,7 @@ void unexport_GPIO(){
 
 	int data = 0;
 	int i = 0;
-	char *arr[32];
+	char *arr[64];
 	char *num_str;
 	char cmd[64];
 	int GPIO_num;
@@ -2649,8 +2759,8 @@ void unexport_GPIO(){
 	for(int j=0; j<i; j++){
 		num_str = strtok(arr[j],"gpio");
 		GPIO_num = atoi(num_str);
-		for(int l=0; l<GPIO_PINS_SIZE; l++){
-			if(GPIO_num == (GPIO_PINS[l]+ GPIO_BASE_ADDRESS)){
+		for(int l=0; l<TOTAL_GPIO_NUMBER; l++){
+			if(GPIO_num == (l+ GPIO_BASE_ADDRESS)){
 				snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/gpio/unexport", GPIO_num);
 				system(cmd);
 				break;
@@ -2804,6 +2914,7 @@ int aurora_down_alarm(int aurora_link, int *flag){
 
 	int aurora_status[1];
 	int rc = 0;
+	int rc_poll = 0;
 	int address = 0;
 	uint64_t timestamp ;
 	char link_id[64] = "Aurora Main Link Status";
@@ -2817,52 +2928,100 @@ int aurora_down_alarm(int aurora_link, int *flag){
 	case 0:
 		address = DIG0_MAIN_AURORA_LINK;
 		strcpy(link_id, "Aurora Main Link Status");
+		rc_poll = poll_GPIO(dig0_aurora_main_fd,DIG0_MAIN_AURORA_LINK,&dig0_aurora_main_val);
+		aurora_status[0] = dig0_aurora_main_val;
 		break;
 	case 1:
 		address = DIG0_BACKUP_AURORA_LINK;
 		strcpy(link_id, "Aurora Backup Link Status");
+		rc_poll = poll_GPIO(dig0_aurora_backup_fd,DIG0_BACKUP_AURORA_LINK,&dig0_aurora_backup_val);
+		aurora_status[0] = dig0_aurora_backup_val;
 		break;
 	case 2:
 		address = DIG1_MAIN_AURORA_LINK;
 		strcpy(link_id, "Aurora Main Link Status");
+		rc_poll = poll_GPIO(dig1_aurora_main_fd,DIG1_MAIN_AURORA_LINK,&dig1_aurora_main_val);
+		aurora_status[0] = dig1_aurora_main_val;
 		break;
 	case 3:
 		address = DIG1_BACKUP_AURORA_LINK;
 		strcpy(link_id, "Aurora Backup Link Status");
+		rc_poll = poll_GPIO(dig1_aurora_backup_fd,DIG1_BACKUP_AURORA_LINK,&dig1_aurora_backup_val);
+		aurora_status[0] = dig1_aurora_backup_val;
 		break;
 	default:
 		return -EINVAL;
 	}
 
-	rc = read_GPIO(address,&aurora_status[0]);
-	if (rc) {
-		DEBUG_PRINTF("Error\r\n");
-		return rc;
+	if(rc_poll == -ALARMTRG){
+		if(aurora_status[0] == 1){
+			if(aurora_link<2){
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG0",link_id,99,timestamp,"info", "ON");
+				return rc;
+			}
+			else{
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG1",link_id,99,timestamp,"info", "ON");
+				return rc;
+			}
+		}
+		else if(aurora_status[0] == 0){
+			if(aurora_link<2){
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical", "OFF");
+				return rc;
+			}
+			else{
+				timestamp = time(NULL);
+				rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical", "OFF");
+				return rc;
+			}
+		}
 	}
-	if((flag[0] == 0) & (aurora_status[0] == 1)){
-		flag[0] = aurora_status[0];
-		if(aurora_link<2){
-			timestamp = time(NULL);
-			rc = status_alarm_json("DIG0",link_id,99,timestamp,"info", "ON");
-			return rc;
+	return 0;
+}
+/**
+* Checks from GPIO if PLL is locked (Si5345 on carrier). The lock monitoring variable is changed if some event has happened
+ *
+ * @param void
+ *
+ * @return  always 0
+ */
+int pll_not_locked_alarm(){
+	int rc;
+	uint64_t timestamp ;
+	rc = poll_GPIO(pll_locked_fd,PLL_LOL_N,&pll_locked_val);
+	if(rc == -ALARMTRG){
+		timestamp = time(NULL);
+		if(pll_locked_val){
+			rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"info", "ON");
 		}
-		else{
-			timestamp = time(NULL);
-			rc = status_alarm_json("DIG1",link_id,99,timestamp,"info", "ON");
-			return rc;
+		else {
+			rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"critical", "OFF");
 		}
 	}
-	if((flag[0] == 1) & (aurora_status[0] == 0)){
-		flag[0] = aurora_status[0];
-		if(aurora_link<2){
-			timestamp = time(NULL);
-			rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical", "OFF");
-			return rc;
+	return 0;
+}
+
+/**
+* Checks from GPIO if TDM is locked (Link to the TDM board). The lock monitoring variable is changed if some event has happened
+ *
+ * @param void
+ *
+ * @return  always 0
+ */
+int tdm_not_locked_alarm(){
+	int rc;
+	uint64_t timestamp ;
+	rc = poll_GPIO(tdm_locked_fd,TDM_DPB_LOCK,&tdm_locked_val);
+	if(rc == -ALARMTRG){
+		timestamp = time(NULL);
+		if(tdm_locked_val){
+			rc = status_alarm_json("DPB","TDM Lock",99,timestamp,"info", "ON");
 		}
-		else{
-			timestamp = time(NULL);
-			rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical", "OFF");
-			return rc;
+		else {
+			rc = status_alarm_json("DPB","TDM Lock",99,timestamp,"critical", "OFF");
 		}
 	}
 	return 0;
@@ -3255,6 +3414,24 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					goto end;
 				}
 			}
+			if(strcmp(cmd[2],"PLLLOCK") == 0){
+				//rc = poll_GPIO(pll_locked_fd,PLL_LOL_N,bool_read);
+				// if(rc){
+				// 	rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+				// 	goto end;
+				// }
+				rc = command_status_response_json (msg_id,pll_locked_val,cmd_reply);
+				goto end;
+			}
+			if(strcmp(cmd[2],"TDMLOCK") == 0){
+				//rc = poll_GPIO(pll_locked_fd,PLL_LOL_N,bool_read);
+				// if(rc){
+				// 	rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+				// 	goto end;
+				// }
+				rc = command_status_response_json (msg_id,pll_locked_val,cmd_reply);
+				goto end;
+			}
 			if(strcmp(cmd[2],"VOLT") == 0){
 				if(strcmp(cmd[0],"READ") == 0){
 					if(strcmp(cmd[3],"FPDCPU") == 0){
@@ -3569,8 +3746,14 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_TDC_RST:
 		// Reset Aurora link, both primary and secondary
 		case HKDIG_RST_AURORA_LINK:
-		case HKDIG_GET_PED_TYPE:
 		case HKDIG_GET_GW_VER:
+
+		// Calibration board commands
+		case HKDIG_TRG_CAL_PULSE:
+		case HKDIG_GET_CAL_PLS_AMP:
+
+		// OD Commands
+		case HKDIG_GET_OD_SEL_REG:
 
 		// Disable all FE clearing bit in Board control register
 		case HKDIG_STOP_FE_ALL:
@@ -3665,6 +3848,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_THR_NUM:
 		case HKDIG_GET_IT_NUM:
 		case HKDIG_GET_DT_NUM:
+		case HKDIG_GET_PED_TYPE:
 		case HKDIG_EN_CAL_N:// Enable channel calibration input
 		// Disable calibration input for channel n
 		case HKDIG_DIS_CAL_N:
@@ -3683,6 +3867,17 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		case HKDIG_GET_CHN_CNTRL:
 
+		// Calibration board commands
+		case HKDIG_SET_CAL_POWER:
+		case HKDIG_SET_CAL_PLS_LEN:
+		case HKDIG_SET_CAL_PLS_AMP:
+		case HKDIG_SET_CAL_NPDN:
+		case HKDIG_SET_CAL_MUTE:
+		case HKDIG_SET_CAL_PLSEN:
+
+		// OD Commands
+		case HKDIG_SET_OD_SEL_REG:
+
 		// Set RMon interval
 		case HKDIG_SET_RMON_PER:
 
@@ -3690,7 +3885,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_RMON_ADC_N:			// Get ADC rate monitor value for channel N
 		case HKDIG_GET_RMON_TDC_N:			// Get TDC rate monitor value for channel N
 		case HKDIG_GET_RMON_FMT_N:			// Get FMT rate monitor value for channel N
-
+		case HKDIG_GET_CHN_LG_CHG:
+    	case HKDIG_GET_CHN_HG_CHG:
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
@@ -3946,12 +4142,14 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	}
 	strcpy(result,"ERROR IN HV/LV Reading");
 	DEBUG_PRINTF("HV/LV Timedout in command %s\n",cmd);
+	usleep(hv_lv_sleep_delay);
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_UL3);
+	usleep(hv_lv_sleep_delay);
 	alarm_flag[0] = 0;
 	cmd[strlen(cmd)-1] = '0';
 	cmd[strlen(cmd)-2] = '0';
@@ -4606,8 +4804,8 @@ int check_digs_presence(){
 	int serial_port_fd,n;
 	char buffer[40];
 
-
-		// Check if Dig0 and Dig1 are there
+	sem_wait(&sem_dig0);
+	// Check if Dig0 and Dig1 are there
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 
 	serial_port_fd = open("/dev/ttyUL1",O_RDWR | O_NONBLOCK);
@@ -4619,6 +4817,7 @@ int check_digs_presence(){
 	usleep(100000);
 	n = read(serial_port_fd, buffer, sizeof(buffer));
 	buffer[n] = '\0';
+	sem_post(&sem_dig0);
 	if(n > 0){
 		if(!dig0_connected){
 			pkt.LoadString(buffer);
@@ -4648,6 +4847,8 @@ int check_digs_presence(){
 		dig0_connected = 0;
 	}
 	close(serial_port_fd);
+
+	sem_wait(&sem_dig1);
 	serial_port_fd = open("/dev/ttyUL2",O_RDWR | O_NONBLOCK);
 	setup_serial_port(serial_port_fd);
 	tcflush(serial_port_fd,TCIOFLUSH);
@@ -4658,6 +4859,7 @@ int check_digs_presence(){
 	usleep(100000);
 	n = read(serial_port_fd, buffer, sizeof(buffer));
 	buffer[n] = '\0';
+	sem_post(&sem_dig1);
 	if(n > 0){
 		if(!dig1_connected){
 			pkt.LoadString(buffer);
@@ -4686,7 +4888,6 @@ int check_digs_presence(){
 		dig1_connected = 0;
 	}
 	close(serial_port_fd);
-
 	return 0;
 }
 

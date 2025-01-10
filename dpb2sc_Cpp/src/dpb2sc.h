@@ -96,6 +96,7 @@ int init_I2cSensors(struct DPB_I2cSensors *);
 int stop_I2cSensors(struct DPB_I2cSensors *);
 int init_semaphores();
 int init_shared_memory();
+int init_GPIO();
 int read_shm(int *, char *, char *);
 int xlnx_ams_read_temp(int *, int, float *);
 int xlnx_ams_read_volt(int *, int, float *);
@@ -136,12 +137,16 @@ int command_status_response_json (int ,int,char *);
 int json_schema_validate (const char *,const char *, const char *);
 int get_GPIO_base_address(int *);
 int write_GPIO(int , int );
-int read_GPIO(int ,int *);
+int write_GPIO_edge(int, char*);
+int read_GPIO(int, int *);
+int poll_GPIO(int, int, int *);
 void unexport_GPIO();
 int eth_link_status (const char *,int *);
 int eth_link_status_config (char *, int );
 int eth_down_alarm(const char *,int *);
 int aurora_down_alarm(int ,int *);
+int pll_not_locked_alarm();
+int tdm_not_locked_alarm();
 int zmq_socket_init ();
 int zmq_socket_destroy();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
@@ -180,17 +185,58 @@ int check_hv_lv_presence();
 #define SFP_NUM 6
 #define DIGITIZER_0 0
 #define DIGITIZER_1 1
+
+/************************** Alarms File Descriptors *****************************/
+/** @defgroup alarmsfd Alarms File Descriptors
+ *  Some file descriptors for alarms as universal variables
+ *  @{
+ */
+/** @brief Dig0 Main Aurora Link up */
+int dig0_aurora_main_fd;
+/** @brief Dig0 Backup Aurora Link up */
+int dig0_aurora_backup_fd;
+/** @brief Dig1 Main Aurora Link up */
+int dig1_aurora_main_fd;
+/** @brief Dig1 Backup Aurora Link up */
+int dig1_aurora_backup_fd;
+/** @brief PLL Locked */
+int pll_locked_fd;
+/** @brief TDM-DPB Locked */
+int tdm_locked_fd;
+/** @} */
+
+/************************** Alarms File Values *****************************/
+/** @defgroup alarmsfd Alarms File Values
+ *  Values for some GPIOs as universal variables
+ *  @{
+ */
+/** @brief Dig0 Main Aurora Link up */
+int dig0_aurora_main_val;
+/** @brief Dig0 Backup Aurora Link up */
+int dig0_aurora_backup_val;
+/** @brief Dig1 Main Aurora Link up */
+int dig1_aurora_main_val;
+/** @brief Dig1 Backup Aurora Link up */
+int dig1_aurora_backup_val;
+/** @brief PLL Locked */
+int pll_locked_val;
+/** @brief TDM-DPB Locked */
+int tdm_locked_val;
+/** @} */
+
 /************************** Custom Errors Definitions *****************************/
 /** @defgroup err Custom Error Flags
  *  Shared Memory content
  *  @{
  */
 /** @brief Error command not valid */
-#define EINCMD 1
+#define EINCMD 35
 /** @brief Error SET commnad not successful */
-#define ERRSET 2
+#define ERRSET 36
 /** @brief Error READ command not successful */
-#define ERRREAD 3
+#define ERRREAD 37
+/** @brief Alarm triggered */
+#define ALARMTRG 38
 /** @} */
 /************************** Global Flags Definitions *****************************/
 int eth0_flag = 1;
@@ -234,20 +280,19 @@ uint16_t UL2_flag = 0;
 uint16_t UL3_flag = 0;
 /** @brief Uart Lite 4 (RS485 Driver 1) flag. Used for not sending many times the same alarm */
 uint16_t UL4_flag = 0;
+/** @brief hv lv sleep delay for waiting before returning from the function in microseconds*/
+int hv_lv_sleep_delay = 0;
 /** @} */
 /************************** GPIO Pins Definitions *****************************/
 /** @defgroup GPIO GPIO pins
  *  GPIO pins definition
  *  @{
  */
-/** @brief Number of GPIO pins used */
-#define GPIO_PINS_SIZE 22
+
+/** @brief Total GPIOs used */
+#define TOTAL_GPIO_NUMBER 76
 
 /** @brief GPIO pins definition */
-#define DIG0_MAIN_AURORA_LINK 40
-#define DIG0_BACKUP_AURORA_LINK 41
-#define DIG1_MAIN_AURORA_LINK 42
-#define DIG1_BACKUP_AURORA_LINK 43
 #define SFP0_PWR_ENA 0
 #define SFP1_PWR_ENA 1
 #define SFP2_PWR_ENA 2
@@ -266,37 +311,21 @@ uint16_t UL4_flag = 0;
 #define SFP3_RX_LOS 26
 #define SFP4_RX_LOS 30
 #define SFP5_RX_LOS 34
+#define DIG0_MAIN_AURORA_LINK 40
+#define DIG0_BACKUP_AURORA_LINK 41
+#define DIG1_MAIN_AURORA_LINK 42
+#define DIG1_BACKUP_AURORA_LINK 43
+#define PLL_LOL_N 45
+#define TDM_DPB_LOCK 46 
+#define DMA_SOURCE 49 
+#define DMA_ENABLE 57
 #define I2C_MUX_RESET 67
-
-/** @brief GPIO pins list */
-const int GPIO_PINS[GPIO_PINS_SIZE] = {
-    DIG0_MAIN_AURORA_LINK,
-    DIG0_BACKUP_AURORA_LINK,
-    DIG1_MAIN_AURORA_LINK,
-    DIG1_BACKUP_AURORA_LINK,
-    SFP0_PWR_ENA,
-    SFP1_PWR_ENA,
-    SFP2_PWR_ENA,
-    SFP3_PWR_ENA,
-    SFP4_PWR_ENA,
-    SFP5_PWR_ENA,
-    SFP0_TX_DIS,
-    SFP1_TX_DIS,
-    SFP2_TX_DIS,
-    SFP3_TX_DIS,
-    SFP4_TX_DIS,
-    SFP5_TX_DIS,
-    SFP0_RX_LOS,
-    SFP1_RX_LOS,
-    SFP2_RX_LOS,
-    SFP3_RX_LOS,
-    SFP4_RX_LOS,
-    SFP5_RX_LOS
-};
+#define DIG0_LINK_SEL 72
+#define DIG1_LINK_SEL 73
 
 
 /******************************************************************************
-* HV and LV GPIOs for CPUs enables
+* HV and LV GPIOs for CPUs enables and RS485 Drivers
 ****************************************************************************/
 #define LV_MAIN_CPU_GPIO_OFFSET             52
 #define LV_BACKUP_CPU_GPIO_OFFSET           53
@@ -306,6 +335,7 @@ const int GPIO_PINS[GPIO_PINS_SIZE] = {
 #define HVLV_DRV_ENABLE_SEC_GPIO_OFFSET     70
 #define HVLV_RS485_PRI_PWR_EN_GPIO_OFFSET   68
 #define HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET   69
+
 /** @} */
 /******************************************************************************
 * Temperature Sensor Register Set - Temperature value, alarm value and alarm flags.
@@ -447,6 +477,7 @@ const int GPIO_PINS[GPIO_PINS_SIZE] = {
 *GPIO base address
 ****************************************************************************/
 int GPIO_BASE_ADDRESS = 0;
+#define POLL_GPIO POLLPRI | POLLERR 
 /******************************************************************************
 *Shared Memory.
 ****************************************************************************/
@@ -620,7 +651,7 @@ char HV_SN[8];
 Digitizer Command Data.
 ****************************************************************************/
 
-#define DIG_STANDARD_CMD_TABLE_SIZE 63
+#define DIG_STANDARD_CMD_TABLE_SIZE 75
 
 const char *dig_dpb_words[] = {
 	"READ DISCTRES",
@@ -634,6 +665,16 @@ const char *dig_dpb_words[] = {
     "SET DEADTIME ALL",
     "SET CALIB ON",
     "SET CALIB OFF",
+    "SET CALIBPULSE",
+    "SET CALIBPWR",
+    "SET CALIBLEN",
+    "SET CALIBAMP",
+    "READ CALIBAMP",
+    "SET CALIBPDN",
+    "SET CALIBMUTE",
+    "SET CALIBSEN",
+    "READ LG",
+    "READ HG",
     "READ STATUS", 
     "READ CHCONTROL",
     "SET STATUS", // TODO: Ask Fabrizio
@@ -648,6 +689,8 @@ const char *dig_dpb_words[] = {
     "SET TDCRST",
     "SET PEDTYPE",
     "READ PEDTYPE",
+    "SET ODSEL",
+    "READ ODSEL",
     "READ GWVER",
     "READ SWVER",
     "READ BDSTATUS",
@@ -719,7 +762,7 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BME_DATA
 };
 
-#define DIG_MON_CHAN_CODES_SIZE 9
+#define DIG_MON_CHAN_CODES_SIZE 11
 const int dig_monitor_mag_chan_codes[] = {
     // Channel monitoring
     HKDIG_GET_THR_NUM,
@@ -730,7 +773,9 @@ const int dig_monitor_mag_chan_codes[] = {
     HKDIG_GET_PED_TYPE,
     HKDIG_GET_RMON_ADC_N,
     HKDIG_GET_RMON_TDC_N,
-    HKDIG_GET_RMON_FMT_N
+    HKDIG_GET_RMON_FMT_N,
+    HKDIG_GET_CHN_LG_CHG,
+    HKDIG_GET_CHN_HG_CHG
 };
 
 const char *dig_monitor_mag_board_names[] = {
@@ -770,7 +815,9 @@ const char *dig_monitor_mag_chan_names[] = {
     "pedtype",
     "rmonadc",
     "rmontdc",
-    "rmonfmt"
+    "rmonfmt",
+    "lgchg",
+    "hgchg"
 };
 
 /** @brief Detected Dig0 Serial Number */
