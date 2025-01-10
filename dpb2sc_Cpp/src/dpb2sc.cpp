@@ -2104,49 +2104,70 @@ int parsing_mon_environment_string_into_object(json_object *jobj,const char *var
 int alarm_json (const char *board,const char *chip,const char *ev_type, int chan, float val,uint64_t timestamp,const char *info_type)
 {
 	sem_wait(&alarm_sync);
-	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type, *j_level = NULL;
-	jalarm_data = json_object_new_object();
-	char buffer[512];
+	#ifdef DAQ_MODE
+		char DAQ_alarm_msg[64];
+		strcpy(DAQ_alarm_msg,info_type);
+		strcpy(DAQ_alarm_msg, ". ");
+		strcpy(DAQ_alarm_msg,"Board ");
+		strcpy(DAQ_alarm_msg,board);
+		strcpy(DAQ_alarm_msg,", Part ");
+		strcpy(DAQ_alarm_msg,chip);
+		if (chan != 99){
+			strcpy(DAQ_alarm_msg," Channel ");
+			char chan_str[8];
+			sprintf(chan_str,"%d",chan);
+			strcpy(DAQ_alarm_msg, chan_str);
+		}
+		strcpy(DAQ_alarm_msg," is ");
+		char value_string[16];
+		sprintf(value_string,"%3.4f",val);
+		strcpy(DAQ_alarm_msg,value_string);
+		DAQ_Inter.SendAlarm(DAQ_alarm_msg);
+	#else
+		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type, *j_level = NULL;
+		jalarm_data = json_object_new_object();
+		char buffer[512];
 
-	if(timestamp == 0)
-		timestamp = time(NULL)*1000;
+		if(timestamp == 0)
+			timestamp = time(NULL)*1000;
 
-	sprintf(buffer, "%lf", (double) val);
+		sprintf(buffer, "%lf", (double) val);
 
-	jboard = json_object_new_string(board);
+		jboard = json_object_new_string(board);
 
-	json_object_object_add(jalarm_data,"board", jboard);
+		json_object_object_add(jalarm_data,"board", jboard);
 
-	j_level = json_object_new_string(info_type);
-	jdouble = json_object_new_double_s((double) val,buffer);
-	jchip = json_object_new_string(chip);
-	jev_type = json_object_new_string(ev_type);
-	jtimestamp = json_object_new_int64(timestamp*1000);
+		j_level = json_object_new_string(info_type);
+		jdouble = json_object_new_double_s((double) val,buffer);
+		jchip = json_object_new_string(chip);
+		jev_type = json_object_new_string(ev_type);
+		jtimestamp = json_object_new_int64(timestamp*1000);
 
-	json_object_object_add(jalarm_data,"magnitudename", jchip);
-	json_object_object_add(jalarm_data,"eventtype", jev_type);
-	json_object_object_add(jalarm_data,"eventtimestamp", jtimestamp);
-	json_object_object_add(jalarm_data,"level", j_level);
+		json_object_object_add(jalarm_data,"magnitudename", jchip);
+		json_object_object_add(jalarm_data,"eventtype", jev_type);
+		json_object_object_add(jalarm_data,"eventtimestamp", jtimestamp);
+		json_object_object_add(jalarm_data,"level", j_level);
 
-	if (chan != 99){
-		jchan = json_object_new_int(chan);
-		json_object_object_add(jalarm_data,"channel", jchan);
-	}
+		if (chan != 99){
+			jchan = json_object_new_int(chan);
+			json_object_object_add(jalarm_data,"channel", jchan);
+		}
 
-	json_object_object_add(jalarm_data,"value", jdouble);
+		json_object_object_add(jalarm_data,"value", jdouble);
 
 
-	const char *serialized_json = json_object_to_json_string(jalarm_data);
-	int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
-	if (rc) {
-		DEBUG_PRINTF("Error validating JSON Schema\r\n");
-		return rc;
-	}
-	else{
-		zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
-	}
+		const char *serialized_json = json_object_to_json_string(jalarm_data);
+		int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
+		if (rc) {
+			DEBUG_PRINTF("Error validating JSON Schema\r\n");
+			return rc;
+		}
+		else{
+			zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
+		}
+		json_object_put(jalarm_data);
+	#endif
 	sem_post(&alarm_sync);
-	json_object_put(jalarm_data);
 	return 0;
 }
 
@@ -2166,42 +2187,61 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 int status_alarm_json (const char *board,const char *chip, int chan,uint64_t timestamp, const char *info_type, const char *status)
 {
 	sem_wait(&alarm_sync);
-	struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
-	jalarm_data = json_object_new_object();
+	#ifdef DAQ_MODE
+		char DAQ_alarm_msg[64];
+		strcpy(DAQ_alarm_msg,info_type);
+		strcpy(DAQ_alarm_msg, ". ");
+		strcpy(DAQ_alarm_msg,"Board ");
+		strcpy(DAQ_alarm_msg,board);
+		strcpy(DAQ_alarm_msg,", Part ");
+		strcpy(DAQ_alarm_msg,chip);
+		if (chan != 99){
+			strcpy(DAQ_alarm_msg," Channel ");
+			char chan_str[8];
+			sprintf(chan_str,"%d",chan);
+			strcpy(DAQ_alarm_msg, chan_str);
+		}
+		strcpy(DAQ_alarm_msg," is ");
+		strcpy(DAQ_alarm_msg,status);
+		DAQ_Inter.SendAlarm(DAQ_alarm_msg);
+	#else
+		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
+		jalarm_data = json_object_new_object();
 
-	uint64_t timestamp_msg = (time(NULL))*1000;
+		uint64_t timestamp_msg = (time(NULL))*1000;
 
-	jboard = json_object_new_string(board);
+		jboard = json_object_new_string(board);
 
-	json_object_object_add(jalarm_data,"board", jboard);
+		json_object_object_add(jalarm_data,"board", jboard);
 
-	jchip = json_object_new_string(chip);
-	jtimestamp = json_object_new_int64(timestamp_msg);
-	j_level = json_object_new_string(info_type);
+		jchip = json_object_new_string(chip);
+		jtimestamp = json_object_new_int64(timestamp_msg);
+		j_level = json_object_new_string(info_type);
 
-	json_object_object_add(jalarm_data,"magnitudename", jchip);
-	json_object_object_add(jalarm_data,"eventtimestamp", jtimestamp);
-	json_object_object_add(jalarm_data,"level", j_level);
+		json_object_object_add(jalarm_data,"magnitudename", jchip);
+		json_object_object_add(jalarm_data,"eventtimestamp", jtimestamp);
+		json_object_object_add(jalarm_data,"level", j_level);
 
-	if (chan != 99){
-		jchan = json_object_new_int(chan);
-		json_object_object_add(jalarm_data,"channel", jchan);
-	}
-	jstatus = json_object_new_string(status);
+		if (chan != 99){
+			jchan = json_object_new_int(chan);
+			json_object_object_add(jalarm_data,"channel", jchan);
+		}
+		jstatus = json_object_new_string(status);
 
-	json_object_object_add(jalarm_data,"value", jstatus);
+		json_object_object_add(jalarm_data,"value", jstatus);
 
-	const char *serialized_json = json_object_to_json_string(jalarm_data);
-	int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
-	if (0) {
-		DEBUG_PRINTF("Error validating JSON Schema\r\n");
-		return -1;
-	}
-	else{
-		zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
-	}
+		const char *serialized_json = json_object_to_json_string(jalarm_data);
+		int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
+		if (0) {
+			DEBUG_PRINTF("Error validating JSON Schema\r\n");
+			return -1;
+		}
+		else{
+			zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
+		}
+		json_object_put(jalarm_data);
+	#endif
 	sem_post(&alarm_sync);
-	json_object_put(jalarm_data);
 	return 0;
 }
 /**
