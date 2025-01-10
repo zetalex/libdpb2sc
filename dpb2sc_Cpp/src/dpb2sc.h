@@ -146,6 +146,7 @@ int eth_link_status_config (char *, int );
 int eth_down_alarm(const char *,int *);
 int aurora_down_alarm(int ,int *);
 int pll_not_locked_alarm();
+int tdm_not_locked_alarm();
 int zmq_socket_init ();
 int zmq_socket_destroy();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
@@ -200,6 +201,8 @@ int dig1_aurora_main_fd;
 int dig1_aurora_backup_fd;
 /** @brief PLL Locked */
 int pll_locked_fd;
+/** @brief TDM-DPB Locked */
+int tdm_locked_fd;
 /** @} */
 
 /************************** Alarms File Values *****************************/
@@ -217,6 +220,8 @@ int dig1_aurora_main_val;
 int dig1_aurora_backup_val;
 /** @brief PLL Locked */
 int pll_locked_val;
+/** @brief TDM-DPB Locked */
+int tdm_locked_val;
 /** @} */
 
 /************************** Custom Errors Definitions *****************************/
@@ -285,7 +290,7 @@ int hv_lv_sleep_delay = 0;
  */
 
 /** @brief Total GPIOs used */
-#define TOTAL_GPIO_NUMBER 72
+#define TOTAL_GPIO_NUMBER 76
 
 /** @brief GPIO pins definition */
 #define SFP0_PWR_ENA 0
@@ -310,10 +315,13 @@ int hv_lv_sleep_delay = 0;
 #define DIG0_BACKUP_AURORA_LINK 41
 #define DIG1_MAIN_AURORA_LINK 42
 #define DIG1_BACKUP_AURORA_LINK 43
-#define PLL_LOL_N 45 
+#define PLL_LOL_N 45
+#define TDM_DPB_LOCK 46 
 #define DMA_SOURCE 49 
 #define DMA_ENABLE 57
 #define I2C_MUX_RESET 67
+#define DIG0_LINK_SEL 72
+#define DIG1_LINK_SEL 73
 
 
 /******************************************************************************

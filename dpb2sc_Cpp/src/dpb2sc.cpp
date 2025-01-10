@@ -216,6 +216,7 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    close(dig1_aurora_main_fd);
    close(dig1_aurora_backup_fd);
    close(pll_locked_fd);
+   close(tdm_locked_fd);
 
    //Unexport all GPIOs
    unexport_GPIO();
@@ -265,6 +266,7 @@ int init_GPIO(){
 	dig1_aurora_main_fd = open("/sys/class/gpio/gpio454/value",O_RDONLY);
 	dig1_aurora_backup_fd = open("/sys/class/gpio/gpio455/value",O_RDONLY);
 	pll_locked_fd = open("/sys/class/gpio/gpio457/value",O_RDONLY);
+	tdm_locked_fd = open("/sys/class/gpio/gpio458/value",O_RDONLY);
 	return 0;
 }
 
@@ -2989,6 +2991,29 @@ int pll_not_locked_alarm(){
 	}
 	return 0;
 }
+
+/**
+* Checks from GPIO if TDM is locked (Link to the TDM board). The lock monitoring variable is changed if some event has happened
+ *
+ * @param void
+ *
+ * @return  always 0
+ */
+int tdm_not_locked_alarm(){
+	int rc;
+	uint64_t timestamp ;
+	rc = poll_GPIO(tdm_locked_fd,TDM_DPB_LOCK,&tdm_locked_val);
+	if(rc == -ALARMTRG){
+		timestamp = time(NULL);
+		if(tdm_locked_val){
+			rc = status_alarm_json("DPB","TDM Lock",99,timestamp,"info", "ON");
+		}
+		else {
+			rc = status_alarm_json("DPB","TDM Lock",99,timestamp,"critical", "OFF");
+		}
+	}
+	return 0;
+}
 /** @} */
 /************************** ZMQ Functions******************************/
 /** @defgroup zmq ZMQ related functions
@@ -3378,6 +3403,15 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				}
 			}
 			if(strcmp(cmd[2],"PLLLOCK") == 0){
+				//rc = poll_GPIO(pll_locked_fd,PLL_LOL_N,bool_read);
+				// if(rc){
+				// 	rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+				// 	goto end;
+				// }
+				rc = command_status_response_json (msg_id,pll_locked_val,cmd_reply);
+				goto end;
+			}
+			if(strcmp(cmd[2],"TDMLOCK") == 0){
 				//rc = poll_GPIO(pll_locked_fd,PLL_LOL_N,bool_read);
 				// if(rc){
 				// 	rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
