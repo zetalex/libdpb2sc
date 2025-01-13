@@ -149,6 +149,7 @@ int pll_not_locked_alarm();
 int tdm_not_locked_alarm();
 int zmq_socket_init ();
 int zmq_socket_destroy();
+char* command_parse(const char *key);
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_get_calib_values(int);
 int dig_command_handling(int, char *, char *);
@@ -265,6 +266,8 @@ uint8_t status_mask[6] = {0,0,0,0,0,0};
 const char *sfp_i2c_locations[6] = {"/dev/i2c-6","/dev/i2c-10","/dev/i2c-8","/dev/i2c-12","/dev/i2c-9","/dev/i2c-13"};
 /** @brief SFP connected array */
 int sfp_connected[SFP_NUM] = {0,0,0,0,0,0};
+/** @brief I2C Sensor Data */
+struct DPB_I2cSensors data;
 /** @} */
 
 /************************** Serial Port Related Variables *****************************/
