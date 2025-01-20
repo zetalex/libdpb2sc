@@ -2,6 +2,7 @@
 // COPacket includes
 #include <common/protocols/COPacket/COPacket.hpp>
 #include "daq_inter_obj.h"
+#include <functional>
 
 extern _COPacketCmdList HkDigCmdList;
 
@@ -126,6 +127,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	check_digs_presence();
 	#ifdef DAQ_MODE
 		DAQ_Inter.sc_vars["Status"]->SetValue("Ready");
+		daq_init_sc_vars();
 	#endif
 	return 0;
 }
@@ -1423,7 +1425,6 @@ int sfp_avago_alarms_interruptions(struct DPB_I2cSensors *data,uint16_t flags, i
 	if(((flags & 0x4000) == 0x4000)&((alarms_mask[n]&0x4000)==0)){
 		timestamp = time(NULL);
 		sfp_avago_read_temperature(data,n,res);
-		// FIXME: DAQ Function Here. Replace alarm_json function by the function of DAQ library
 		rc = alarm_json("DPB","SFP Temperature","falling", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x4000;
 	}
@@ -3300,7 +3301,72 @@ int inList(int inp, int* list, int listLen) {
  *  It can communicate within the DPB itself, HV, LV or Digitizers.
  *  @{
  */
+#ifdef DAQ_MODE
+int daq_init_sc_vars(){
+	char cmd_string[64];
 
+	DAQ_Inter.sc_vars.Add("DPB Parameters",ToolFramework::INFO);
+
+	for (int n = 0; n < 70;n++){
+		if(DAQ_chan_cmd_list[n].type == ENV_PARAM){
+			strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
+			switch (DAQ_chan_cmd_list[n].type) {
+				case VARIABLE_TYPE:
+					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
+					DAQ_Inter.sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
+					DAQ_Inter.sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
+					DAQ_Inter.sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
+					DAQ_Inter.sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
+					break;
+				case OPTIONS_TYPE:
+					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
+					DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
+					DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
+				break;
+				case BUTTONS_TYPE:
+					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
+				break;
+			}
+		}
+		else{
+			for(int i= 0; i < DAQ_chan_cmd_list[n].chan_n; i++){
+				strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
+				char chan[4];
+				sprintf(chan, "%d",i);
+				strcat(cmd_string, " ");
+				strcat(cmd_string,chan);
+				switch (DAQ_chan_cmd_list[n].type) {
+					case VARIABLE_TYPE:
+						DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
+						DAQ_Inter.sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
+						DAQ_Inter.sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
+						DAQ_Inter.sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
+						DAQ_Inter.sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
+						break;
+					case OPTIONS_TYPE:
+						DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
+						DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
+						DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
+						break;
+					case BUTTONS_TYPE:
+						DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
+					break;
+				}
+			}
+		}
+	}
+}
+
+#endif
+
+/**
+* Handles received command. This is the callback function given to libDAQInterface
+* and is called each time a variable is modified to modify the hardware behaviour
+*
+* @param  key: string containing the name of the slow control variable.
+*
+* @return 0 if parameters OK and reports the event, if not returns negative integer.
+*/
 char* command_parse(const char *key){
 	json_object *jobj;
 	char *cmd[6];
@@ -3313,6 +3379,12 @@ char* command_parse(const char *key){
 	int msg_id = 0;
 	// Copy const char key to variable
 	strcpy(buffer,key);
+	#ifdef DAQ_MODE
+		int set_value = DAQ_Inter.sc_vars[key]->GetValue<int>();
+		char set_value_str[8];
+		sprintf(set_value_str," %d",set_value);
+		strcat(buffer,set_value_str);
+	#endif
 	cmd[0] = strtok(buffer," ");
 	words_n = 0;
 	while( cmd[words_n] != NULL ) {

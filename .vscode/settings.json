@@ -15,7 +15,9 @@
         "*.tcc": "cpp",
         "list": "cpp",
         "array": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "typeinfo": "cpp",
+        "functional": "cpp"
     },
     "cSpell.language": "en-GB",
     "cSpell.words": [
