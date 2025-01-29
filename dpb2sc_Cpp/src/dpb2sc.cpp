@@ -3622,7 +3622,7 @@ char* command_parse(const char *key){
 			}
 		}
 		else{ //DPB
-			//rc = dpb_command_handling(i2c_data,cmd,msg_id,reply);
+			rc = dpb_command_handling(&data,cmd,msg_id,reply);
 		}
 	}
 	// Free JSON objects after using them
