@@ -268,7 +268,7 @@ const char *sfp_i2c_locations[6] = {"/dev/i2c-6","/dev/i2c-10","/dev/i2c-8","/de
 /** @brief SFP connected array */
 int sfp_connected[SFP_NUM] = {0,0,0,0,0,0};
 /** @brief I2C Sensor Data */
-struct DPB_I2cSensors data;
+//extern struct DPB_I2cSensors *i2c_data;
 /** @} */
 
 /************************** Serial Port Related Variables *****************************/
