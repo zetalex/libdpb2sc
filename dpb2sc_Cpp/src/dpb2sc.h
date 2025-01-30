@@ -22,8 +22,9 @@ extern "C" {
 #include "uthash.h"
 #include <linux/serial.h>
 #include <sys/ioctl.h>
- #include <sys/param.h>
+#include <sys/param.h>
 
+#include <poll.h>
 #include "i2c.h"
 #include "linux/errno.h"
 #include <COPacketCmdHkDig.h>

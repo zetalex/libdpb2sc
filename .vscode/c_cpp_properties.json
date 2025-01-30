@@ -40,7 +40,7 @@
                     "${workspaceFolder}",
                     "/media/hyperk2/SSD_DATA/BitBucket/redlibs/**"
                 ],
-                "limitSymbolsToIncludedHeaders": true
+                "limitSymbolsToIncludedHeaders": false
             }
         }
     ],

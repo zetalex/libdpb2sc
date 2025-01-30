@@ -8,7 +8,6 @@ extern _COPacketCmdList HkDigCmdList;
 
 extern "C" {
 #include "dpb2sc.h"
-#include <poll.h>
 
 //struct DPB_I2cSensors *i2c_data = NULL;
 /************************** Init and Close functions ******************************/
