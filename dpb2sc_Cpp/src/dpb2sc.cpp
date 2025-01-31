@@ -16,6 +16,16 @@ extern "C" {
  *  @{
  */
 
+/**
+ * Initializes the DPB SC library.
+ *
+ * This function initializes various elements required by the library, such as semaphores, GPIO, I2C sensors, and shared memory.
+ * It also handles device-specific initialization for DAQ mode or ZMQ sockets.
+ *
+ * @param data A pointer to a DPB_I2cSensors structure containing I2C sensor data.
+ *
+ * @return 0 on success, or an error code on failure.
+ */
 int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 
 	int rc = 0;
@@ -3222,6 +3232,14 @@ int populate_dig_hash_table(int table_size, const char **keys) {
 	return 0;
 }
 
+/**
+ * Retrieves the board word associated with a given key from the HV Hash table.
+ *
+ * @param key The key to search for in the HV Hash table.
+ * @param value A pointer to a buffer where the associated board word will be copied if the key is found.
+ *
+ * @return 0 if the key is found and the value is copied successfully, -EINVAL if the key is not found.
+ */
 int get_hv_hash_table_command(char *key, char *value) {
 	struct cmd_uthash *s;
 	HASH_FIND_STR(hv_cmd_table,key,s);
@@ -3234,6 +3252,14 @@ int get_hv_hash_table_command(char *key, char *value) {
 	}
 }
 
+/**
+ * Retrieves the board word associated with a given key from the LV Hash table.
+ *
+ * @param key The key to search for in the LV Hash table.
+ * @param value A pointer to a buffer where the associated board word will be copied if the key is found.
+ *
+ * @return 0 if the key is found and the value is copied successfully, -EINVAL if the key is not found.
+ */
 int get_lv_hash_table_command(char *key, char *value) {
 	struct cmd_uthash *s;
 	HASH_FIND_STR(lv_cmd_table,key,s);
@@ -3247,6 +3273,14 @@ int get_lv_hash_table_command(char *key, char *value) {
 	}
 }
 
+/**
+ * Retrieves the digitizer command number associated with a given command from the Digitizer Hash table.
+ *
+ * @param cmd An array of strings representing the command to search for in the Digitizer Hash table.
+ * @param value A pointer to an integer where the associated digitizer command number will be stored if the command is found.
+ *
+ * @return 0 if the command is found and the value is stored successfully, -EINVAL if the command is not found.
+ */
 int get_dig_hash_table_command(char **cmd, int *value) {
 	struct dig_uthash *s;
 	// Get Uthash table key
@@ -3305,6 +3339,14 @@ int inList(int inp, int* list, int listLen) {
  *  @{
  */
 #ifdef DAQ_MODE
+/**
+ * Initializes the Slow Control (SC) variables for DAQ mode.
+ *
+ * This function adds various SC variables to the DAQ_Inter.sc_vars object based on the DAQ_chan_cmd_list configuration.
+ * It handles different types of variables such as VARIABLE_TYPE, OPTIONS_TYPE, and BUTTONS_TYPE.
+ *
+ * @return 0 on success, or an error code on failure.
+ */
 int daq_init_sc_vars(){
 	char cmd_string[64];
 
@@ -5270,6 +5312,15 @@ int check_digs_presence(){
 	return 0;
 }
 
+/**
+ * Retrieves the calibration values from the specified digitizer.
+ *
+ * This function sends commands to the digitizer to get the calibration variables, which are read-only variables written by the BME280 manufacturer.
+ *
+ * @param dig_num The digitizer number from which to retrieve the calibration values.
+ *
+ * @return 0 on success, or an error code on failure.
+ */
 int dig_get_calib_values(int dig_num){
 	char digcmd[32];
 	char dig_response[64];
