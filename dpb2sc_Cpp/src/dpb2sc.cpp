@@ -3353,10 +3353,10 @@ int daq_init_sc_vars(){
 	DAQ_Inter.sc_vars.Add("DPB Parameters",ToolFramework::INFO);
 	int n;
 	for (n = 0 ; n < 70 ; n++){
-		printf("n iteration: %d\n",n);
+		DEBUG_PRINTF("n iteration: %d\n",n);
 		if(DAQ_chan_cmd_list[n].chan_or_env == ENV_PARAM){
 			strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
-			printf("cmd_string: %s\n",cmd_string);
+			DEBUG_PRINTF("cmd_string: %s\n",cmd_string);
 			switch (DAQ_chan_cmd_list[n].type) {
 				case VARIABLE_TYPE:
 					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));

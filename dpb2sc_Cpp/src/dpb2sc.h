@@ -214,17 +214,17 @@ int tdm_locked_fd;
  *  @{
  */
 /** @brief Dig0 Main Aurora Link up */
-int dig0_aurora_main_val;
+int dig0_aurora_main_val = 0;
 /** @brief Dig0 Backup Aurora Link up */
-int dig0_aurora_backup_val;
+int dig0_aurora_backup_val = 0;
 /** @brief Dig1 Main Aurora Link up */
-int dig1_aurora_main_val;
+int dig1_aurora_main_val = 0;
 /** @brief Dig1 Backup Aurora Link up */
-int dig1_aurora_backup_val;
+int dig1_aurora_backup_val = 0;
 /** @brief PLL Locked */
-int pll_locked_val;
+int pll_locked_val = 0;
 /** @brief TDM-DPB Locked */
-int tdm_locked_val;
+int tdm_locked_val = 0;
 /** @} */
 
 /************************** Custom Errors Definitions *****************************/
