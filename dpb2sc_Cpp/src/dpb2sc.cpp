@@ -2121,21 +2121,21 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 	#ifdef DAQ_MODE
 		char DAQ_alarm_msg[64];
 		strcpy(DAQ_alarm_msg,info_type);
-		strcpy(DAQ_alarm_msg, ". ");
-		strcpy(DAQ_alarm_msg,"Board ");
-		strcpy(DAQ_alarm_msg,board);
-		strcpy(DAQ_alarm_msg,", Part ");
-		strcpy(DAQ_alarm_msg,chip);
+		strcat(DAQ_alarm_msg, ". ");
+		strcat(DAQ_alarm_msg,"Board ");
+		strcat(DAQ_alarm_msg,board);
+		strcat(DAQ_alarm_msg,", Part ");
+		strcat(DAQ_alarm_msg,chip);
 		if (chan != 99){
-			strcpy(DAQ_alarm_msg," Channel ");
+			strcat(DAQ_alarm_msg," Channel ");
 			char chan_str[8];
 			sprintf(chan_str,"%d",chan);
-			strcpy(DAQ_alarm_msg, chan_str);
+			strcat(DAQ_alarm_msg, chan_str);
 		}
-		strcpy(DAQ_alarm_msg," is ");
+		strcat(DAQ_alarm_msg," is ");
 		char value_string[16];
 		sprintf(value_string,"%3.4f",val);
-		strcpy(DAQ_alarm_msg,value_string);
+		strcat(DAQ_alarm_msg,value_string);
 		DAQ_Inter.SendAlarm(DAQ_alarm_msg);
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type, *j_level = NULL;
