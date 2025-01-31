@@ -17,7 +17,8 @@
         "array": "cpp",
         "string_view": "cpp",
         "typeinfo": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "any": "cpp"
     },
     "cSpell.language": "en-GB",
     "cSpell.words": [

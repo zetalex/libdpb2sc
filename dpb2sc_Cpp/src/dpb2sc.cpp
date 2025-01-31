@@ -136,8 +136,8 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	usleep(12000000);
 	check_digs_presence();
 	#ifdef DAQ_MODE
-		DAQ_Inter.sc_vars["Status"]->SetValue("Ready");
 		daq_init_sc_vars();
+		DAQ_Inter.sc_vars["Status"]->SetValue("Ready");
 	#endif
 	return 0;
 }
@@ -3351,10 +3351,12 @@ int daq_init_sc_vars(){
 	char cmd_string[64];
 
 	DAQ_Inter.sc_vars.Add("DPB Parameters",ToolFramework::INFO);
-
-	for (int n = 0; n < 70;n++){
-		if(DAQ_chan_cmd_list[n].type == ENV_PARAM){
+	int n;
+	for (n = 0 ; n < 70 ; n++){
+		printf("n iteration: %d\n",n);
+		if(DAQ_chan_cmd_list[n].chan_or_env == ENV_PARAM){
 			strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
+			printf("cmd_string: %s\n",cmd_string);
 			switch (DAQ_chan_cmd_list[n].type) {
 				case VARIABLE_TYPE:
 					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
@@ -3367,9 +3369,11 @@ int daq_init_sc_vars(){
 					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
 					DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
 					DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
+					DAQ_Inter.sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
 				break;
 				case BUTTONS_TYPE:
 					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
+					DAQ_Inter.sc_vars[cmd_string]->SetValue(false);
 				break;
 			}
 		}
@@ -3380,6 +3384,7 @@ int daq_init_sc_vars(){
 				sprintf(chan, "%d",i);
 				strcat(cmd_string, " ");
 				strcat(cmd_string,chan);
+				printf("cmd_string: %s\n",cmd_string);
 				switch (DAQ_chan_cmd_list[n].type) {
 					case VARIABLE_TYPE:
 						DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
@@ -3392,14 +3397,17 @@ int daq_init_sc_vars(){
 						DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
 						DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
 						DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
+						DAQ_Inter.sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
 						break;
 					case BUTTONS_TYPE:
 						DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
+						DAQ_Inter.sc_vars[cmd_string]->SetValue(false);
 					break;
 				}
 			}
 		}
 	}
+	return 0;
 }
 
 #endif
@@ -3425,6 +3433,11 @@ char* command_parse(const char *key){
 	// Copy const char key to variable
 	strcpy(buffer,key);
 	#ifdef DAQ_MODE
+		// Check Status of the App, if it is not ready, just return without doing nothing
+		if(strcmp(DAQ_Inter.sc_vars["Status"]->GetValue<std::string>().c_str(),"Ready")){
+			free(reply);
+			return 0;
+		}
 		int set_value = DAQ_Inter.sc_vars[key]->GetValue<int>();
 		char set_value_str[8];
 		sprintf(set_value_str," %d",set_value);
