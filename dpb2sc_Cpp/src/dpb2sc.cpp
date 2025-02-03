@@ -2220,7 +2220,6 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 		}
 		strcat(DAQ_alarm_msg," is ");
 		strcat(DAQ_alarm_msg,status);
-		printf("%s\n",DAQ_alarm_msg);
 		DAQ_Inter.SendAlarm(DAQ_alarm_msg);
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
