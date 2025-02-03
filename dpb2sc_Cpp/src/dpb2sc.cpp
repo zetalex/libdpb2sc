@@ -8,6 +8,8 @@ extern _COPacketCmdList HkDigCmdList;
 
 extern "C" {
 #include "dpb2sc.h"
+#include <execinfo.h>
+void segmentation_handler(int );
 
 //struct DPB_I2cSensors *i2c_data = NULL;
 /************************** Init and Close functions ******************************/
@@ -31,6 +33,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	int rc = 0;
 	int var_lock;
 
+	signal(SIGSEGV, segmentation_handler);
 	rc = init_semaphores();
 	if(rc)
 		return rc;
@@ -2202,7 +2205,7 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 {
 	sem_wait(&alarm_sync);
 	#ifdef DAQ_MODE
-		char DAQ_alarm_msg[64];
+		char DAQ_alarm_msg[256];
 		strcpy(DAQ_alarm_msg,info_type);
 		strcat(DAQ_alarm_msg, ". ");
 		strcat(DAQ_alarm_msg,"Board ");
@@ -2217,6 +2220,7 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 		}
 		strcat(DAQ_alarm_msg," is ");
 		strcat(DAQ_alarm_msg,status);
+		printf("%s\n",DAQ_alarm_msg);
 		DAQ_Inter.SendAlarm(DAQ_alarm_msg);
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
@@ -3024,11 +3028,13 @@ int aurora_down_alarm(int aurora_link, int *flag){
 			if(aurora_link<2){
 				timestamp = time(NULL);
 				rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical", "OFF");
+				printf("Error Aurora %d Down Alarm\n",aurora_link);
 				return rc;
 			}
 			else{
 				timestamp = time(NULL);
 				rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical", "OFF");
+				printf("Error Aurora %d Down Alarm\n",aurora_link);
 				return rc;
 			}
 		}
@@ -5381,6 +5387,24 @@ int dig_get_calib_values(int dig_num){
 			return -EINVAL;
 	}	
 	return 0;
+}
+/**
+ * Handles segmentation fault signals, prints backtrace
+ *
+ * @param sig Signal ID, should be -11 (SEGV)
+ *
+ * @return this function should not return,it quits the program executing exit
+ */
+void segmentation_handler(int sig) {
+	void *array[10];
+	  size_t size;
+
+	  // get void*'s for all entries on the stack
+	  size = backtrace(array, 10);
+	  // print out all the frames to stderr
+	  fprintf(stderr, "Error: signal %d:\n", sig);
+	  backtrace_symbols_fd(array, size, STDERR_FILENO);
+	  exit(1);
 }
 /** @} */
 }
