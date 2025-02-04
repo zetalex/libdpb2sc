@@ -1,8 +1,7 @@
 #ifdef DAQ_MODE
     #include "daq_inter_obj.h"
     #include <string.h>
-	std::string interface_config_file = "/home/petalinux/daq/InterfaceConfig";
-	ToolFramework::DAQInterface DAQ_Inter(interface_config_file);
+	ToolFramework::DAQInterface* DAQ_Inter;
 
 
     struct slow_control_var_struct DAQ_chan_cmd_list[70] = {

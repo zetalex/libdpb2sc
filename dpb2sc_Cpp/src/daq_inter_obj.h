@@ -10,7 +10,7 @@
 	#define OPTIONS_TYPE 1
 	#define BUTTONS_TYPE 2
 
-	extern ToolFramework::DAQInterface DAQ_Inter;
+	extern ToolFramework::DAQInterface* DAQ_Inter;
     struct slow_control_var_struct  {
         int type;
         int chan_or_env;

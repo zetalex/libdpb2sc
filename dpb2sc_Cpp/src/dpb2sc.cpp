@@ -41,10 +41,12 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	init_GPIO();
 	#ifdef DAQ_MODE
 		std::string dev_name;
-		dev_name = DAQ_Inter.GetDeviceName();
+		std::string interface_config_file = "/home/petalinux/daq/InterfaceConfig";
+		DAQ_Inter = new ToolFramework::DAQInterface(interface_config_file);
+		dev_name = DAQ_Inter->GetDeviceName();
 		const char *dev_name_c = dev_name.c_str();
 		printf("Interface successfully built with device %s",dev_name_c);
-		DAQ_Inter.sc_vars["Status"]->SetValue("Initialising"); //setting status message
+		DAQ_Inter->sc_vars["Status"]->SetValue("Initialising"); //setting status message
 	#else
 		rc = zmq_socket_init(); //Initialize ZMQ Sockets
 		if (rc) {
@@ -140,7 +142,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	check_digs_presence();
 	#ifdef DAQ_MODE
 		daq_init_sc_vars();
-		DAQ_Inter.sc_vars["Status"]->SetValue("Ready");
+		DAQ_Inter->sc_vars["Status"]->SetValue("Ready");
 	#endif
 	return 0;
 }
@@ -2139,7 +2141,7 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 		char value_string[16];
 		sprintf(value_string,"%3.4f",val);
 		strcat(DAQ_alarm_msg,value_string);
-		DAQ_Inter.SendAlarm(DAQ_alarm_msg);
+		DAQ_Inter->SendAlarm(DAQ_alarm_msg);
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type, *j_level = NULL;
 		jalarm_data = json_object_new_object();
@@ -2220,7 +2222,7 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 		}
 		strcat(DAQ_alarm_msg," is ");
 		strcat(DAQ_alarm_msg,status);
-		DAQ_Inter.SendAlarm(DAQ_alarm_msg);
+		DAQ_Inter->SendAlarm(DAQ_alarm_msg);
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
 		jalarm_data = json_object_new_object();
@@ -3355,7 +3357,7 @@ int inList(int inp, int* list, int listLen) {
 int daq_init_sc_vars(){
 	char cmd_string[64];
 
-	DAQ_Inter.sc_vars.Add("DPB Parameters",ToolFramework::INFO);
+	DAQ_Inter->sc_vars.Add("DPB Parameters",ToolFramework::INFO);
 	int n;
 	for (n = 0 ; n < 70 ; n++){
 		DEBUG_PRINTF("n iteration: %d\n",n);
@@ -3364,21 +3366,21 @@ int daq_init_sc_vars(){
 			DEBUG_PRINTF("cmd_string: %s\n",cmd_string);
 			switch (DAQ_chan_cmd_list[n].type) {
 				case VARIABLE_TYPE:
-					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
-					DAQ_Inter.sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
-					DAQ_Inter.sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
-					DAQ_Inter.sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
-					DAQ_Inter.sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
+					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
+					DAQ_Inter->sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
+					DAQ_Inter->sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
+					DAQ_Inter->sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
+					DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
 					break;
 				case OPTIONS_TYPE:
-					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
-					DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
-					DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
-					DAQ_Inter.sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
+					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
+					DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
+					DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
+					DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
 				break;
 				case BUTTONS_TYPE:
-					DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
-					DAQ_Inter.sc_vars[cmd_string]->SetValue(false);
+					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
+					DAQ_Inter->sc_vars[cmd_string]->SetValue(false);
 				break;
 			}
 		}
@@ -3389,24 +3391,24 @@ int daq_init_sc_vars(){
 				sprintf(chan, "%d",i);
 				strcat(cmd_string, " ");
 				strcat(cmd_string,chan);
-				printf("cmd_string: %s\n",cmd_string);
+				DEBUG_PRINTF("cmd_string: %s\n",cmd_string);
 				switch (DAQ_chan_cmd_list[n].type) {
 					case VARIABLE_TYPE:
-						DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
-						DAQ_Inter.sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
-						DAQ_Inter.sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
-						DAQ_Inter.sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
-						DAQ_Inter.sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
+						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
+						DAQ_Inter->sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
+						DAQ_Inter->sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
+						DAQ_Inter->sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
+						DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
 						break;
 					case OPTIONS_TYPE:
-						DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
-						DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
-						DAQ_Inter.sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
-						DAQ_Inter.sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
+						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
+						DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
+						DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
+						DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
 						break;
 					case BUTTONS_TYPE:
-						DAQ_Inter.sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
-						DAQ_Inter.sc_vars[cmd_string]->SetValue(false);
+						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
+						DAQ_Inter->sc_vars[cmd_string]->SetValue(false);
 					break;
 				}
 			}
@@ -3439,11 +3441,11 @@ char* command_parse(const char *key){
 	strcpy(buffer,key);
 	#ifdef DAQ_MODE
 		// Check Status of the App, if it is not ready, just return without doing nothing
-		if(strcmp(DAQ_Inter.sc_vars["Status"]->GetValue<std::string>().c_str(),"Ready")){
+		if(strcmp(DAQ_Inter->sc_vars["Status"]->GetValue<std::string>().c_str(),"Ready")){
 			free(reply);
 			return 0;
 		}
-		int set_value = DAQ_Inter.sc_vars[key]->GetValue<int>();
+		int set_value = DAQ_Inter->sc_vars[key]->GetValue<int>();
 		char set_value_str[8];
 		sprintf(set_value_str," %d",set_value);
 		strcat(buffer,set_value_str);
