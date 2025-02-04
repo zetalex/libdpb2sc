@@ -3029,13 +3029,11 @@ int aurora_down_alarm(int aurora_link, int *flag){
 			if(aurora_link<2){
 				timestamp = time(NULL);
 				rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical", "OFF");
-				printf("Error Aurora %d Down Alarm\n",aurora_link);
 				return rc;
 			}
 			else{
 				timestamp = time(NULL);
 				rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical", "OFF");
-				printf("Error Aurora %d Down Alarm\n",aurora_link);
 				return rc;
 			}
 		}
