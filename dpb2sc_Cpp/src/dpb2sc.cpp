@@ -41,11 +41,12 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	init_GPIO();
 	#ifdef DAQ_MODE
 		std::string dev_name;
-		std::string interface_config_file = "/home/petalinux/daq/InterfaceConfig";
+		char interface_config_file[64];
+		strcpy(interface_config_file, "/home/petalinux/daq/InterfaceConfig");
 		DAQ_Inter = new ToolFramework::DAQInterface(interface_config_file);
 		dev_name = DAQ_Inter->GetDeviceName();
 		const char *dev_name_c = dev_name.c_str();
-		printf("Interface successfully built with device %s",dev_name_c);
+		printf("Interface successfully built with device %s \n",dev_name_c);
 		DAQ_Inter->sc_vars["Status"]->SetValue("Initialising"); //setting status message
 	#else
 		rc = zmq_socket_init(); //Initialize ZMQ Sockets
@@ -2223,6 +2224,7 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 		strcat(DAQ_alarm_msg," is ");
 		strcat(DAQ_alarm_msg,status);
 		DAQ_Inter->SendAlarm(DAQ_alarm_msg);
+		strcpy(DAQ_alarm_msg,"");
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
 		jalarm_data = json_object_new_object();
