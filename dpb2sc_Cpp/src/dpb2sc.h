@@ -254,6 +254,7 @@ int dig0_connected = 0;
 int dig1_connected = 0;
 int count_fails_until_success = 0;
 int count_since_reset = 0;
+char msg_cmd[64];
 
 /************************** SFP Related Variables *****************************/
 /** @defgroup SFP_I2C SFP Related Variables

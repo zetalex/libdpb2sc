@@ -3357,7 +3357,7 @@ int inList(int inp, int* list, int listLen) {
 int daq_init_sc_vars(){
 	char cmd_string[64];
 
-	DAQ_Inter->sc_vars.Add("DPB Parameters",ToolFramework::INFO);
+	DAQ_Inter->sc_vars.Add("DPB_Parameters",ToolFramework::INFO);
 	int n;
 	for (n = 0 ; n < 70 ; n++){
 		DEBUG_PRINTF("n iteration: %d\n",n);
@@ -3389,7 +3389,7 @@ int daq_init_sc_vars(){
 				strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
 				char chan[4];
 				sprintf(chan, "%d",i);
-				strcat(cmd_string, " ");
+				strcat(cmd_string, "_");
 				strcat(cmd_string,chan);
 				DEBUG_PRINTF("cmd_string: %s\n",cmd_string);
 				switch (DAQ_chan_cmd_list[n].type) {
@@ -3437,6 +3437,14 @@ char* command_parse(const char *key){
 	char *reply = static_cast<char *>(malloc(256));
 	// Set msg_id temporarily to 0
 	int msg_id = 0;
+	// Put the appropiate separator
+	char separator[4];
+	#ifdef DAQ_MODE
+		strcpy(separator,"_");
+	#else
+		strcpy(separator," ");
+	#endif
+
 	// Copy const char key to variable
 	strcpy(buffer,key);
 	#ifdef DAQ_MODE
@@ -3446,15 +3454,17 @@ char* command_parse(const char *key){
 			return 0;
 		}
 		int set_value = DAQ_Inter->sc_vars[key]->GetValue<int>();
-		char set_value_str[8];
-		sprintf(set_value_str," %d",set_value);
-		strcat(buffer,set_value_str);
+		if(set_value != 1){
+			char set_value_str[8];
+			sprintf(set_value_str,"_%d",set_value);
+			strcat(buffer,set_value_str);
+		}
 	#endif
-	cmd[0] = strtok(buffer," ");
+	cmd[0] = strtok(buffer,separator);
 	words_n = 0;
 	while( cmd[words_n] != NULL ) {
 		words_n++;
-		cmd[words_n] = strtok(NULL, " ");
+		cmd[words_n] = strtok(NULL, separator);
 	}
 	jobj = json_object_new_object();
 	char buff[512];
@@ -3693,10 +3703,10 @@ char* command_parse(const char *key){
 		json_object * jcmd;
 		json_object * jmsg = json_tokener_parse(reply);
 		json_object_object_get_ex(jmsg, "msg_value", &jcmd);
-		strcpy(buffer,json_object_get_string(jcmd));
+		strcpy(msg_cmd,json_object_get_string(jcmd));
 		json_object_put(jmsg);
 		json_object_put(jcmd);
-		return buffer;
+		return msg_cmd;
 	#else
 		return const_cast<char*>(reply);
 	#endif
