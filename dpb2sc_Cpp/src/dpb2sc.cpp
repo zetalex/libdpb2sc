@@ -144,6 +144,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	#ifdef DAQ_MODE
 		daq_init_sc_vars();
 		DAQ_Inter->sc_vars["Status"]->SetValue("Ready");
+		daq_flag = 1;
 	#endif
 	return 0;
 }
@@ -3366,20 +3367,20 @@ int daq_init_sc_vars(){
 			DEBUG_PRINTF("cmd_string: %s\n",cmd_string);
 			switch (DAQ_chan_cmd_list[n].type) {
 				case VARIABLE_TYPE:
-					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
+					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(command_parse,std::placeholders::_1));
 					DAQ_Inter->sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
 					DAQ_Inter->sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
 					DAQ_Inter->sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
 					DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
 					break;
 				case OPTIONS_TYPE:
-					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
+					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(command_parse,std::placeholders::_1));
 					DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
 					DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
 					DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
 				break;
 				case BUTTONS_TYPE:
-					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
+					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(command_parse,std::placeholders::_1));
 					DAQ_Inter->sc_vars[cmd_string]->SetValue(false);
 				break;
 			}
@@ -3394,20 +3395,20 @@ int daq_init_sc_vars(){
 				DEBUG_PRINTF("cmd_string: %s\n",cmd_string);
 				switch (DAQ_chan_cmd_list[n].type) {
 					case VARIABLE_TYPE:
-						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(&command_parse,std::placeholders::_1));
+						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(command_parse,std::placeholders::_1));
 						DAQ_Inter->sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
 						DAQ_Inter->sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
 						DAQ_Inter->sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
 						DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
 						break;
 					case OPTIONS_TYPE:
-						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(&command_parse,std::placeholders::_1));
+						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(command_parse,std::placeholders::_1));
 						DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
 						DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
 						DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
 						break;
 					case BUTTONS_TYPE:
-						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(&command_parse,std::placeholders::_1));
+						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(command_parse,std::placeholders::_1));
 						DAQ_Inter->sc_vars[cmd_string]->SetValue(false);
 					break;
 				}
@@ -3427,7 +3428,7 @@ int daq_init_sc_vars(){
 *
 * @return 0 if parameters OK and reports the event, if not returns negative integer.
 */
-char* command_parse(const char *key){
+std::string command_parse(const char *key){
 	json_object *jobj;
 	char *cmd[6];
 	const char *serialized_json;
@@ -3448,16 +3449,17 @@ char* command_parse(const char *key){
 	// Copy const char key to variable
 	strcpy(buffer,key);
 	#ifdef DAQ_MODE
-		// Check Status of the App, if it is not ready, just return without doing nothing
-		if(strcmp(DAQ_Inter->sc_vars["Status"]->GetValue<std::string>().c_str(),"Ready")){
-			free(reply);
-			return 0;
-		}
 		int set_value = DAQ_Inter->sc_vars[key]->GetValue<int>();
+		char set_value_str[8];
 		if(set_value != 1){
-			char set_value_str[8];
 			sprintf(set_value_str,"_%d",set_value);
 			strcat(buffer,set_value_str);
+		}
+		// Check Status of the App, if it is not ready, just return without doing nothing
+		if(!daq_flag){
+			free(reply);
+			msg_cmd = std::string("DAQ not ready");
+			return msg_cmd;
 		}
 	#endif
 	cmd[0] = strtok(buffer,separator);
@@ -3703,12 +3705,13 @@ char* command_parse(const char *key){
 		json_object * jcmd;
 		json_object * jmsg = json_tokener_parse(reply);
 		json_object_object_get_ex(jmsg, "msg_value", &jcmd);
-		strcpy(msg_cmd,json_object_get_string(jcmd));
+		msg_cmd = std::string(json_object_get_string(jcmd));
 		json_object_put(jmsg);
 		json_object_put(jcmd);
+		free(reply);
 		return msg_cmd;
 	#else
-		return const_cast<char*>(reply);
+		return std::string(reply);
 	#endif
 }
 /**

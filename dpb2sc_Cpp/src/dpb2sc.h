@@ -23,6 +23,7 @@ extern "C" {
 #include <linux/serial.h>
 #include <sys/ioctl.h>
 #include <sys/param.h>
+#include <string>
 
 #include <poll.h>
 #include "i2c.h"
@@ -151,7 +152,7 @@ int tdm_not_locked_alarm();
 int zmq_socket_init ();
 int zmq_socket_destroy();
 int daq_init_sc_vars();
-char* command_parse(const char *key);
+std::string command_parse(const char *key);
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_get_calib_values(int);
 int dig_command_handling(int, char *, char *);
@@ -254,7 +255,8 @@ int dig0_connected = 0;
 int dig1_connected = 0;
 int count_fails_until_success = 0;
 int count_since_reset = 0;
-char msg_cmd[64];
+int daq_flag = 0;
+std::string msg_cmd;
 
 /************************** SFP Related Variables *****************************/
 /** @defgroup SFP_I2C SFP Related Variables
