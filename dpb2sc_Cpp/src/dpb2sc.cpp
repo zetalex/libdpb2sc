@@ -3512,7 +3512,6 @@ std::string command_parse(const char *key){
 		}
 		// Get the value of the slow control variable
 		int pos = daq_find_struct(key,buffer);
-		printf("Buffer: %s\n",buffer);
 	#else
 		strcpy(buffer,key);
 	#endif

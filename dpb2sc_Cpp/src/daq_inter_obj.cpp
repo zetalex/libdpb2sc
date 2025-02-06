@@ -6,11 +6,11 @@
 
    struct slow_control_var_struct DAQ_chan_cmd_list[70] = {
     //LV SC Vars
-         {OPTIONS_TYPE, CHAN_PARAM, 6, "SET_LV_STATUS", 0, 0, 0, 0, {"ON", "OFF"}},
-         {OPTIONS_TYPE, CHAN_PARAM, 6, "SET_LV_CPU_MAIN", 0, 0, 0, 0, {"ON", "OFF"}},
-         {OPTIONS_TYPE, CHAN_PARAM, 6, "SET_LV_CPU_BACKUP", 0, 0, 0, 0, {"ON", "OFF"}},
-        {VARIABLE_TYPE, CHAN_PARAM, 6, "SET_LV_VOLT", 0, 20, 1, 15,{}},
-        {VARIABLE_TYPE, CHAN_PARAM, 6, "SET_LV_CURR", 0, 2500, 100,{}},
+         {OPTIONS_TYPE, CHAN_PARAM, 8, "SET_LV_STATUS", 0, 0, 0, 0, {"ON", "OFF"}},
+         {OPTIONS_TYPE, CHAN_PARAM, 8, "SET_LV_CPU_MAIN", 0, 0, 0, 0, {"ON", "OFF"}},
+         {OPTIONS_TYPE, CHAN_PARAM, 8, "SET_LV_CPU_BACKUP", 0, 0, 0, 0, {"ON", "OFF"}},
+        {VARIABLE_TYPE, CHAN_PARAM, 8, "SET_LV_VOLT", 0, 20, 1, 15,{}},
+        {VARIABLE_TYPE, CHAN_PARAM, 8, "SET_LV_CURR", 0, 2500, 100,{}},
 
     // HV SC Vars
         {OPTIONS_TYPE, CHAN_PARAM, 24, "SET_HV_STATUS", 0, 0, 0, 0, {"ON", "OFF"}},
