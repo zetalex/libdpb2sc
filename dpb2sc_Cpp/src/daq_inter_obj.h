@@ -20,7 +20,7 @@
         int max;
         int step;
         int default_value;
-        char *options[8];
+        std::string options[2];
     };
 
     extern slow_control_var_struct DAQ_chan_cmd_list[70];

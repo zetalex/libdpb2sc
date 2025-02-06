@@ -3373,11 +3373,14 @@ int daq_init_sc_vars(){
 					DAQ_Inter->sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
 					DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
 					break;
-				case OPTIONS_TYPE:
+				case OPTIONS_TYPE:{
 					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(command_parse,std::placeholders::_1));
-					DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
-					DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
-					DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
+					std::string option1 = DAQ_chan_cmd_list[n].options[0];
+					std::string option2 = DAQ_chan_cmd_list[n].options[1];
+					DAQ_Inter->sc_vars[cmd_string]->AddOption(option1);
+					DAQ_Inter->sc_vars[cmd_string]->AddOption(option2);
+					DAQ_Inter->sc_vars[cmd_string]->SetValue(option1);
+				}
 				break;
 				case BUTTONS_TYPE:
 					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(command_parse,std::placeholders::_1));
@@ -3401,12 +3404,15 @@ int daq_init_sc_vars(){
 						DAQ_Inter->sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
 						DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
 						break;
-					case OPTIONS_TYPE:
+					case OPTIONS_TYPE:{
 						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(command_parse,std::placeholders::_1));
-						DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[0]);
-						DAQ_Inter->sc_vars[cmd_string]->AddOption(DAQ_chan_cmd_list[n].options[1]);
-						DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].options[0]);
+						std::string option1 = DAQ_chan_cmd_list[n].options[0];
+						std::string option2 = DAQ_chan_cmd_list[n].options[1];
+						DAQ_Inter->sc_vars[cmd_string]->AddOption(option1);
+						DAQ_Inter->sc_vars[cmd_string]->AddOption(option2);
+						DAQ_Inter->sc_vars[cmd_string]->SetValue(option1);
 						break;
+					}
 					case BUTTONS_TYPE:
 						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(command_parse,std::placeholders::_1));
 						DAQ_Inter->sc_vars[cmd_string]->SetValue(false);
