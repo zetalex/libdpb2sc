@@ -151,7 +151,6 @@ int pll_not_locked_alarm();
 int tdm_not_locked_alarm();
 int zmq_socket_init ();
 int zmq_socket_destroy();
-int daq_init_sc_vars();
 std::string command_parse(const char *key);
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_get_calib_values(int);
@@ -190,6 +189,10 @@ int check_hv_lv_presence();
 #define DIGITIZER_0 0
 #define DIGITIZER_1 1
 
+#ifdef DAQ_MODE
+int daq_init_sc_vars();
+int daq_find_struct(const char *, char *);
+#endif
 /************************** Alarms File Descriptors *****************************/
 /** @defgroup alarmsfd Alarms File Descriptors
  *  Some file descriptors for alarms as universal variables

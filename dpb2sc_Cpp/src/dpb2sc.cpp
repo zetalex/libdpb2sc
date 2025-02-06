@@ -3424,8 +3424,59 @@ int daq_init_sc_vars(){
 	return 0;
 }
 
+/**
+ * Initializes the DAQ mode.
+ *
+ * This function initializes the DAQ mode by creating the DAQ_Inter object and initializing the SC variables.
+ *
+ * @return 0 on success, or an error code on failure.
+ */
+int daq_find_struct(const char *key, char *cmd){
+	int n;
+	for (n = 0 ; n < 70 ; n++){
+			if(DAQ_chan_cmd_list[n].chan_or_env == CHAN_PARAM){
+				for(int i= 0; i < DAQ_chan_cmd_list[n].chan_n; i++){
+					char cmd_string[64];
+					strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
+					char chan[4];
+					sprintf(chan, "_%d",i);
+					strcat(cmd_string,chan);
+					if(!strcmp(key,cmd_string)){
+						switch(DAQ_chan_cmd_list[n].type){
+						case VARIABLE_TYPE:
+							sprintf(cmd,"%s_%d",cmd_string,DAQ_Inter->sc_vars[key]->GetValue<int>());
+							break;
+						case OPTIONS_TYPE:
+							sprintf(cmd,"%s_%s",cmd_string,DAQ_Inter->sc_vars[key]->GetValue<std::string>().c_str());
+							break;
+						case BUTTONS_TYPE:
+							sprintf(cmd,"%s",cmd_string);
+							break;
+						}
+						return n;
+					}
+				}
+			}
+			else{
+				if(!strcmp(DAQ_chan_cmd_list[n].name,key)){
+					switch(DAQ_chan_cmd_list[n].type){
+						case VARIABLE_TYPE:
+							sprintf(cmd,"%s_%d",key,DAQ_Inter->sc_vars[key]->GetValue<int>());
+							break;
+						case OPTIONS_TYPE:
+							sprintf(cmd,"%s_%s",key,DAQ_Inter->sc_vars[key]->GetValue<std::string>().c_str());
+							break;
+						case BUTTONS_TYPE:
+							sprintf(cmd,"%s",key);
+							break;
+					}
+					return n;
+				}
+			}
+		}
+	return -EINVAL;
+}
 #endif
-
 /**
 * Handles received command. This is the callback function given to libDAQInterface
 * and is called each time a variable is modified to modify the hardware behaviour
@@ -3441,7 +3492,7 @@ std::string command_parse(const char *key){
 	int words_n;
 	int rc;
 	char buffer[256];
-	char *reply = static_cast<char *>(malloc(256));
+	char reply[256];
 	// Set msg_id temporarily to 0
 	int msg_id = 0;
 	// Put the appropiate separator
@@ -3453,21 +3504,19 @@ std::string command_parse(const char *key){
 	#endif
 
 	// Copy const char key to variable
-	strcpy(buffer,key);
 	#ifdef DAQ_MODE
-		int set_value = DAQ_Inter->sc_vars[key]->GetValue<int>();
-		char set_value_str[8];
-		if(set_value != 1){
-			sprintf(set_value_str,"_%d",set_value);
-			strcat(buffer,set_value_str);
-		}
 		// Check Status of the App, if it is not ready, just return without doing nothing
 		if(!daq_flag){
-			free(reply);
 			msg_cmd = std::string("DAQ not ready");
 			return msg_cmd;
 		}
+		// Get the value of the slow control variable
+		int pos = daq_find_struct(key,buffer);
+		printf("Buffer: %s\n",buffer);
+	#else
+		strcpy(buffer,key);
 	#endif
+	// Split the command into words
 	cmd[0] = strtok(buffer,separator);
 	words_n = 0;
 	while( cmd[words_n] != NULL ) {
@@ -3714,10 +3763,10 @@ std::string command_parse(const char *key){
 		msg_cmd = std::string(json_object_get_string(jcmd));
 		json_object_put(jmsg);
 		json_object_put(jcmd);
-		free(reply);
 		return msg_cmd;
 	#else
-		return std::string(reply);
+		msg_cmd = std::string(reply);
+		return msg_cmd;
 	#endif
 }
 /**
