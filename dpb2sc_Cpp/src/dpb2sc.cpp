@@ -3,8 +3,11 @@
 #include <common/protocols/COPacket/COPacket.hpp>
 #include "daq_inter_obj.h"
 #include <functional>
+#include <string>
 
 extern _COPacketCmdList HkDigCmdList;
+
+std::string msg_cmd;
 
 extern "C" {
 #include "dpb2sc.h"
@@ -3485,7 +3488,7 @@ int daq_find_struct(const char *key, char *cmd){
 *
 * @return 0 if parameters OK and reports the event, if not returns negative integer.
 */
-std::string command_parse(const char *key){
+char* command_parse(const char *key){
 	json_object *jobj;
 	char *cmd[6];
 	const char *serialized_json;
@@ -3508,7 +3511,7 @@ std::string command_parse(const char *key){
 		// Check Status of the App, if it is not ready, just return without doing nothing
 		if(!daq_flag){
 			msg_cmd = std::string("DAQ not ready");
-			return msg_cmd;
+			return const_cast<char*>(msg_cmd.c_str());
 		}
 		// Get the value of the slow control variable
 		int pos = daq_find_struct(key,buffer);
@@ -3762,10 +3765,10 @@ std::string command_parse(const char *key){
 		msg_cmd = std::string(json_object_get_string(jcmd));
 		json_object_put(jmsg);
 		json_object_put(jcmd);
-		return msg_cmd;
+		return const_cast<char*>(msg_cmd.c_str());
 	#else
 		msg_cmd = std::string(reply);
-		return msg_cmd;
+		return const_cast<char*>(msg_cmd.c_str());
 	#endif
 }
 /**
