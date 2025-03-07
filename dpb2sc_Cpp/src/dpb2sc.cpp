@@ -1113,7 +1113,7 @@ int checksum_check(struct I2cDevice *dev,uint8_t ini_reg, int size){
 	DEBUG_PRINTF("Checksum calc: %hhu \n Checksum_val: %hhu \n",calc_checksum, checksum_val);
 	if (checksum_val != calc_checksum){ //Check the obtained checksum equals the device checksum register
 		printf("Checksum value does not match the expected value \r\n");
-		return rc;
+		return -EHWPOISON;
 	}
 	return 0;
 }
