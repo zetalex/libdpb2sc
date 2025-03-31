@@ -265,6 +265,8 @@ uint8_t status_mask[6] = {0,0,0,0,0,0};
 const char *sfp_i2c_locations[6] = {"/dev/i2c-6","/dev/i2c-10","/dev/i2c-8","/dev/i2c-12","/dev/i2c-9","/dev/i2c-13"};
 /** @brief SFP connected array */
 int sfp_connected[SFP_NUM] = {0,0,0,0,0,0};
+/** @brief SFP switch turned on array. All SFPs are assumed to be ON at the start of the application */
+int sfp_switch_on[SFP_NUM] = {1,1,1,1,1,1};
 /** @} */
 
 /************************** Serial Port Related Variables *****************************/

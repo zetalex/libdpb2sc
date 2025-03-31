@@ -957,6 +957,10 @@ int check_sfp_presence(struct DPB_I2cSensors *data){
 	struct I2cDevice dev;
 	uint64_t timestamp = time(NULL);
 	for(int i = 0; i < SFP_NUM; i++){
+		// Check if SFP is powered on
+		if(sfp_switch_on[i] == 0){
+			continue;
+		}
 		dev = data->dev_sfp_A0[i];
 		rc_check = checksum_check(&dev, SFP_PHYS_DEV,63);
 		if(rc_check && sfp_connected[i]){
@@ -3295,6 +3299,8 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				else{
 					bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
 					rc = write_GPIO(SFP0_PWR_ENA+sfp_num,bool_set);
+					//Update sfp_switch_flag
+					sfp_switch_on[sfp_num] = bool_set;
 					if(rc){
 						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 						goto end;
