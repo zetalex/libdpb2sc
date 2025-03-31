@@ -75,6 +75,9 @@ sem_t sem_dig0;
 /** @brief Semaphore to avoid race conditions when reading from Digitizer 1 serial port */
 sem_t sem_dig1;
 
+/** @brief Semaphore to avoid incorrect alarm when switching back on a SFP module */
+sem_t sem_sfp_switch;
+
 /** @} */
 
 /******************************************************************************
