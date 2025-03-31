@@ -161,6 +161,11 @@ int init_semaphores(){
 		DEBUG_PRINTF("Error initialising semaphore Dig1\n");
 		return rc;
 	}
+	rc = sem_init(&sem_sfp_switch,1,1);
+	if(rc){
+		DEBUG_PRINTF("Error initialising semaphore SFP Switch\n");
+		return rc;
+	}
 	return rc;
 }
 
@@ -234,6 +239,7 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    sem_destroy(&sem_hvlv);
    sem_destroy(&sem_dig0);
    sem_destroy(&sem_dig1);
+   sem_destroy(&sem_sfp_switch);
    //Stop I2C Sensors
    stop_I2cSensors(data);
    return;
@@ -951,6 +957,7 @@ int init_I2C_SFP(int n, struct DPB_I2cSensors *data){
  */
 int check_sfp_presence(struct DPB_I2cSensors *data){
 	// Check SFP i2C buses in all of them
+	sem_wait(&sem_sfp_switch);
 	sem_wait(&i2c_sync); 
 	int rc_check = 0;
 	int rc_status = 0;
@@ -983,6 +990,7 @@ int check_sfp_presence(struct DPB_I2cSensors *data){
 	usleep(100);
 	write_GPIO(I2C_MUX_RESET,0);
 	sem_post(&i2c_sync);
+	sem_post(&sem_sfp_switch);
 	return 0;
 }
 
@@ -3298,14 +3306,18 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				}
 				else{
 					bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
+					sem_wait(&sem_sfp_switch);
+					//Set GPIO
 					rc = write_GPIO(SFP0_PWR_ENA+sfp_num,bool_set);
-					//Update sfp_switch_flag
-					sfp_switch_on[sfp_num] = bool_set;
 					if(rc){
 						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 						goto end;
 					}
 					rc = command_status_response_json (msg_id,99,cmd_reply);
+					//Update sfp_switch_flag
+					sfp_switch_on[sfp_num] = bool_set;
+					usleep(500000);
+					sem_post(&sem_sfp_switch);
 					goto end;
 				}
 			}
