@@ -14,6 +14,7 @@ extern "C" {
 #include <stdlib.h>
 
 #include "i2c.h"
+#include <i2c/smbus.h>
 
 /*
  * Start the I2C device.
@@ -93,32 +94,20 @@ int i2c_write(struct I2cDevice* dev, uint8_t *buf, size_t buf_len) {
  * @param buf points to the start of buffer to be read into
  * @param buf_len length of the buffer to be read
  *
- * @return - number of bytes read if the read procedure succeeded
- *         - 0 if no bytes were read
- *         - negative if the read procedure failed
+ * @return - always 0
  */
 int i2c_readn_reg(struct I2cDevice* dev, uint8_t reg, uint8_t *buf, size_t buf_len) {
-	int rc;
 
-	/*
-	 * Write the I2C register address.
-	 */
-	rc = i2c_write(dev, &reg, 1);
-	if (rc <= 0) {
-		DEBUG_PRINTF("%s: failed to write i2c register address\r\n", __func__);
-		return rc;
+	 /*
+	  * Read the I2C register data.
+	  */
+
+	for(int i = 0; i < buf_len; i++){
+		buf[i] = i2c_smbus_read_byte_data(dev->fd, reg);
+		DEBUG_PRINTF("i2c read from reg: %hhu result: %hhu \n",reg,buf[i]);
 	}
 
-	/*
-	 * Read the I2C register data.
-	 */
-	rc = i2c_read(dev, buf, buf_len);
-	if (rc <= 0) {
-		DEBUG_PRINTF("%s: failed to read i2c register data\r\n", __func__);
-		return rc;
-	}
-
-	return rc;
+	return 0;
 }
 
 /*
