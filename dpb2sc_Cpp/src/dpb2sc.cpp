@@ -3312,7 +3312,7 @@ int get_dig_hash_table_command(char **cmd, int *value) {
 	strcat(str_dpb_format," ");
 	strcat(str_dpb_format,cmd[2]);
 
-	if(cmd[3] != NULL && !strcmp(cmd[3],"ALL")){
+	if(cmd[3] != NULL && (!strcmp(cmd[3],"ALL") || !strcmp(cmd[3],"ON") || !strcmp(cmd[3],"OFF"))){
 		strcat(str_dpb_format," ");
 		strcat(str_dpb_format,cmd[3]);
 	}
@@ -4278,7 +4278,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_GW_VER:
 
 		// Calibration board commands
-		case HKDIG_TRG_CAL_PULSE:
 		case HKDIG_GET_CAL_PLS_AMP:
 
 		// OD Commands
@@ -4301,6 +4300,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_BOARD_STATUS:
 
 		case HKDIG_GET_BOARD_CNTRL:
+
+		case HKDIG_GET_BOARD_CNTRL2:
 
 		// Get TLink lock status
 		case HKDIG_GET_TLNK_LOCK:
@@ -4377,7 +4378,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_THR_NUM:
 		case HKDIG_GET_IT_NUM:
 		case HKDIG_GET_DT_NUM:
-		case HKDIG_GET_PED_TYPE:
+		case HKDIG_GET_PED_ENABLE:
 		case HKDIG_EN_CAL_N:// Enable channel calibration input
 		// Disable calibration input for channel n
 		case HKDIG_DIS_CAL_N:
@@ -4416,6 +4417,21 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_RMON_FMT_N:			// Get FMT rate monitor value for channel N
 		case HKDIG_GET_CHN_LG_CHG:
     	case HKDIG_GET_CHN_HG_CHG:
+
+		//Calibration setting paarmeters
+		case HKDIG_SET_CAL_PERIOD:
+		case HKDIG_SET_CAL_TYPE:
+		
+		// Data Transmission commands
+		case HKDIG_AUR_DEMUX_EN:
+		case HKDIG_AUR_DEMUX_DIS:
+
+		// Pedestal commands
+		case HKDIG_SET_PED_PERIOD:
+		case HKDIG_SET_PED_STAGGER:
+
+		case HKDIG_SET_ADS_PSC:
+		
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
@@ -4435,8 +4451,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_DT_NUM:
 
 		// Setting pedestal type per channel
-		case HKDIG_SET_PED_TYPE:
-		
+		case HKDIG_SET_PED_ENABLE:
+
 		value1 = atoi(cmd[3]);
 		value2 = atoi(cmd[4]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1, (uint32_t)value2);
@@ -5356,9 +5372,9 @@ int check_digs_presence(){
 				write(serial_port_fd, buffer, strlen(buffer));
 				usleep(100000);
 				n = read(serial_port_fd, buffer, sizeof(buffer));	
-				uint16_t gw_ver;
-				pkt.GetNextFieldAsUINT16(gw_ver);
-				sprintf(DIG0_SN,"%d",gw_ver);
+				char* gw_ver_str;
+				gw_ver_str = pkt.GetNextField();
+				strcpy(DIG0_SN,gw_ver_str); // Digitizer gateway is in hex format	
 				printf("Hotplug event: Digitizer 0 has been detected GW Ver %s\n",DIG0_SN);
 				status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
 				dig0_connected = 1;
@@ -5397,9 +5413,9 @@ int check_digs_presence(){
 				pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
 				write(serial_port_fd, buffer, strlen(buffer));
 				usleep(100000);
-				uint16_t gw_ver;
-				pkt.GetNextFieldAsUINT16(gw_ver);
-				sprintf(DIG1_SN,"%d",gw_ver);	
+				char* gw_ver_str;
+				gw_ver_str = pkt.GetNextField();
+				strcpy(DIG1_SN,gw_ver_str); // Digitizer gateway is in hex format	
 				printf("Hotplug event: Digitizer 1 has been detected GW Ver %s\n",DIG1_SN);
 				status_alarm_json("DIG1","Serial Port", 99,0,"info","ON");
 				dig1_connected = 1;

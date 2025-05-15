@@ -665,7 +665,7 @@ char HV_SN[8];
 Digitizer Command Data.
 ****************************************************************************/
 
-#define DIG_STANDARD_CMD_TABLE_SIZE 75
+#define DIG_STANDARD_CMD_TABLE_SIZE 82
 
 const char *dig_dpb_words[] = {
 	"READ DISCTRES",
@@ -677,9 +677,9 @@ const char *dig_dpb_words[] = {
     "READ DEADTIME",
     "SET DEADTIME",
     "SET DEADTIME ALL",
+    "SET CALTYPE",
     "SET CALIB ON",
     "SET CALIB OFF",
-    "SET CALIBPULSE",
     "SET CALIBPWR",
     "SET CALIBLEN",
     "SET CALIBAMP",
@@ -687,6 +687,7 @@ const char *dig_dpb_words[] = {
     "SET CALIBPDN",
     "SET CALIBMUTE",
     "SET CALIBSEN",
+    "SET CALIBPER",
     "READ LG",
     "READ HG",
     "READ STATUS", 
@@ -701,19 +702,25 @@ const char *dig_dpb_words[] = {
     "SET DAQSTATUS ALL ON",
     "SET DAQSTATUS ALL OFF",
     "SET TDCRST",
+    "SET DEMUX ON",
+    "SET DEMUX OFF",
     "SET PEDTYPE",
     "READ PEDTYPE",
+    "SET PEDPERIOD",
+    "SET PEDSTAG",
     "SET ODSEL",
     "READ ODSEL",
     "READ GWVER",
     "READ SWVER",
     "READ BDSTATUS",
     "READ BDCONTROL",
+    "READ BDCONTROL2",
     "READ UPTIME",
     "SET AURORARST",
     "SET CLOCK",
     "READ DAQCLOCK",
     "READ TLNLOCK",
+    "SET PSC",
     "READ OUI",
     "READ EID",
     "READ RMONT",
@@ -745,13 +752,14 @@ const char *dig_dpb_words[] = {
     "READ PRESS",
     NULL
 };
-#define DIG_MON_BOARD_CODES_SIZE 25
+#define DIG_MON_BOARD_CODES_SIZE 26
 const int dig_monitor_mag_board_codes[] = {
     // Board monitoring
     HKDIG_GET_GW_VER,
     HKDIG_GET_SW_VER,
     HKDIG_GET_BOARD_STATUS,
     HKDIG_GET_BOARD_CNTRL,
+    HKDIG_GET_BOARD_CNTRL2,
     HKDIG_GET_UPTIME,
     HKDIG_GET_RMON_PER,
     HKDIG_GET_RMON_MUX_N,
@@ -784,7 +792,7 @@ const int dig_monitor_mag_chan_codes[] = {
     HKDIG_GET_DT_NUM,
     HKDIG_GET_CHN_STATUS,
     HKDIG_GET_CHN_CNTRL,
-    HKDIG_GET_PED_TYPE,
+    HKDIG_GET_PED_ENABLE,
     HKDIG_GET_RMON_ADC_N,
     HKDIG_GET_RMON_TDC_N,
     HKDIG_GET_RMON_FMT_N,
@@ -797,6 +805,7 @@ const char *dig_monitor_mag_board_names[] = {
     "SWVer",
     "BDStatus",
     "BDCntrl",
+    "BDCntrl2",
     "BDUptime",
     "RMONT",
     "RMONMUX",
