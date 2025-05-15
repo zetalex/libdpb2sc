@@ -3214,7 +3214,7 @@ int get_dig_hash_table_command(char **cmd, int *value) {
 	strcat(str_dpb_format," ");
 	strcat(str_dpb_format,cmd[2]);
 
-	if(cmd[3] != NULL && !strcmp(cmd[3],"ALL")){
+	if(cmd[3] != NULL && (!strcmp(cmd[3],"ALL") || !strcmp(cmd[3],"ON") || !strcmp(cmd[3],"OFF"))){
 		strcat(str_dpb_format," ");
 		strcat(str_dpb_format,cmd[3]);
 	}
