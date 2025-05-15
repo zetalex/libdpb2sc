@@ -4852,9 +4852,9 @@ int check_digs_presence(){
 				write(serial_port_fd, buffer, strlen(buffer));
 				usleep(100000);
 				n = read(serial_port_fd, buffer, sizeof(buffer));	
-				uint16_t gw_ver;
-				pkt.GetNextFieldAsUINT16(gw_ver);
-				sprintf(DIG0_SN,"%d",gw_ver);
+				char* gw_ver_str;
+				gw_ver_str = pkt.GetNextField();
+				strcpy(DIG0_SN,gw_ver_str); // Digitizer gateway is in hex format	
 				printf("Hotplug event: Digitizer 0 has been detected GW Ver %s\n",DIG0_SN);
 				status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
 				dig0_connected = 1;
@@ -4893,9 +4893,9 @@ int check_digs_presence(){
 				pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
 				write(serial_port_fd, buffer, strlen(buffer));
 				usleep(100000);
-				uint16_t gw_ver;
-				pkt.GetNextFieldAsUINT16(gw_ver);
-				sprintf(DIG1_SN,"%d",gw_ver);	
+				char* gw_ver_str;
+				gw_ver_str = pkt.GetNextField();
+				strcpy(DIG1_SN,gw_ver_str); // Digitizer gateway is in hex format	
 				printf("Hotplug event: Digitizer 1 has been detected GW Ver %s\n",DIG1_SN);
 				status_alarm_json("DIG1","Serial Port", 99,0,"info","ON");
 				dig1_connected = 1;
