@@ -4893,6 +4893,7 @@ int check_digs_presence(){
 				pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
 				write(serial_port_fd, buffer, strlen(buffer));
 				usleep(100000);
+				n = read(serial_port_fd, buffer, sizeof(buffer));
 				char* gw_ver_str;
 				gw_ver_str = pkt.GetNextField();
 				strcpy(DIG1_SN,gw_ver_str); // Digitizer gateway is in hex format	
