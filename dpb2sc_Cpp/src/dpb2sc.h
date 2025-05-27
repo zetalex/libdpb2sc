@@ -656,7 +656,7 @@ char HV_SN[8];
 Digitizer Command Data.
 ****************************************************************************/
 
-#define DIG_STANDARD_CMD_TABLE_SIZE 82
+#define DIG_STANDARD_CMD_TABLE_SIZE 84
 
 const char *dig_dpb_words[] = {
 	"READ DISCTRES",
@@ -698,7 +698,9 @@ const char *dig_dpb_words[] = {
     "SET PEDTYPE",
     "READ PEDTYPE",
     "SET PEDPERIOD",
+    "READ PEDPERIOD",
     "SET PEDSTAG",
+    "READ PEDSTAG",
     "SET ODSEL",
     "READ ODSEL",
     "READ GWVER",
@@ -728,7 +730,7 @@ const char *dig_dpb_words[] = {
     "READ 5V0A",
     "READ 5V0F",
     "READ C12V",
-    "READ I5VF",
+    "READ I5VA",
     "READ I3V3A",
     "READ I12VA",
     "READ TFE",
@@ -743,7 +745,7 @@ const char *dig_dpb_words[] = {
     "READ PRESS",
     NULL
 };
-#define DIG_MON_BOARD_CODES_SIZE 26
+#define DIG_MON_BOARD_CODES_SIZE 28
 const int dig_monitor_mag_board_codes[] = {
     // Board monitoring
     HKDIG_GET_GW_VER,
@@ -765,12 +767,14 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BOARD_5V0A,
     HKDIG_GET_BOARD_5V0F,
     HKDIG_GET_BOARD_C12V,
-    HKDIG_GET_BOARD_I5VF,
+    HKDIG_GET_BOARD_I5VA,
     HKDIG_GET_BOARD_I3V3A,
     HKDIG_GET_BOARD_I12VA,
     HKDIG_GET_BOARD_TU40,
     HKDIG_GET_BOARD_TU41,
     HKDIG_GET_BOARD_TU45,
+    HKDIG_GET_PED_STAGGER,
+    HKDIG_GET_PED_PERIOD,
 	// BME280 commands
     HKDIG_GET_BME_DATA
 };
@@ -811,12 +815,14 @@ const char *dig_monitor_mag_board_names[] = {
     "5V0A",
     "5V0F",
     "C12V",
-    "I5VF",
+    "I5VA",
     "I3V3A",
     "I12VA",
     "TFE",
     "TFPGA",
     "TPWR",
+    "PEDSTAG",
+    "PEDPERIOD",
     "bmedata"
 };
 
