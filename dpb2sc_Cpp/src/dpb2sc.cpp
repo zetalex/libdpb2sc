@@ -4339,7 +4339,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_BOARD_C12V:
 
 		// I of 5VF is calculated dividing read voltage by 3.6: multiply value in mV by 10/36
-		case HKDIG_GET_BOARD_I5VF:
+		case HKDIG_GET_BOARD_I5VA:
 
 		// I of 3.3VA is calculated dividing read voltage by 3.6: multiply value in mV by 10/36
 		case HKDIG_GET_BOARD_I3V3A:
@@ -4368,7 +4368,14 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		case HKDIG_GET_RMON_MUX_N:			// Get board MUX rate monitor for channel N
 
+		//Get Pedestal Stagger
 		case HKDIG_GET_RMON_RST_N:
+
+		// Get Pedestal period
+		case HKDIG_GET_PED_PERIOD:
+
+		//Get Pedestal Stagger
+		case HKDIG_GET_PED_STAGGER:
 		
 			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
 			break;
@@ -4541,7 +4548,7 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 					case HKDIG_GET_BOARD_5V0A:
 					case HKDIG_GET_BOARD_5V0F:
 					case HKDIG_GET_BOARD_C12V:
-					case HKDIG_GET_BOARD_I5VF:
+					case HKDIG_GET_BOARD_I5VA:
 					case HKDIG_GET_BOARD_I3V3A:
 					case HKDIG_GET_BOARD_I12VA:
 						float_value = atof(value);
@@ -5413,6 +5420,7 @@ int check_digs_presence(){
 				pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
 				write(serial_port_fd, buffer, strlen(buffer));
 				usleep(100000);
+				n = read(serial_port_fd, buffer, sizeof(buffer));
 				char* gw_ver_str;
 				gw_ver_str = pkt.GetNextField();
 				strcpy(DIG1_SN,gw_ver_str); // Digitizer gateway is in hex format	
