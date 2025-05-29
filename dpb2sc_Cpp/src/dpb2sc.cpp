@@ -3776,7 +3776,6 @@ char* command_parse(const char *key){
 		json_object_object_get_ex(jmsg, "msg_value", &jcmd);
 		msg_cmd = std::string(json_object_get_string(jcmd));
 		json_object_put(jmsg);
-		json_object_put(jcmd);
 		return const_cast<char*>(msg_cmd.c_str());
 	#else
 		msg_cmd = std::string(reply);
