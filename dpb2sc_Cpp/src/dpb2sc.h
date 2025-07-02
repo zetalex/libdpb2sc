@@ -22,7 +22,9 @@ extern "C" {
 #include "uthash.h"
 #include <linux/serial.h>
 #include <sys/ioctl.h>
- #include <sys/param.h>
+#include <sys/param.h>
+#include <sys/mman.h>
+#include <stdint.h>
 
 #include "i2c.h"
 #include "linux/errno.h"
@@ -177,6 +179,8 @@ int bme280_get_press(char *,char *,int32_t *,float *);
 int bme280_get_relhum(char *,char *,int32_t *,float *);
 int check_digs_presence();
 int check_hv_lv_presence();
+int read_uio(int, void*);
+int write_uio(int, uint32_t);
 
 /******************************************************************************/
 /************************** Constant Definitions *****************************/
@@ -483,6 +487,38 @@ int hv_lv_sleep_delay = 0;
 ****************************************************************************/
 int GPIO_BASE_ADDRESS = 0;
 #define POLL_GPIO POLLPRI | POLLERR 
+
+/******************************************************************************
+*UIO AXI Register Map
+****************************************************************************/
+
+#define UIO_SIZE "/sys/class/uio/uio4/maps/map0/size"
+#define UIO_ADDR "/sys/class/uio/uio4/maps/map0/addr"
+#define UIO_DEV "/dev/uio4"
+enum UIO_AXIREG {
+    REG_DPB_COMMIT_SHA,
+    REG_DPB_VER,
+    REG_DPB_COMMIT_DATE,
+    REG_DMA_BUF_SIZE,
+    REG_TIMING_LINK_SWITCH,
+    REG_TIMING_MGT_MAIN_SWITCH,
+    REG_TIMING_MGT_BACKUP_SWITCH
+};
+struct uio_axi_reg {
+    uint32_t reg_name;
+    uint32_t offset;
+    uint32_t size;
+};
+struct uio_axi_reg uio_axi_regs[] = {
+    {REG_DPB_COMMIT_SHA,            0x00000000,32}, // DPB Commit SHA
+    {REG_DPB_VER,                   0x00000007,8}, // DPB Version
+    {REG_DPB_COMMIT_DATE,           0x00000008,32}, // DPB Commit Date
+    {REG_DMA_BUF_SIZE,              0x0000000F,8}, // DMA Buffer Size
+    {REG_TIMING_LINK_SWITCH,        0x00000010,4}, // Timing Link Switch
+    {REG_TIMING_MGT_MAIN_SWITCH,    0x00000011,4}, // Timing MGT Main Switch
+    {REG_TIMING_MGT_BACKUP_SWITCH,  0x00000012,4}  // Timing MGT Backup Switch
+};
+
 /******************************************************************************
 *Shared Memory.
 ****************************************************************************/

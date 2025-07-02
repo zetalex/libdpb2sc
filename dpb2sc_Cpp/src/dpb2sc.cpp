@@ -4972,5 +4972,151 @@ int dig_get_calib_values(int dig_num){
 	}	
 	return 0;
 }
+
+/**  
+ * Reads a value from a UIO register
+ *
+ * @param reg Register to read from
+ * @param val Pointer to store the read value
+ *
+ * @return 0 if successful, negative error code otherwise
+ */
+int read_uio(int reg, void* val){
+	unsigned int uio_addr;
+	unsigned int uio_size;
+	FILE * size_gpio;
+	FILE * size_addr;
+	void *ptr;
+
+    int GPIO_UIO = open("/dev/uio4", O_RDWR);
+    if (GPIO_UIO < 0) {
+      perror("UIO Open Error:");
+
+    }
+
+    size_gpio = fopen(UIO_SIZE, "r");
+    if (size_gpio == NULL){
+        perror("UIO Size Open Error:");
+    }
+    fscanf(size_gpio,"0x%16X",&uio_size);
+    printf("size of UIO Memory: 0x%x\n",uio_size);
+
+    size_addr = fopen(UIO_ADDR, "r");
+    if (size_addr == NULL){
+        perror("UIO Addr Open Error:");
+    }
+    fscanf(size_addr,"0x%16X",&uio_addr);
+    printf("size of UIO Memory: 0x%x\n",uio_addr);
+
+
+
+    ptr = mmap(NULL, uio_size, PROT_READ|PROT_WRITE, MAP_SHARED, GPIO_UIO, 0);
+    if (ptr == MAP_FAILED) {
+       perror("mmap error:");
+     }
+	uint8_t *p = (uint8_t *)ptr + uio_axi_regs[reg].offset;
+
+	if (p == NULL) {
+		perror("UIO Memory Map Error:");
+		return -EINVAL;
+	}
+
+	// Read the value from the register
+	switch(uio_axi_regs[reg].size) {
+		case 4:
+			*((uint8_t *)val) = *((uint8_t *)p) & 0x0F;
+			DEBUG_PRINTF("Read 1 nibble from reg %d: %u\n", reg, *((uint8_t *)val));
+			break;
+		case 8:
+			*((uint8_t *)val) = *((uint8_t *)p);
+			DEBUG_PRINTF("Read 1 byte from reg %d: %u\n", reg, *((uint8_t *)val));
+			break;
+		case 16:
+			*((uint16_t *)val) = *((uint16_t *)p);
+			DEBUG_PRINTF("Read 2 bytes from reg %d: %u\n", reg, *((uint16_t *)val));
+			break;
+		case 32:
+			*((uint32_t *)val) = *((uint32_t *)p);
+			DEBUG_PRINTF("Read 4 bytes from reg %d: %u\n", reg, *((uint32_t *)val));
+			break;
+		default:
+			DEBUG_PRINTF("Invalid register size for reg %d\n", reg);
+			return -EINVAL;
+	}
+
+	munmap(ptr, uio_size);
+	close(GPIO_UIO);
+    return 0;
+}
+
+/* * Writes a value to a UIO register
+ *
+ * @param reg Register to write to
+ * @param val Pointer to the value to write
+ *
+ * @return 0 if successful, negative error code otherwise
+ */
+int write_uio(int reg, uint32_t val){
+	unsigned int uio_addr;
+	unsigned int uio_size;
+	FILE * size_gpio;
+	FILE * size_addr;
+	void *ptr;
+
+	int GPIO_UIO = open(UIO_DEV, O_RDWR);
+	if (GPIO_UIO < 0) {
+	  perror("UIO Open Error:");
+	}
+
+	size_gpio = fopen(UIO_SIZE, "r");
+	if (size_gpio == NULL){
+		perror("UIO Size Open Error:");
+	}
+	fscanf(size_gpio,"0x%16X",&uio_size);
+	printf("size of UIO Memory: 0x%x\n",uio_size);
+
+	size_addr = fopen(UIO_ADDR, "r");
+	if (size_addr == NULL){
+		perror("UIO Addr Open Error:");
+	}
+	fscanf(size_addr,"0x%16X",&uio_addr);
+	printf("size of UIO Memory: 0x%x\n",uio_addr);
+
+	ptr = mmap(NULL, uio_size, PROT_READ|PROT_WRITE, MAP_SHARED, GPIO_UIO, 0);
+	if (ptr == MAP_FAILED) {
+	   perror("mmap error:");
+	 }
+	uint8_t *p = (uint8_t *)ptr + uio_axi_regs[reg].offset;
+
+	if (p == NULL) {
+		perror("UIO Memory Map Error:");
+		return -EINVAL;
+	}
+
+	// Write the value to the register
+	switch(uio_axi_regs[reg].size) {
+		case 4:
+			*((uint8_t *)p) = (uint8_t)val & 0x0F;
+			DEBUG_PRINTF("Wrote 1 nibble to reg %d: %u\n", reg, *((uint8_t *)val));
+			break;
+		case 8:
+			*((uint8_t *)p) = (uint8_t)val;
+			DEBUG_PRINTF("Wrote 1 byte to reg %d: %u\n", reg, *((uint8_t *)val));
+			break;
+		case 16:
+			*((uint16_t *)p) = (uint16_t)val;
+			DEBUG_PRINTF("Wrote 2 bytes to reg %d: %u\n", reg, *((uint16_t *)val));
+			break;
+		case 32:
+			*((uint32_t *)p) = (uint32_t)val;
+		default:
+			DEBUG_PRINTF("Invalid register size for reg %d\n", reg);
+			return -EINVAL;
+	}
+
+	munmap(ptr, uio_size);
+	close(GPIO_UIO);
+    return 0;
+}
 /** @} */
 }
