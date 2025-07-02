@@ -3375,7 +3375,8 @@ int daq_init_sc_vars(){
 
 	DAQ_Inter->sc_vars.Add("DPB_Parameters",ToolFramework::INFO);
 	int n;
-	for (n = 0 ; n < 70 ; n++){
+	size_t var_N = sizeof(DAQ_chan_cmd_list) / sizeof(DAQ_chan_cmd_list[0]);
+	for (n = 0 ; n < var_N ; n++){
 		DEBUG_PRINTF("n iteration: %d\n",n);
 		if(DAQ_chan_cmd_list[n].chan_or_env == ENV_PARAM){
 			strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
