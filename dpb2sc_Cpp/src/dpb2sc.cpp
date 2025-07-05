@@ -3441,6 +3441,159 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				rc = command_status_response_json (msg_id,pll_locked_val,cmd_reply);
 				goto end;
 			}
+			if(!strcmp(cmd[2],"TDMLINK")){
+				if(!strcmp(cmd[0],"READ")){
+					uint8_t tdm_active_link = -1;
+					rc = read_uio(REG_TIMING_LINK_SWITCH,&tdm_active_link);
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+						goto end;
+					}
+					if(tdm_active_link){
+						command_response_string_json(msg_id,"BACKUP",cmd_reply);
+					}
+					else {
+						command_response_string_json(msg_id,"MAIN",cmd_reply);
+					}
+				}
+				else if(!strcmp(cmd[0],"SET")){
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = write_uio(REG_TIMING_LINK_SWITCH,0);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = write_uio(REG_TIMING_LINK_SWITCH,1);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					rc = command_status_response_json (msg_id,99,cmd_reply);
+					goto end;
+				}
+			}
+
+			if(!strcmp(cmd[2],"TDMTX")){
+				uint8_t tdm_tx_status = -1;
+				if(!strcmp(cmd[0],"READ")){
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_tx_status);
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = read_uio(REG_TIMING_MGT_BACKUP_SWITCH,&tdm_tx_status);
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+						goto end;
+					}
+				}
+				else if(!strcmp(cmd[0],"SET")){
+					bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_tx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						tdm_tx_status &= 0x2;
+						tdm_tx_status |= (bool_set << 1); //TDM TX is bit 1
+						rc = write_uio(REG_TIMING_MGT_MAIN_SWITCH,tdm_tx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = read_uio(REG_TIMING_MGT_BACKUP_SWITCH,&tdm_tx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						tdm_tx_status &= 0x2;
+						tdm_tx_status |= (bool_set << 1); //TDM TX is bit 1
+						rc = write_uio(REG_TIMING_MGT_BACKUP_SWITCH,tdm_tx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					rc = command_status_response_json (msg_id,99,cmd_reply);
+					goto end;
+				}
+			}
+
+			if(!strcmp(cmd[2],"TDMRX")){
+				uint8_t tdm_rx_status = -1;
+				if(!strcmp(cmd[0],"READ")){
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_rx_status);
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = read_uio(REG_TIMING_MGT_BACKUP_SWITCH,&tdm_rx_status);
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+						goto end;
+					}
+				}
+				else if(!strcmp(cmd[0],"SET")){
+					bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_rx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						tdm_rx_status &= 0;
+						tdm_rx_status |= bool_set; //TDM RX is bit 0
+						rc = write_uio(REG_TIMING_MGT_MAIN_SWITCH,tdm_rx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = read_uio(REG_TIMING_MGT_BACKUP_SWITCH,&tdm_rx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						tdm_rx_status &= 0;
+						tdm_rx_status |=  bool_set; //TDM RX is bit 0
+						rc = write_uio(REG_TIMING_MGT_BACKUP_SWITCH,tdm_rx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					rc = command_status_response_json (msg_id,99,cmd_reply);
+					goto end;
+				}
+			}
+
 			if(strcmp(cmd[2],"VOLT") == 0){
 				if(strcmp(cmd[0],"READ") == 0){
 					if(strcmp(cmd[3],"FPDCPU") == 0){
