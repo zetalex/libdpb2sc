@@ -5152,14 +5152,14 @@ int read_uio(int reg, void* val){
         perror("UIO Size Open Error:");
     }
     fscanf(size_gpio,"0x%16X",&uio_size);
-    printf("size of UIO Memory: 0x%x\n",uio_size);
+    DEBUG_PRINTF("size of UIO Memory: 0x%x\n",uio_size);
 
     size_addr = fopen(UIO_ADDR, "r");
     if (size_addr == NULL){
         perror("UIO Addr Open Error:");
     }
     fscanf(size_addr,"0x%16X",&uio_addr);
-    printf("size of UIO Memory: 0x%x\n",uio_addr);
+    DEBUG_PRINTF("address of UIO Memory: 0x%x\n",uio_addr);
 
 
 
@@ -5226,14 +5226,14 @@ int write_uio(int reg, uint32_t val){
 		perror("UIO Size Open Error:");
 	}
 	fscanf(size_gpio,"0x%16X",&uio_size);
-	printf("size of UIO Memory: 0x%x\n",uio_size);
+	DEBUG_PRINTF("size of UIO Memory: 0x%x\n",uio_size);
 
 	size_addr = fopen(UIO_ADDR, "r");
 	if (size_addr == NULL){
 		perror("UIO Addr Open Error:");
 	}
 	fscanf(size_addr,"0x%16X",&uio_addr);
-	printf("size of UIO Memory: 0x%x\n",uio_addr);
+	DEBUG_PRINTF("address of UIO Memory: 0x%x\n",uio_addr);
 
 	ptr = mmap(NULL, uio_size, PROT_READ|PROT_WRITE, MAP_SHARED, GPIO_UIO, 0);
 	if (ptr == MAP_FAILED) {
