@@ -3444,17 +3444,19 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 			if(!strcmp(cmd[2],"TDMLINK")){
 				if(!strcmp(cmd[0],"READ")){
 					uint8_t tdm_active_link = -1;
+					char tdm_active_link_str[12];
 					rc = read_uio(REG_TIMING_LINK_SWITCH,&tdm_active_link);
 					if(rc){
 						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						goto end;
 					}
 					if(tdm_active_link){
-						command_response_string_json(msg_id,"BACKUP",cmd_reply);
+						strcpy(tdm_active_link_str,"BACKUP");
 					}
 					else {
-						command_response_string_json(msg_id,"MAIN",cmd_reply);
+						strcpy(tdm_active_link_str,"MAIN");
 					}
+					command_response_string_json(msg_id,tdm_active_link_str,cmd_reply);
 				}
 				else if(!strcmp(cmd[0],"SET")){
 					if(!strcmp(cmd[3],"MAIN")){
