@@ -3457,6 +3457,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						strcpy(tdm_active_link_str,"MAIN");
 					}
 					command_response_string_json(msg_id,tdm_active_link_str,cmd_reply);
+					goto end;
 				}
 				else if(!strcmp(cmd[0],"SET")){
 					if(!strcmp(cmd[3],"MAIN")){
@@ -3500,6 +3501,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						goto end;
 					}
 					rc = command_status_response_json (msg_id,!(tdm_tx_status & 0x2),cmd_reply);
+					goto end;
 				}
 				else if(!strcmp(cmd[0],"SET")){
 					bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
@@ -3558,6 +3560,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						goto end;
 					}
 					rc = command_status_response_json (msg_id,!(tdm_rx_status & 0x1),cmd_reply);
+					goto end;
 				}
 				else if(!strcmp(cmd[0],"SET")){
 					bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
