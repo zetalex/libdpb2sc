@@ -3511,7 +3511,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 							goto end;
 						}
-						tdm_tx_status &= 0x2;
+						tdm_tx_status &= 0x1;
 						tdm_tx_status |= (bool_set << 1); //TDM TX is bit 1
 						rc = write_uio(REG_TIMING_MGT_MAIN_SWITCH,tdm_tx_status);
 						if(rc){
@@ -3525,7 +3525,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 							goto end;
 						}
-						tdm_tx_status &= 0x2;
+						tdm_tx_status &= 0x1;
 						tdm_tx_status |= (bool_set << 1); //TDM TX is bit 1
 						rc = write_uio(REG_TIMING_MGT_BACKUP_SWITCH,tdm_tx_status);
 						if(rc){
@@ -3570,7 +3570,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 							goto end;
 						}
-						tdm_rx_status &= 0;
+						tdm_rx_status &= 0x2;
 						tdm_rx_status |= bool_set; //TDM RX is bit 0
 						rc = write_uio(REG_TIMING_MGT_MAIN_SWITCH,tdm_rx_status);
 						if(rc){
@@ -3584,7 +3584,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 							goto end;
 						}
-						tdm_rx_status &= 0;
+						tdm_rx_status &= 0x2;
 						tdm_rx_status |=  bool_set; //TDM RX is bit 0
 						rc = write_uio(REG_TIMING_MGT_BACKUP_SWITCH,tdm_rx_status);
 						if(rc){
