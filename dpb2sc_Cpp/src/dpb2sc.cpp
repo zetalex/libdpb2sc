@@ -3504,7 +3504,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					goto end;
 				}
 				else if(!strcmp(cmd[0],"SET")){
-					bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
+					bool_set=((strcmp(cmd[4],"ON") == 0)?(0):(1));
 					if(!strcmp(cmd[3],"MAIN")){
 						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_tx_status);
 						if(rc){
@@ -3563,7 +3563,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					goto end;
 				}
 				else if(!strcmp(cmd[0],"SET")){
-					bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
+					bool_set=((strcmp(cmd[4],"ON") == 0)?(0):(1));
 					if(!strcmp(cmd[3],"MAIN")){
 						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_rx_status);
 						if(rc){
