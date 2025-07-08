@@ -3449,7 +3449,8 @@ int daq_init_sc_vars(){
  */
 int daq_find_struct(const char *key, char *cmd){
 	int n;
-	for (n = 0 ; n < 70 ; n++){
+	size_t var_N = sizeof(DAQ_chan_cmd_list) / sizeof(DAQ_chan_cmd_list[0]);
+	for (n = 0 ; n < var_N ; n++){
 			if(DAQ_chan_cmd_list[n].chan_or_env == CHAN_PARAM){
 				for(int i= 0; i < DAQ_chan_cmd_list[n].chan_n; i++){
 					char cmd_string[64];
