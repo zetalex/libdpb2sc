@@ -254,6 +254,7 @@ int tdm_locked_val = 0;
 /************************** Global Flags Definitions *****************************/
 int eth0_flag = 1;
 int eth1_flag = 1;
+int eths_shutdown[2] = {0,0};   //Indicates if the ethernet links are shutdown by configuration
 int dig0_main_flag = 1;
 int dig1_main_flag = 1;
 int dig0_backup_flag = 1;

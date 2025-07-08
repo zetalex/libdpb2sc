@@ -1483,11 +1483,15 @@ int sfp_avago_read_alarms(struct DPB_I2cSensors *data,int n) {
 
 	struct I2cDevice dev;
 
-if(sfp_connected[n]){
+	if(sfp_connected[n]){
 		dev = data->dev_sfp_A2[n];
 	}
 	else{
-		return -EINVAL;
+		return 0; // If SFP is not connected, do not read alarms
+	}
+
+	if((n==0 && eths_shutdown[0]) || (n==1 && eths_shutdown[1])) {
+		return 0; // If ethernet is powered off, do not read alarms
 	}
 
 	// Read status bit register
@@ -2903,19 +2907,24 @@ int eth_link_status_config (char *eth_interface, int val)
 {
 	char eth_link[32];
 	char cmd[64];
+	int index;
 	if(strcmp(eth_interface,"ETH0") == 0){
 		strcpy(eth_link,"eth0");
+		index = 0;
 	}
 	else{
 		strcpy(eth_link,"eth1");
+		index = 1;
 	}
 	strcpy(cmd,"ifconfig ");
 	strcat(cmd,eth_link);
 	if(val == 1){
 		strcat(cmd," up");
+		eths_shutdown[index] = 0;
 	}
 	else if (val == 0){
 		strcat(cmd," down");
+		eths_shutdown[index] = 1;
 	}
 	else{
 		return -EINVAL;
