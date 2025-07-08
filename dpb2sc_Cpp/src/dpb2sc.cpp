@@ -1490,7 +1490,7 @@ int sfp_avago_read_alarms(struct DPB_I2cSensors *data,int n) {
 		return 0; // If SFP is not connected, do not read alarms
 	}
 
-	if((n==0 && eths_shutdown[0]) || (n==1 && eths_shutdown[1])) {
+	if((n==1 && eths_shutdown[0]) || (n==0 && eths_shutdown[1])) { //SFP0 is backup link, SFP1 is main link
 		return 0; // If ethernet is powered off, do not read alarms
 	}
 
