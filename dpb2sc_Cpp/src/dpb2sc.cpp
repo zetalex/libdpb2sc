@@ -3961,6 +3961,166 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				rc = command_status_response_json (msg_id,pll_locked_val,cmd_reply);
 				goto end;
 			}
+			if(!strcmp(cmd[2],"TDMLINK")){
+				if(!strcmp(cmd[0],"READ")){
+					uint8_t tdm_active_link = -1;
+					char tdm_active_link_str[12];
+					rc = read_uio(REG_TIMING_LINK_SWITCH,&tdm_active_link);
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+						goto end;
+					}
+					if(tdm_active_link){
+						strcpy(tdm_active_link_str,"BACKUP");
+					}
+					else {
+						strcpy(tdm_active_link_str,"MAIN");
+					}
+					command_response_string_json(msg_id,tdm_active_link_str,cmd_reply);
+					goto end;
+				}
+				else if(!strcmp(cmd[0],"SET")){
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = write_uio(REG_TIMING_LINK_SWITCH,0);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = write_uio(REG_TIMING_LINK_SWITCH,1);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					rc = command_status_response_json (msg_id,99,cmd_reply);
+					goto end;
+				}
+			}
+
+			if(!strcmp(cmd[2],"TDMTX")){
+				uint8_t tdm_tx_status = -1;
+				if(!strcmp(cmd[0],"READ")){
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_tx_status);
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = read_uio(REG_TIMING_MGT_BACKUP_SWITCH,&tdm_tx_status);
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+						goto end;
+					}
+					rc = command_status_response_json (msg_id,!(tdm_tx_status & 0x2),cmd_reply);
+					goto end;
+				}
+				else if(!strcmp(cmd[0],"SET")){
+					bool_set=((strcmp(cmd[4],"ON") == 0)?(0):(1));
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_tx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						tdm_tx_status &= 0x1;
+						tdm_tx_status |= (bool_set << 1); //TDM TX is bit 1
+						rc = write_uio(REG_TIMING_MGT_MAIN_SWITCH,tdm_tx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = read_uio(REG_TIMING_MGT_BACKUP_SWITCH,&tdm_tx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						tdm_tx_status &= 0x1;
+						tdm_tx_status |= (bool_set << 1); //TDM TX is bit 1
+						rc = write_uio(REG_TIMING_MGT_BACKUP_SWITCH,tdm_tx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					rc = command_status_response_json (msg_id,99,cmd_reply);
+					goto end;
+				}
+			}
+
+			if(!strcmp(cmd[2],"TDMRX")){
+				uint8_t tdm_rx_status = -1;
+				if(!strcmp(cmd[0],"READ")){
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_rx_status);
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = read_uio(REG_TIMING_MGT_BACKUP_SWITCH,&tdm_rx_status);
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+						goto end;
+					}
+					rc = command_status_response_json (msg_id,!(tdm_rx_status & 0x1),cmd_reply);
+					goto end;
+				}
+				else if(!strcmp(cmd[0],"SET")){
+					bool_set=((strcmp(cmd[4],"ON") == 0)?(0):(1));
+					if(!strcmp(cmd[3],"MAIN")){
+						rc = read_uio(REG_TIMING_MGT_MAIN_SWITCH,&tdm_rx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						tdm_rx_status &= 0x2;
+						tdm_rx_status |= bool_set; //TDM RX is bit 0
+						rc = write_uio(REG_TIMING_MGT_MAIN_SWITCH,tdm_rx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else if(!strcmp(cmd[3],"BACKUP")){
+						rc = read_uio(REG_TIMING_MGT_BACKUP_SWITCH,&tdm_rx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						tdm_rx_status &= 0x2;
+						tdm_rx_status |=  bool_set; //TDM RX is bit 0
+						rc = write_uio(REG_TIMING_MGT_BACKUP_SWITCH,tdm_rx_status);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+					}
+					else{
+						rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					rc = command_status_response_json (msg_id,99,cmd_reply);
+					goto end;
+				}
+			}
+
 			if(strcmp(cmd[2],"VOLT") == 0){
 				if(strcmp(cmd[0],"READ") == 0){
 					if(strcmp(cmd[3],"FPDCPU") == 0){
@@ -5518,6 +5678,154 @@ void segmentation_handler(int sig) {
 	  fprintf(stderr, "Error: signal %d:\n", sig);
 	  backtrace_symbols_fd(array, size, STDERR_FILENO);
 	  exit(1);
+}
+/**  
+ * Reads a value from a UIO register
+ *
+ * @param reg Register to read from
+ * @param val Pointer to store the read value
+ *
+ * @return 0 if successful, negative error code otherwise
+ */
+int read_uio(int reg, void* val){
+	unsigned int uio_addr;
+	unsigned int uio_size;
+	FILE * size_gpio;
+	FILE * size_addr;
+	void *ptr;
+
+    int GPIO_UIO = open("/dev/uio4", O_RDWR);
+    if (GPIO_UIO < 0) {
+      perror("UIO Open Error:");
+
+    }
+
+    size_gpio = fopen(UIO_SIZE, "r");
+    if (size_gpio == NULL){
+        perror("UIO Size Open Error:");
+    }
+    fscanf(size_gpio,"0x%16X",&uio_size);
+    DEBUG_PRINTF("size of UIO Memory: 0x%x\n",uio_size);
+	fclose(size_gpio);
+
+    size_addr = fopen(UIO_ADDR, "r");
+    if (size_addr == NULL){
+        perror("UIO Addr Open Error:");
+    }
+    fscanf(size_addr,"0x%16X",&uio_addr);
+    DEBUG_PRINTF("address of UIO Memory: 0x%x\n",uio_addr);
+	fclose(size_addr);
+
+
+    ptr = mmap(NULL, uio_size, PROT_READ|PROT_WRITE, MAP_SHARED, GPIO_UIO, 0);
+    if (ptr == MAP_FAILED) {
+       perror("mmap error:");
+     }
+	uint8_t *p = (uint8_t *)ptr + uio_axi_regs[reg].offset;
+
+	if (p == NULL) {
+		perror("UIO Memory Map Error:");
+		return -EINVAL;
+	}
+
+	// Read the value from the register
+	switch(uio_axi_regs[reg].size) {
+		case 4:
+			*((uint8_t *)val) = *((uint8_t *)p) & 0x0F;
+			DEBUG_PRINTF("Read 1 nibble from reg %d: %u\n", reg, *((uint8_t *)val));
+			break;
+		case 8:
+			*((uint8_t *)val) = *((uint8_t *)p);
+			DEBUG_PRINTF("Read 1 byte from reg %d: %u\n", reg, *((uint8_t *)val));
+			break;
+		case 16:
+			*((uint16_t *)val) = *((uint16_t *)p);
+			DEBUG_PRINTF("Read 2 bytes from reg %d: %u\n", reg, *((uint16_t *)val));
+			break;
+		case 32:
+			*((uint32_t *)val) = *((uint32_t *)p);
+			DEBUG_PRINTF("Read 4 bytes from reg %d: %u\n", reg, *((uint32_t *)val));
+			break;
+		default:
+			DEBUG_PRINTF("Invalid register size for reg %d\n", reg);
+			return -EINVAL;
+	}
+
+	munmap(ptr, uio_size);
+	close(GPIO_UIO);
+    return 0;
+}
+
+/* * Writes a value to a UIO register
+ *
+ * @param reg Register to write to
+ * @param val Pointer to the value to write
+ *
+ * @return 0 if successful, negative error code otherwise
+ */
+int write_uio(int reg, uint32_t val){
+	unsigned int uio_addr;
+	unsigned int uio_size;
+	FILE * size_gpio;
+	FILE * size_addr;
+	void *ptr;
+
+	int GPIO_UIO = open(UIO_DEV, O_RDWR);
+	if (GPIO_UIO < 0) {
+	  perror("UIO Open Error:");
+	}
+
+	size_gpio = fopen(UIO_SIZE, "r");
+	if (size_gpio == NULL){
+		perror("UIO Size Open Error:");
+	}
+	fscanf(size_gpio,"0x%16X",&uio_size);
+	DEBUG_PRINTF("size of UIO Memory: 0x%x\n",uio_size);
+	fclose(size_gpio);
+
+	size_addr = fopen(UIO_ADDR, "r");
+	if (size_addr == NULL){
+		perror("UIO Addr Open Error:");
+	}
+	fscanf(size_addr,"0x%16X",&uio_addr);
+	DEBUG_PRINTF("address of UIO Memory: 0x%x\n",uio_addr);
+	fclose(size_addr);
+
+	ptr = mmap(NULL, uio_size, PROT_READ|PROT_WRITE, MAP_SHARED, GPIO_UIO, 0);
+	if (ptr == MAP_FAILED) {
+	   perror("mmap error:");
+	 }
+	uint8_t *p = (uint8_t *)ptr + uio_axi_regs[reg].offset;
+
+	if (p == NULL) {
+		perror("UIO Memory Map Error:");
+		return -EINVAL;
+	}
+
+	// Write the value to the register
+	switch(uio_axi_regs[reg].size) {
+		case 4:
+			*((uint8_t *)p) = (uint8_t)val & 0x0F;
+			DEBUG_PRINTF("Wrote 1 nibble to reg %d: %u\n", reg, *((uint8_t *)val));
+			break;
+		case 8:
+			*((uint8_t *)p) = (uint8_t)val;
+			DEBUG_PRINTF("Wrote 1 byte to reg %d: %u\n", reg, *((uint8_t *)val));
+			break;
+		case 16:
+			*((uint16_t *)p) = (uint16_t)val;
+			DEBUG_PRINTF("Wrote 2 bytes to reg %d: %u\n", reg, *((uint16_t *)val));
+			break;
+		case 32:
+			*((uint32_t *)p) = (uint32_t)val;
+		default:
+			DEBUG_PRINTF("Invalid register size for reg %d\n", reg);
+			return -EINVAL;
+	}
+
+	munmap(ptr, uio_size);
+	close(GPIO_UIO);
+    return 0;
 }
 /** @} */
 }
