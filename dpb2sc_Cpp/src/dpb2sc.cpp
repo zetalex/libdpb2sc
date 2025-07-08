@@ -3527,8 +3527,17 @@ char* command_parse(const char *key){
 			msg_cmd = std::string("DAQ not ready");
 			return const_cast<char*>(msg_cmd.c_str());
 		}
+		// Set the value in the data base
+		char temp_to_get_value[64];
+		char *command;
+		char *value_set;
+		strcpy(temp_to_get_value,key);
+		command = strtok(temp_to_get_value," ");
+		value_set = strtok(NULL," ");
+		printf("Comando: %s\n",command);
+		printf("Valor: %s\n");
 		// Get the value of the slow control variable
-		int pos = daq_find_struct(key,buffer);
+		int pos = daq_find_struct(command,buffer);
 	#else
 		strcpy(buffer,key);
 	#endif
