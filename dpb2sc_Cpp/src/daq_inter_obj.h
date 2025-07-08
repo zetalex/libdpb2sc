@@ -23,7 +23,7 @@
         std::string options[2];
     };
 
-    extern slow_control_var_struct DAQ_chan_cmd_list[70];
+    extern slow_control_var_struct DAQ_chan_cmd_list[80];
 #endif
 
 #endif
