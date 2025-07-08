@@ -3534,8 +3534,9 @@ char* command_parse(const char *key){
 		strcpy(temp_to_get_value,key);
 		command = strtok(temp_to_get_value," ");
 		value_set = strtok(NULL," ");
-		printf("Comando: %s\n",command);
-		printf("Valor: %s\n");
+		if(value_set != NULL){
+			DAQ_Inter->sc_vars[command]->SetValue(value_set);
+		}
 		// Get the value of the slow control variable
 		int pos = daq_find_struct(command,buffer);
 	#else
