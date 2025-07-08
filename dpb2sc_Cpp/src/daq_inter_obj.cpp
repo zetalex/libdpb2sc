@@ -4,7 +4,7 @@
 	ToolFramework::DAQInterface* DAQ_Inter;
 
 
-   struct slow_control_var_struct DAQ_chan_cmd_list[80] = {
+   struct slow_control_var_struct DAQ_chan_cmd_list[85] = {
     //LV SC Vars
          {OPTIONS_TYPE, CHAN_PARAM, 8, "SET_LV_STATUS", 0, 0, 0, 0, {"ON", "OFF"}},
          {OPTIONS_TYPE, CHAN_PARAM, 8, "SET_LV_CPU_MAIN", 0, 0, 0, 0, {"ON", "OFF"}},
@@ -92,6 +92,11 @@
         {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_STATUS_SFP5", 0, 0, 0, 0, {"ON", "OFF"}},
         {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_STATUS_ETH0", 0, 0, 0, 0, {"ON", "OFF"}},
         {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_STATUS_ETH1", 0, 0, 0, 0, {"ON", "OFF"}}
+        {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_TDMLINK", 0, 0, 0, 0, {"MAIN", "BACKUP"}}
+        {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_TDMTX_MAIN", 0, 0, 0, 0, {"ON", "OFF"}}
+        {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_TDMTX_BACKUP", 0, 0, 0, 0, {"ON", "OFF"}}
+        {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_TDMRX_MAIN", 0, 0, 0, 0, {"ON", "OFF"}}
+        {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_TDMRX_BACKUP", 0, 0, 0, 0, {"ON", "OFF"}}
 };
 
 #endif
