@@ -2218,7 +2218,12 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 			return rc;
 		}
 		else{
-			zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
+			if(!strcmp(info_type,"critical")){
+				zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
+			}
+			else{
+				zmq_send(logging_publisher, serialized_json, strlen(serialized_json), 0);
+			}
 		}
 		json_object_put(jalarm_data);
 	#endif
@@ -2303,7 +2308,12 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 			return -1;
 		}
 		else{
-			zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
+			if(!strcmp(info_type,"critical")){
+				zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
+			}
+			else{
+				zmq_send(logging_publisher, serialized_json, strlen(serialized_json), 0);
+			}		
 		}
 		json_object_put(jalarm_data);
 	#endif
