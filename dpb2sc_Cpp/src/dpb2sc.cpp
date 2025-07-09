@@ -49,37 +49,37 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		DAQ_Inter = new ToolFramework::DAQInterface(interface_config_file);
 		dev_name = DAQ_Inter->GetDeviceName();
 		const char *dev_name_c = dev_name.c_str();
-		printf("Interface successfully built with device %s \n",dev_name_c);
+		LOG_PRINTF("Interface successfully built with device %s \n",dev_name_c);
 		DAQ_Inter->sc_vars["Status"]->SetValue("Initialising"); //setting status message
 	#else
 		rc = zmq_socket_init(); //Initialize ZMQ Sockets
 		if (rc) {
-			DEBUG_PRINTF("Error\r\n");
+			DEBUG_PRINTF_1("Error initialising ZMQ sockets\r\n");
 			return rc;
 		}
 	#endif
 	rc = init_I2cSensors(data); //Initialize i2c sensors
 	if (rc) {
-		DEBUG_PRINTF("Error\r\n");
+		DEBUG_PRINTF_1("Error initialising I2C Sensors\r\n");
 		return rc;
 	}
 	rc = init_shared_memory();
 	if (rc) {
-		DEBUG_PRINTF("Error\r\n");
+		DEBUG_PRINTF_1("Error initialising shared memory\r\n");
 		return rc;
 	}
 
 	// try to create lock file in /var/lock
 	var_lock = open("/var/lock/LCK..ttyUL1", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
 	if(var_lock < 0){
-		printf("Cannot lock file ttyUL1. Already in use by other process");
+		LOG_PRINTF("Cannot lock file ttyUL1. Already in use by other process");
 		return errno;
 	}
 	write(var_lock, "%4d\n", getpid());
 	close(var_lock);
 	var_lock = open("/var/lock/LCK..ttyUL2", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
 	if(var_lock < 0){
-		printf("Cannot lock file ttyUL2. Already in use by other process");
+		LOG_PRINTF("Cannot lock file ttyUL2. Already in use by other process");
 		return errno;
 	}
 	write(var_lock, "%4d\n", getpid());
@@ -87,14 +87,14 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	// try to create lock file in /var/lock
 	var_lock = open("/var/lock/LCK..ttyUL3", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
 	if(var_lock < 0){
-		printf("Cannot lock file ttyUL3. Already in use by other process");
+		LOG_PRINTF("Cannot lock file ttyUL3. Already in use by other process");
 		return errno;
 	}
 	write(var_lock, "%4d\n", getpid());
 	close(var_lock);
 	var_lock = open("/var/lock/LCK..ttyUL4", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
 	if(var_lock < 0){
-		printf("Cannot lock file ttyUL4. Already in use by other process");
+		LOG_PRINTF("Cannot lock file ttyUL4. Already in use by other process");
 		return errno;
 	}
 	write(var_lock, "%4d\n", getpid());
@@ -162,42 +162,42 @@ int init_semaphores(){
 
 	rc = sem_init(&sem_valid,1,1);
 	if(rc){
-		DEBUG_PRINTF("Error initialising semaphore valid\n");
+		DEBUG_PRINTF_1("Error initialising semaphore valid\n");
 		return rc;
 	}
 	rc = sem_init(&file_sync,1,1);
 	if(rc){
-		DEBUG_PRINTF("Error initialising semaphore for GPIO files\n");
+		DEBUG_PRINTF_1("Error initialising semaphore for GPIO files\n");
 		return rc;
 	}
 	sem_init(&i2c_sync,1,1);
 	if(rc){
-		DEBUG_PRINTF("Error initialising semaphore for I2C Devices\n");
+		DEBUG_PRINTF_1("Error initialising semaphore for I2C Devices\n");
 		return rc;
 	}
 	sem_init(&alarm_sync,1,1);
 	if(rc){
-		DEBUG_PRINTF("Error initialising semaphore for Alarm files\n");
+		DEBUG_PRINTF_1("Error initialising semaphore for Alarm files\n");
 		return rc;
 	}
 	rc = sem_init(&sem_hvlv,1,1);
 	if(rc){
-		DEBUG_PRINTF("Error initialising semaphore HV LV\n");
+		DEBUG_PRINTF_1("Error initialising semaphore HV LV\n");
 		return rc;
 	}
 	rc = sem_init(&sem_dig0,1,1);
 	if(rc){
-		DEBUG_PRINTF("Error initialising semaphore Dig0\n");
+		DEBUG_PRINTF_1("Error initialising semaphore Dig0\n");
 		return rc;
 	}
 	rc = sem_init(&sem_dig1,1,1);
 	if(rc){
-		DEBUG_PRINTF("Error initialising semaphore Dig1\n");
+		DEBUG_PRINTF_1("Error initialising semaphore Dig1\n");
 		return rc;
 	}
 	rc = sem_init(&sem_sfp_switch,1,1);
 	if(rc){
-		DEBUG_PRINTF("Error initialising semaphore SFP Switch\n");
+		DEBUG_PRINTF_1("Error initialising semaphore SFP Switch\n");
 		return rc;
 	}
 	return rc;
@@ -355,7 +355,7 @@ int xlnx_ams_read_temp(int *chan, int n, float *res){
 		scale = fopen(scale_str,"r");
 
 		if((raw==NULL)|(offset==NULL)|(scale==NULL)){
-			DEBUG_PRINTF("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
+			DEBUG_PRINTF_2("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
 			fclose(raw);
 			fclose(offset);
 			fclose(scale);
@@ -429,7 +429,7 @@ int xlnx_ams_read_volt(int *chan, int n, float *res){
 		scale = fopen(scale_str,"r");
 
 		if((raw==NULL)|(scale==NULL)){
-			DEBUG_PRINTF("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
+			DEBUG_PRINTF_2("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
 			fclose(raw);
 			fclose(scale);
 			return -1;
@@ -506,7 +506,7 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 		thres = open(thres_str, O_WRONLY);
 
 		if((scale==NULL)|(thres < 0)){
-			DEBUG_PRINTF("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
+			DEBUG_PRINTF_2("AMS Voltage file could not be opened!!! \n");/*Any of the files could not be opened*/
 			fclose(scale);
 			return -1;
 			}
@@ -519,7 +519,7 @@ int xlnx_ams_set_limits(int chan, const char *ev_type, const char *ch_type, floa
 				offset = fopen(offset_str,"r");
 				if(offset==NULL){
 					fclose(scale);
-					DEBUG_PRINTF("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
+					DEBUG_PRINTF_2("AMS Temperature file could not be opened!!! \n");/*Any of the files could not be opened*/
 					return -1;
 				}
 				if(strcmp("rising",ev_type)){
@@ -654,12 +654,12 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 	// PCB Temperature set temperature limits
 		rc = mcp9844_set_limits(data,0,60);
 	if (rc) {
-		DEBUG_PRINTF("Failed to set MCP9844 Upper Limit\r\n");
+		DEBUG_PRINTF_1("Failed to set MCP9844 Upper Limit\r\n");
 	}
 
 	rc = mcp9844_set_limits(data,2,80);
 	if (rc) {
-		DEBUG_PRINTF("Failed to set MCP9844 Critical Limit\r\n");
+		DEBUG_PRINTF_1("Failed to set MCP9844 Critical Limit\r\n");
 	}
 	return 0;
 }
@@ -721,7 +721,7 @@ int init_tempSensor (struct I2cDevice *dev) {
 	if(rc < 0)
 			return rc;
 	if(!((manID_buf[0] == 0x00) && (manID_buf[1] == 0x54))){ //Check Manufacturer ID to verify is the right component
-		printf("Manufacturer ID does not match the corresponding device: Temperature Sensor\r\n");
+		LOG_PRINTF("Manufacturer ID does not match the corresponding device: Temperature Sensor\r\n");
 		return -EINVAL;
 	}
 
@@ -735,7 +735,7 @@ int init_tempSensor (struct I2cDevice *dev) {
 	if(rc < 0)
 			return rc;
 	if(!((devID_buf[0] == 0x06) && (devID_buf[1] == 0x01))){//Check Device ID to verify is the right component
-			printf("Device ID does not match the corresponding device: Temperature Sensor\r\n");
+			LOG_PRINTF("Device ID does not match the corresponding device: Temperature Sensor\r\n");
 			return -EINVAL;
 	}
 	return 0;
@@ -1005,12 +1005,12 @@ int check_sfp_presence(struct DPB_I2cSensors *data){
 		dev = data->dev_sfp_A0[i];
 		rc_check = checksum_check(&dev, SFP_PHYS_DEV,63);
 		if(rc_check && sfp_connected[i]){
-			printf("Hotplug event: SFP %d DISCONNECTED:\n",i);
+			LOG_PRINTF("Hotplug event: SFP %d DISCONNECTED:\n",i);
 			sfp_connected[i] = 0;
 			rc_status = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"critical","OFF");
 		}
 		else if(!rc_check && !sfp_connected[i]){
-			printf("Hotplug event: SFP %d has been detected:\n",i);
+			LOG_PRINTF("Hotplug event: SFP %d has been detected:\n",i);
 			sfp_connected[i] = 1;
 			rc_status = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"info","ON");
 		}
@@ -1057,7 +1057,7 @@ int init_SFP_A0(struct I2cDevice *dev) {
 	if(rc < 0)
 			return rc;
 	if(!((SFPphys_buf[0] == 0x03) && (SFPphys_buf[1] == 0x04))){ //Check Physical device and function to verify is the right component
-			printf("Device ID does not match the corresponding device: SFP-Avago\r\n");
+			LOG_PRINTF("Device ID does not match the corresponding device: SFP-Avago\r\n");
 			return -EINVAL;
 	}
 	rc = checksum_check(dev, SFP_PHYS_DEV,63); //Check checksum register to verify is the right component and the EEPROM is working correctly
@@ -1118,13 +1118,13 @@ int checksum_check(struct I2cDevice *dev,uint8_t ini_reg, int size){
 
 	for(int i=0;i<size;i++){
 		sum += byte_buf[i];  //Sum every register read in order to obtain the checksum
-		DEBUG_PRINTF("Sum: %u \nbyte added: %hhu\n",sum,byte_buf[i]);
+		DEBUG_PRINTF_1("Sum: %u \nbyte added: %hhu\n",sum,byte_buf[i]);
 	}
 	uint8_t calc_checksum = (sum & 0xFF); //Only taking the 8 LSB of the checksum as the checksum register is only 8 bits
 	uint8_t checksum_val = byte_buf[size];
-	DEBUG_PRINTF("Checksum calc: %hhu \n Checksum_val: %hhu \n",calc_checksum, checksum_val);
+	DEBUG_PRINTF_1("Checksum calc: %hhu \n Checksum_val: %hhu \n",calc_checksum, checksum_val);
 	if (checksum_val != calc_checksum){ //Check the obtained checksum equals the device checksum register
-		printf("Checksum value does not match the expected value \r\n");
+		LOG_PRINTF("Checksum value does not match the expected value \r\n");
 		return -EHWPOISON;
 	}
 	return 0;
@@ -1553,7 +1553,7 @@ int init_voltSensor (struct I2cDevice *dev) {
 	uint8_t devID_reg = INA3221_DIE_ID_REG;
 	rc = i2c_start(dev); //Start I2C device
 		if (rc) {
-			DEBUG_PRINTF("Error inicializando volt sensor start\n");
+			DEBUG_PRINTF_1("Error initialising voltage sensor \n");
 			return rc;
 		}
 	// Write Manufacturer ID address in register pointer
@@ -1564,11 +1564,11 @@ int init_voltSensor (struct I2cDevice *dev) {
 	// Read MSB and LSB of Manufacturer ID
 	rc = i2c_read(dev,manID_buf,2);
 	if(rc < 0){
-			DEBUG_PRINTF("Error inicializando volt sensor read\n");
+			DEBUG_PRINTF_1("Error reding volt sensor\n");
 			return rc;
 	}
 	if(!((manID_buf[0] == 0x54) && (manID_buf[1] == 0x49))){ //Check Manufacturer ID to verify is the right component
-		printf("Manufacturer ID does not match the corresponding device: Voltage Sensor\r\n");
+		LOG_PRINTF("Manufacturer ID does not match the corresponding device: Voltage Sensor\r\n");
 		return -EINVAL;
 	}
 
@@ -1582,7 +1582,7 @@ int init_voltSensor (struct I2cDevice *dev) {
 	if(rc < 0)
 			return rc;
 	if(!((devID_buf[0] == 0x32) && (devID_buf[1] == 0x20))){ //Check Device ID to verify is the right component
-			printf("Device ID does not match the corresponding device: Voltage Sensor\r\n");
+			LOG_PRINTF("Device ID does not match the corresponding device: Voltage Sensor\r\n");
 			return -EINVAL;
 	}
 	return 0;
@@ -2162,7 +2162,16 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 		char value_string[16];
 		sprintf(value_string,"%3.4f",val);
 		strcat(DAQ_alarm_msg,value_string);
-		DAQ_Inter->SendAlarm(DAQ_alarm_msg);
+
+		if(!strcmp(info_type,"warning")){
+			DAQ_Inter->SendLog(DAQ_alarm_msg,2);
+		}
+		else if(!strcmp(info_type,"critical")){
+			DAQ_Inter->SendAlarm(DAQ_alarm_msg);
+		}
+		else{
+			DAQ_Inter->SendLog(DAQ_alarm_msg,3);
+		}
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type, *j_level = NULL;
 		jalarm_data = json_object_new_object();
@@ -2199,7 +2208,7 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 		const char *serialized_json = json_object_to_json_string(jalarm_data);
 		int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
 		if (rc) {
-			DEBUG_PRINTF("Error validating JSON Schema\r\n");
+			DEBUG_PRINTF_1("Error validating JSON Schema\r\n");
 			return rc;
 		}
 		else{
@@ -2243,7 +2252,17 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 		}
 		strcat(DAQ_alarm_msg," is ");
 		strcat(DAQ_alarm_msg,status);
-		DAQ_Inter->SendAlarm(DAQ_alarm_msg);
+
+		if(!strcmp(info_type,"warning")){
+			DAQ_Inter->SendLog(DAQ_alarm_msg,2);
+		}
+		else if(!strcmp(info_type,"critical")){
+			DAQ_Inter->SendAlarm(DAQ_alarm_msg,0);
+		}
+		else{
+			DAQ_Inter->SendLog(DAQ_alarm_msg,3);
+		}
+
 		strcpy(DAQ_alarm_msg,"");
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
@@ -2274,7 +2293,7 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 		const char *serialized_json = json_object_to_json_string(jalarm_data);
 		int rc = json_schema_validate("JSONSchemaAlarms.json",serialized_json, "alarm_temp.json");
 		if (0) {
-			DEBUG_PRINTF("Error validating JSON Schema\r\n");
+			DEBUG_PRINTF_1("Error validating JSON Schema\r\n");
 			return -1;
 		}
 		else{
@@ -2335,7 +2354,7 @@ int command_response_json (int msg_id, float val, char* cmd_reply)
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
-		DEBUG_PRINTF("Error\r\n");
+		DEBUG_PRINTF_1("Error in command response validation\r\n");
 		return rc;
 	}
 	strcpy(cmd_reply,serialized_json);
@@ -2406,7 +2425,7 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	const char *serialized_json = json_object_to_json_string(jcmd_data);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
-		DEBUG_PRINTF("Error\r\n");
+		DEBUG_PRINTF_1("Error in command response status validation\r\n");
 		return rc;
 	}
 	strcpy(cmd_reply,serialized_json);
@@ -2460,7 +2479,7 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 	const char *serialized_json = json_object_to_json_string(jcmd_data2);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
-		DEBUG_PRINTF("Error\r\n");
+		DEBUG_PRINTF_1("Error\r\n");
 		return rc;
 	}
 	strcpy(cmd_reply,serialized_json);
@@ -2523,7 +2542,7 @@ int json_schema_validate (const char *schema,const char *json_string, const char
 		close(pipefd[0]);
 		close(pipefd[1]);
 		sem_post(&sem_valid);
-		DEBUG_PRINTF("Failed to run command\n" );
+		DEBUG_PRINTF_2("Failed to run command\n" );
 		return -1;
 	}
 	close(pipefd[1]);
@@ -2536,7 +2555,7 @@ int json_schema_validate (const char *schema,const char *json_string, const char
 
 	data = regexec(&r1, path, 0, NULL, 0);
 	if(data){
-		DEBUG_PRINTF("Error: JSON schema not valid\n" );
+		DEBUG_PRINTF_2("Error: JSON schema not valid\n" );
 		regfree(&r1);
 		sem_post(&sem_valid);
 		return -EINVAL;
@@ -2957,7 +2976,7 @@ int eth_down_alarm(const char *str,int *flag){
 
 	rc = eth_link_status(str,&eth_status[0]);
 	if (rc) {
-		DEBUG_PRINTF("Error\r\n");
+		DEBUG_PRINTF_2("Error\r\n");
 		return rc;
 	}
 	if((flag[0] == 0) & (eth_status[0] == 1)){
@@ -3163,6 +3182,16 @@ int zmq_socket_init (){
 	if (rc) {
 		return rc;
 	}
+
+	logging_publisher = zmq_socket(zmq_context, ZMQ_PUB);
+
+    zmq_setsockopt(logging_publisher, ZMQ_SNDHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
+    zmq_setsockopt(logging_publisher, ZMQ_RCVHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
+    zmq_setsockopt (logging_publisher, ZMQ_LINGER, &linger, linger_size);
+    rc = zmq_bind(logging_publisher, "tcp://*:5558");
+	if (rc) {
+		return rc;
+	}
 	return 0;
 }
 
@@ -3183,6 +3212,10 @@ int zmq_socket_destroy (){
 		return errno;
 	}
 	rc = zmq_close(cmd_router);
+	if(rc){
+		return errno;
+	}
+	rc = zmq_close(logging_publisher);
 	if(rc){
 		return errno;
 	}
@@ -3386,10 +3419,10 @@ int daq_init_sc_vars(){
 	int n;
 	size_t var_N = sizeof(DAQ_chan_cmd_list) / sizeof(DAQ_chan_cmd_list[0]);
 	for (n = 0 ; n < var_N ; n++){
-		DEBUG_PRINTF("n iteration: %d\n",n);
+		DEBUG_PRINTF_2("n iteration: %d\n",n);
 		if(DAQ_chan_cmd_list[n].chan_or_env == ENV_PARAM){
 			strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
-			DEBUG_PRINTF("cmd_string: %s\n",cmd_string);
+			DEBUG_PRINTF_2("cmd_string: %s\n",cmd_string);
 			switch (DAQ_chan_cmd_list[n].type) {
 				case VARIABLE_TYPE:
 					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(command_parse,std::placeholders::_1));
@@ -3420,7 +3453,7 @@ int daq_init_sc_vars(){
 				sprintf(chan, "%d",i);
 				strcat(cmd_string, "_");
 				strcat(cmd_string,chan);
-				DEBUG_PRINTF("cmd_string: %s\n",cmd_string);
+				DEBUG_PRINTF_2("cmd_string: %s\n",cmd_string);
 				switch (DAQ_chan_cmd_list[n].type) {
 					case VARIABLE_TYPE:
 						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(command_parse,std::placeholders::_1));
@@ -3679,7 +3712,7 @@ char* command_parse(const char *key){
 				char hvlvcmd[40] =  "$BD:1,$CMD:";
 				rc = hv_lv_command_translation(hvlvcmd, cmd, words_n);
 				if(rc){
-					DEBUG_PRINTF("HV/LV Command not valid \n");
+					DEBUG_PRINTF_1("HV/LV Command not valid \n");
 					strcpy(board_response,"ERROR: READ operation not successful");
 					command_response_string_json(msg_id,board_response,reply);
 				}
@@ -3721,7 +3754,7 @@ char* command_parse(const char *key){
 					//Command conversion
 					rc = dig_command_translation(digcmd, cmd, words_n);
 					if(rc){
-						DEBUG_PRINTF("DIG0 Command not valid \n");
+						DEBUG_PRINTF_1("DIG0 Command not valid \n");
 						strcpy(board_response,"ERROR: READ operation not successful");
 						command_response_string_json(msg_id,board_response,reply);
 					}
@@ -3766,7 +3799,7 @@ char* command_parse(const char *key){
 					//Command conversion
 					rc = dig_command_translation(digcmd, cmd, words_n);
 					if(rc){
-						DEBUG_PRINTF("DIG1 Command not valid \n");
+						DEBUG_PRINTF_1("DIG1 Command not valid \n");
 						strcpy(board_response,"ERROR: READ operation not successful");
 						command_response_string_json(msg_id,board_response,reply);
 					}
@@ -3931,6 +3964,16 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 			}
 		}
 		else{
+			if(strcmp(cmd[2],"DEBUGLVL")==0){
+				debug_flag = atoi(cmd[3]);
+				if(debug_flag < 0 || debug_flag > 3){
+					rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+					goto end;
+				}
+				rc = command_status_response_json (msg_id,99,cmd_reply);
+				goto end;
+			}
+
 			if(strcmp(cmd[2],"STATUS") == 0){
 				if(strcmp(cmd[0],"READ") == 0){
 					if(strcmp(cmd[3],"ETH0") == 0){
@@ -4347,7 +4390,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		alarm_flag = &UL2_flag;
 		break;
 		default:
-		DEBUG_PRINTF("Invalid digitizer number");
+		DEBUG_PRINTF_1("Invalid digitizer number");
 		return -EINVAL;
 	}
 	sem_wait(sem_temp);
@@ -4355,7 +4398,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	serial_port_fd = open(board_dev,O_RDWR);
 	if (serial_port_fd < 0) {
 		//Send alarm
-		DEBUG_PRINTF("Error opening Dig%d UART\n",dig_num);
+		DEBUG_PRINTF_1("Error opening Dig%d UART\n",dig_num);
 		sem_post(sem_temp);
 		status_alarm_json("DIG0","UART Lite 3", 99,0,"warning", "OFF");
 		strcpy(result,"ERROR");
@@ -4385,7 +4428,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		}
 		else{
 			//Send Warning
-			DEBUG_PRINTF("Warning, character not received\n");
+			DEBUG_PRINTF_1("Warning, character not received\n");
 			if(!alarm_flag[0]){
 				status_alarm_json(board_name,"Serial Port", 99,0,"warning", "OFF");
 			}
@@ -4403,20 +4446,20 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	}
 	//Send Critical error
 	close(serial_port_fd);
-	DEBUG_PRINTF("Critical, character not received\n");
+	DEBUG_PRINTF_1("Critical, character not received\n");
 	if(!alarm_flag[0]){
 		alarm_flag[0] = 1;
 		status_alarm_json(board_name,"Serial Port", 99,0,"critical","OFF");
 	}
 	strcpy(result,"ERROR IN Digitizer Reading");
-	DEBUG_PRINTF("Digitizer Timedout in command %s\n",cmd);
+	DEBUG_PRINTF_2("Digitizer Timedout in command %s\n",cmd);
 	// Release the two locking mechanisms
 	flock(serial_port_fd, LOCK_UN);
 	sem_post(sem_temp);
 	return -ETIMEDOUT;
 success:
 	close(serial_port_fd);
-	DEBUG_PRINTF("Digitizer successful in command %s with response %s\n",cmd,result);
+	DEBUG_PRINTF_2("Digitizer successful in command %s with response %s\n",cmd,result);
 	// Release the two locking mechanisms
 	alarm_flag[0] = 0;  // Set back the alarm_flag to send any alarm in case of an error
 	flock(serial_port_fd, LOCK_UN);
@@ -4441,7 +4484,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 	int value2 = 0;
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 	rc = get_dig_hash_table_command(cmd,&dig_cmd_id);
-	DEBUG_PRINTF("Retrieved command from dig hash table: %d",dig_cmd_id);
+	DEBUG_PRINTF_2("Retrieved command from dig hash table: %d",dig_cmd_id);
 	if(rc){
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_ERRO].CmdString);
 		return -EINVAL;
@@ -4815,7 +4858,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		alarm_flag = &UL4_flag;
 	}
 	else{
-		DEBUG_PRINTF("Invalid HV/LV UART");
+		DEBUG_PRINTF_1("Invalid HV/LV UART");
 		return -EINVAL;
 	}
 	//Open one device
@@ -4825,7 +4868,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		//Send alarm
 		char error_buffer[64];
 		strerror_r(errno,error_buffer,sizeof(error_buffer));
-		DEBUG_PRINTF("Error opening HV/LV UART %s\n",error_buffer);
+		DEBUG_PRINTF_1("Error opening HV/LV UART %s\n",error_buffer);
 		sem_post(&sem_hvlv);
 		status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning","OFF");
 		strcpy(result,"ERROR");
@@ -4851,7 +4894,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		}
 		else{
 			//Send Warning
-			DEBUG_PRINTF("Warning, character not received\n");
+			DEBUG_PRINTF_1("Warning, character not received\n");
 			if(!alarm_flag[0]){
 				status_alarm_json("HV/LV","UART Lite 3", 99,0,"warning","OFF");
 			}
@@ -4867,13 +4910,13 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	}
 	//Send Critical error
 	close(serial_port_UL3);
-	DEBUG_PRINTF("Critical, character not received\n");
+	DEBUG_PRINTF_1("Critical, character not received\n");
 	if(!alarm_flag[0]){
 		status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
 		alarm_flag[0] = 1;
 	}
 	strcpy(result,"ERROR IN HV/LV Reading");
-	DEBUG_PRINTF("HV/LV Timedout in command %s\n",cmd);
+	DEBUG_PRINTF_2("HV/LV Timedout in command %s\n",cmd);
 	usleep(hv_lv_sleep_delay);
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
@@ -4885,7 +4928,7 @@ success:
 	alarm_flag[0] = 0;
 	cmd[strlen(cmd)-1] = '0';
 	cmd[strlen(cmd)-2] = '0';
-	DEBUG_PRINTF("HV/LV Successful in command %s with response %s\n",cmd,result);
+	DEBUG_PRINTF_2("HV/LV Successful in command %s with response %s\n",cmd,result);
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
@@ -5064,7 +5107,7 @@ int setup_serial_port(int serial_port){
 
 	struct termios tty;
 	if(tcgetattr(serial_port, &tty) != 0) {
-    	DEBUG_PRINTF("Error %i from tcgetattr: %s\n", errno, strerror(errno));
+    	DEBUG_PRINTF_2("Error %i from tcgetattr: %s\n", errno, strerror(errno));
 		return -1;
 	}
 	tty.c_cflag &= ~PARENB; // Clear parity bit, disabling parity (most common)
@@ -5091,7 +5134,7 @@ int setup_serial_port(int serial_port){
 	cfsetospeed(&tty, B115200);
 
 	if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
-    	DEBUG_PRINTF("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+    	DEBUG_PRINTF_2("Error %i from tcsetattr: %s\n", errno, strerror(errno));
 		return -1;
 	}
 
@@ -5479,7 +5522,7 @@ int check_hv_lv_presence(){
 			for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
 				HV_SN[i-12] = buffer[i];
 			}
-			printf("Hotplug event: HV has been detected: S/N %s \n",HV_SN);
+			LOG_PRINTF("Hotplug event: HV has been detected: S/N %s \n",HV_SN);
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
 			hv_connected = 1;
 		}
@@ -5507,7 +5550,7 @@ int check_hv_lv_presence(){
 			for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
 				LV_SN[i-12] = buffer[i];
 			}
-			printf("Hotplug event: LV has been detected: S/N %s \n", LV_SN);
+			LOG_PRINTF("Hotplug event: LV has been detected: S/N %s \n", LV_SN);
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
 			lv_connected = 1;
 		}
@@ -5562,13 +5605,13 @@ int check_digs_presence(){
 				char* gw_ver_str;
 				gw_ver_str = pkt.GetNextField();
 				strcpy(DIG0_SN,gw_ver_str); // Digitizer gateway is in hex format	
-				printf("Hotplug event: Digitizer 0 has been detected GW Ver %s\n",DIG0_SN);
+				LOG_PRINTF("Hotplug event: Digitizer 0 has been detected GW Ver %s\n",DIG0_SN);
 				status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
 				dig0_connected = 1;
 				dig_get_calib_values(DIGITIZER_0);
 			}
 			else{
-				printf("WARNING: Digitizer 0 is using a non compatible firmware\n");
+				LOG_PRINTF("WARNING: Digitizer 0 is using a non compatible firmware\n");
 			}
 		}
 	}
@@ -5604,13 +5647,13 @@ int check_digs_presence(){
 				char* gw_ver_str;
 				gw_ver_str = pkt.GetNextField();
 				strcpy(DIG1_SN,gw_ver_str); // Digitizer gateway is in hex format	
-				printf("Hotplug event: Digitizer 1 has been detected GW Ver %s\n",DIG1_SN);
+				LOG_PRINTF("Hotplug event: Digitizer 1 has been detected GW Ver %s\n",DIG1_SN);
 				status_alarm_json("DIG1","Serial Port", 99,0,"info","ON");
 				dig1_connected = 1;
 				dig_get_calib_values(DIGITIZER_1);
 			}
 			else{
-				printf("WARNING: Digitizer 1 is using a non compatible firmware\n");
+				LOG_PRINTF("WARNING: Digitizer 1 is using a non compatible firmware\n");
 			}
 		}
 	}
@@ -5725,7 +5768,7 @@ int read_uio(int reg, void* val){
         perror("UIO Size Open Error:");
     }
     fscanf(size_gpio,"0x%16X",&uio_size);
-    DEBUG_PRINTF("size of UIO Memory: 0x%x\n",uio_size);
+    DEBUG_PRINTF_2("size of UIO Memory: 0x%x\n",uio_size);
 	fclose(size_gpio);
 
     size_addr = fopen(UIO_ADDR, "r");
@@ -5733,7 +5776,7 @@ int read_uio(int reg, void* val){
         perror("UIO Addr Open Error:");
     }
     fscanf(size_addr,"0x%16X",&uio_addr);
-    DEBUG_PRINTF("address of UIO Memory: 0x%x\n",uio_addr);
+    DEBUG_PRINTF_2("address of UIO Memory: 0x%x\n",uio_addr);
 	fclose(size_addr);
 
 
@@ -5752,22 +5795,22 @@ int read_uio(int reg, void* val){
 	switch(uio_axi_regs[reg].size) {
 		case 4:
 			*((uint8_t *)val) = *((uint8_t *)p) & 0x0F;
-			DEBUG_PRINTF("Read 1 nibble from reg %d: %u\n", reg, *((uint8_t *)val));
+			DEBUG_PRINTF_2("Read 1 nibble from reg %d: %u\n", reg, *((uint8_t *)val));
 			break;
 		case 8:
 			*((uint8_t *)val) = *((uint8_t *)p);
-			DEBUG_PRINTF("Read 1 byte from reg %d: %u\n", reg, *((uint8_t *)val));
+			DEBUG_PRINTF_2("Read 1 byte from reg %d: %u\n", reg, *((uint8_t *)val));
 			break;
 		case 16:
 			*((uint16_t *)val) = *((uint16_t *)p);
-			DEBUG_PRINTF("Read 2 bytes from reg %d: %u\n", reg, *((uint16_t *)val));
+			DEBUG_PRINTF_2("Read 2 bytes from reg %d: %u\n", reg, *((uint16_t *)val));
 			break;
 		case 32:
 			*((uint32_t *)val) = *((uint32_t *)p);
-			DEBUG_PRINTF("Read 4 bytes from reg %d: %u\n", reg, *((uint32_t *)val));
+			DEBUG_PRINTF_2("Read 4 bytes from reg %d: %u\n", reg, *((uint32_t *)val));
 			break;
 		default:
-			DEBUG_PRINTF("Invalid register size for reg %d\n", reg);
+			DEBUG_PRINTF_2("Invalid register size for reg %d\n", reg);
 			return -EINVAL;
 	}
 
@@ -5800,7 +5843,7 @@ int write_uio(int reg, uint32_t val){
 		perror("UIO Size Open Error:");
 	}
 	fscanf(size_gpio,"0x%16X",&uio_size);
-	DEBUG_PRINTF("size of UIO Memory: 0x%x\n",uio_size);
+	DEBUG_PRINTF_2("size of UIO Memory: 0x%x\n",uio_size);
 	fclose(size_gpio);
 
 	size_addr = fopen(UIO_ADDR, "r");
@@ -5808,7 +5851,7 @@ int write_uio(int reg, uint32_t val){
 		perror("UIO Addr Open Error:");
 	}
 	fscanf(size_addr,"0x%16X",&uio_addr);
-	DEBUG_PRINTF("address of UIO Memory: 0x%x\n",uio_addr);
+	DEBUG_PRINTF_2("address of UIO Memory: 0x%x\n",uio_addr);
 	fclose(size_addr);
 
 	ptr = mmap(NULL, uio_size, PROT_READ|PROT_WRITE, MAP_SHARED, GPIO_UIO, 0);
@@ -5826,20 +5869,20 @@ int write_uio(int reg, uint32_t val){
 	switch(uio_axi_regs[reg].size) {
 		case 4:
 			*((uint8_t *)p) = (uint8_t)val & 0x0F;
-			DEBUG_PRINTF("Wrote 1 nibble to reg %d: %u\n", reg, *((uint8_t *)val));
+			DEBUG_PRINTF_2("Wrote 1 nibble to reg %d: %u\n", reg, *((uint8_t *)val));
 			break;
 		case 8:
 			*((uint8_t *)p) = (uint8_t)val;
-			DEBUG_PRINTF("Wrote 1 byte to reg %d: %u\n", reg, *((uint8_t *)val));
+			DEBUG_PRINTF_2("Wrote 1 byte to reg %d: %u\n", reg, *((uint8_t *)val));
 			break;
 		case 16:
 			*((uint16_t *)p) = (uint16_t)val;
-			DEBUG_PRINTF("Wrote 2 bytes to reg %d: %u\n", reg, *((uint16_t *)val));
+			DEBUG_PRINTF_2("Wrote 2 bytes to reg %d: %u\n", reg, *((uint16_t *)val));
 			break;
 		case 32:
 			*((uint32_t *)p) = (uint32_t)val;
 		default:
-			DEBUG_PRINTF("Invalid register size for reg %d\n", reg);
+			DEBUG_PRINTF_2("Invalid register size for reg %d\n", reg);
 			return -EINVAL;
 	}
 

@@ -31,10 +31,57 @@ extern "C" {
 #include "linux/errno.h"
 #include <COPacketCmdHkDig.h>
 
-#ifdef DEBUG
-    #define DEBUG_PRINTF(...) printf("DEBUG: " __VA_ARGS__)
+/* Logging and Debugging macros*/
+#ifdef DAQ_MODE
+#define LOG_PRINTF(...) do{ \
+    DAQ_Inter->SendLog(__VA_ARGS__,2); \
+    printf("INFO: " __VA_ARGS__); \
+} while(0) 
+
+#define DEBUG_PRINTF_1(...) do{ \
+    if(debug_flag >=1) { \
+    DAQ_Inter->SendLog(__VA_ARGS__,2); \
+    printf("DEBUG LVL 1: " __VA_ARGS__); \
+    } \
+} while(0) 
+
+#define DEBUG_PRINTF_2(...) do{ \
+    if(debug_flag >=2) { \
+    DAQ_Inter->SendLog(__VA_ARGS__,2); \
+    printf("DEBUG LVL 2: " __VA_ARGS__); \
+    } \
+} while(0) 
+
 #else
-    #define DEBUG_PRINTF(...) do {} while (0)
+
+#define LOG_PRINTF(...) do{ \
+    const char *_msg_log = (__VA_ARGS__); \
+    if(_msg_log) { \
+        zmq_send(logging_publisher,_msg_log,strlen(_msg_log),0); \
+        printf("INFO: %s ",_msg_log); \
+    } \
+} while(0) 
+
+#define DEBUG_PRINTF_1(...) do{ \
+    if(debug_flag >=1) { \
+        const char *_msg_log = (__VA_ARGS__); \
+        if(_msg_log) { \
+            zmq_send(logging_publisher,_msg_log,strlen(_msg_log),0); \
+            printf("DEBUG LVL 1: %s ",_msg_log); \
+        } \
+    } \
+} while(0) 
+
+#define DEBUG_PRINTF_2(...) do{ \
+    if(debug_flag >=2) { \
+        const char *_msg_log = (__VA_ARGS__); \
+        if(_msg_log) { \
+            zmq_send(logging_publisher,_msg_log,strlen(_msg_log),0); \
+            printf("DEBUG LVL 2: %s ",_msg_log); \
+        } \
+    } \
+} while(0)  
+
 #endif
 
 /************************** Main Struct Definition *****************************/
@@ -89,6 +136,7 @@ void *zmq_context ;
 void *mon_publisher;
 void *alarm_publisher ;
 void *cmd_router;
+void *logging_publisher;
 /************************** Function Prototypes ******************************/
 
 int dpbsc_lib_init(struct DPB_I2cSensors *);
@@ -266,6 +314,7 @@ int dig1_connected = 0;
 int count_fails_until_success = 0;
 int count_since_reset = 0;
 int daq_flag = 0;
+int debug_flag = 0; //Debug flag to control the debug level of the application
 
 /************************** SFP Related Variables *****************************/
 /** @defgroup SFP_I2C SFP Related Variables
