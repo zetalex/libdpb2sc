@@ -35,7 +35,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 
 	int rc = 0;
 	int var_lock;
-
+	debug_flag = 1;
 	signal(SIGSEGV, segmentation_handler);
 	rc = init_semaphores();
 	if(rc)
@@ -149,6 +149,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		DAQ_Inter->sc_vars["Status"]->SetValue("Ready");
 		daq_flag = 1;
 	#endif
+	debug_flag = 0;
 	return 0;
 }
 /**
