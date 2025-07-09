@@ -3971,6 +3971,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					goto end;
 				}
 				rc = command_status_response_json (msg_id,99,cmd_reply);
+				LOG_PRINTF("DEBUG LEVEL SET TO %d",debug_flag);
 				goto end;
 			}
 
