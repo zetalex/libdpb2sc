@@ -39,7 +39,7 @@ extern "C" {
     int _len = snprintf(_msg_log, sizeof(_msg_log), __VA_ARGS__); \
     if(_len > 0) { \
         DAQ_Inter->SendLog(_msg_log,2); \
-        printf("INFO: ", _msg_log); \
+        printf("INFO: %s", _msg_log); \
     }\
     sem_post(&sem_zmq_logging); \
 } while(0) 
@@ -51,7 +51,7 @@ extern "C" {
         int _len = snprintf(_msg_log, sizeof(_msg_log), __VA_ARGS__); \
         if(_len > 0) { \
             DAQ_Inter->SendLog(_msg_log,2); \
-            printf("DEBUG LVL 1: ", _msg_log); \
+            printf("DEBUG LVL 1: %s", _msg_log); \
         }\
     } \
     sem_post(&sem_zmq_logging); \
@@ -64,7 +64,7 @@ extern "C" {
         int _len = snprintf(_msg_log, sizeof(_msg_log), __VA_ARGS__); \
         if(_len > 0) { \
             DAQ_Inter->SendLog(_msg_log,2); \
-            printf("DEBUG LVL 2: ", _msg_log); \
+            printf("DEBUG LVL 2: %s", _msg_log); \
         }\
     } \
     sem_post(&sem_zmq_logging); \
