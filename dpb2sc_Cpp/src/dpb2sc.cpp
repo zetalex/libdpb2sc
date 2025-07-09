@@ -3171,9 +3171,11 @@ int zmq_socket_init (){
 	int linger = 0;
 	int sndhwm_mon_cmd = 1;
 	int sndhwm_alarms = 6;
+	int sndhwm_logging = 20;
 	size_t sndhwm_mon_cmd_size = sizeof(sndhwm_mon_cmd);
 	size_t sndhwm_alarms_size = sizeof(sndhwm_alarms);
 	size_t linger_size = sizeof(linger);
+	size_t sndhwm_logging_size = sizeof(sndhwm_logging);
 
     zmq_context = zmq_ctx_new();
     mon_publisher = zmq_socket(zmq_context, ZMQ_PUB);
@@ -3206,8 +3208,8 @@ int zmq_socket_init (){
 
 	logging_publisher = zmq_socket(zmq_context, ZMQ_PUB);
 
-    zmq_setsockopt(logging_publisher, ZMQ_SNDHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
-    zmq_setsockopt(logging_publisher, ZMQ_RCVHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
+    zmq_setsockopt(logging_publisher, ZMQ_SNDHWM, &sndhwm_logging, sndhwm_logging_size);
+    zmq_setsockopt(logging_publisher, ZMQ_RCVHWM, &sndhwm_logging, sndhwm_logging_size);
     zmq_setsockopt (logging_publisher, ZMQ_LINGER, &linger, linger_size);
     rc = zmq_bind(logging_publisher, "tcp://*:5558");
 	if (rc) {
