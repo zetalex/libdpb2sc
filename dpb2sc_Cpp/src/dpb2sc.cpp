@@ -200,6 +200,11 @@ int init_semaphores(){
 		DEBUG_PRINTF_1("Error initialising semaphore SFP Switch\n");
 		return rc;
 	}
+	rc = sem_init(&sem_zmq_logging,1,1);
+	if(rc){
+		DEBUG_PRINTF_1("Error initialising semaphore SFP Switch\n");
+		return rc;
+	}
 	return rc;
 }
 
@@ -274,6 +279,7 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    sem_destroy(&sem_dig0);
    sem_destroy(&sem_dig1);
    sem_destroy(&sem_sfp_switch);
+   sem_destroy(&sem_zmq_logging);
    //Stop I2C Sensors
    stop_I2cSensors(data);
    return;
@@ -3971,7 +3977,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					goto end;
 				}
 				rc = command_status_response_json (msg_id,99,cmd_reply);
-				LOG_PRINTF("DEBUG LEVEL SET TO %d",debug_flag);
+				LOG_PRINTF("DEBUG LEVEL SET TO %d \n",debug_flag);
 				goto end;
 			}
 
