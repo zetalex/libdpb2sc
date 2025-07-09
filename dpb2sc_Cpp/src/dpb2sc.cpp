@@ -2223,7 +2223,9 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 				zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
 			}
 			else{
+				sem_wait(&sem_zmq_logging);
 				zmq_send(logging_publisher, serialized_json, strlen(serialized_json), 0);
+				sem_post(&sem_zmq_logging);
 			}
 		}
 		json_object_put(jalarm_data);
@@ -2313,7 +2315,9 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 				zmq_send(alarm_publisher, serialized_json, strlen(serialized_json), 0);
 			}
 			else{
+				sem_wait(&sem_zmq_logging);
 				zmq_send(logging_publisher, serialized_json, strlen(serialized_json), 0);
+				sem_post(&sem_zmq_logging);
 			}		
 		}
 		json_object_put(jalarm_data);
