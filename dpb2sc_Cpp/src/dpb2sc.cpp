@@ -72,14 +72,14 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	// try to create lock file in /var/lock
 	var_lock = open("/var/lock/LCK..ttyUL1", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
 	if(var_lock < 0){
-		LOG_PRINTF("Cannot lock file ttyUL1. Already in use by other process");
+		LOG_PRINTF("Cannot lock file ttyUL1. Already in use by other process \n");
 		return errno;
 	}
 	write(var_lock, "%4d\n", getpid());
 	close(var_lock);
 	var_lock = open("/var/lock/LCK..ttyUL2", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
 	if(var_lock < 0){
-		LOG_PRINTF("Cannot lock file ttyUL2. Already in use by other process");
+		LOG_PRINTF("Cannot lock file ttyUL2. Already in use by other process \n");
 		return errno;
 	}
 	write(var_lock, "%4d\n", getpid());
@@ -87,14 +87,14 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	// try to create lock file in /var/lock
 	var_lock = open("/var/lock/LCK..ttyUL3", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
 	if(var_lock < 0){
-		LOG_PRINTF("Cannot lock file ttyUL3. Already in use by other process");
+		LOG_PRINTF("Cannot lock file ttyUL3. Already in use by other process \n");
 		return errno;
 	}
 	write(var_lock, "%4d\n", getpid());
 	close(var_lock);
 	var_lock = open("/var/lock/LCK..ttyUL4", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
 	if(var_lock < 0){
-		LOG_PRINTF("Cannot lock file ttyUL4. Already in use by other process");
+		LOG_PRINTF("Cannot lock file ttyUL4. Already in use by other process \n");
 		return errno;
 	}
 	write(var_lock, "%4d\n", getpid());
@@ -4397,7 +4397,7 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		alarm_flag = &UL2_flag;
 		break;
 		default:
-		DEBUG_PRINTF_1("Invalid digitizer number");
+		DEBUG_PRINTF_1("Invalid digitizer number \n");
 		return -EINVAL;
 	}
 	sem_wait(sem_temp);
@@ -4491,7 +4491,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 	int value2 = 0;
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
 	rc = get_dig_hash_table_command(cmd,&dig_cmd_id);
-	DEBUG_PRINTF_2("Retrieved command from dig hash table: %d",dig_cmd_id);
+	DEBUG_PRINTF_2("Retrieved command from dig hash table: %d \n",dig_cmd_id);
 	if(rc){
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[HKDIG_ERRO].CmdString);
 		return -EINVAL;
@@ -4865,7 +4865,7 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		alarm_flag = &UL4_flag;
 	}
 	else{
-		DEBUG_PRINTF_1("Invalid HV/LV UART");
+		DEBUG_PRINTF_1("Invalid HV/LV UART \n");
 		return -EINVAL;
 	}
 	//Open one device
