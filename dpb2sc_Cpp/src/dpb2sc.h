@@ -34,29 +34,42 @@ extern "C" {
 /* Logging and Debugging macros*/
 #ifdef DAQ_MODE
 #define LOG_PRINTF(...) do{ \
-    DAQ_Inter->SendLog(__VA_ARGS__,2); \
-    printf("INFO: " __VA_ARGS__); \
+    char _msg_log[1024]; \
+    int _len = snprintf(_msg_log, sizeof(_msg_log), __VA_ARGS__); \
+    if(_len > 0) { \
+        DAQ_Inter->SendLog(_msg_log,2); \
+        printf("INFO: " _msg_log); \
+    }\
 } while(0) 
 
 #define DEBUG_PRINTF_1(...) do{ \
     if(debug_flag >=1) { \
-    DAQ_Inter->SendLog(__VA_ARGS__,2); \
-    printf("DEBUG LVL 1: " __VA_ARGS__); \
+        char _msg_log[1024]; \
+        int _len = snprintf(_msg_log, sizeof(_msg_log), __VA_ARGS__); \
+        if(_len > 0) { \
+            DAQ_Inter->SendLog(_msg_log,2); \
+            printf("DEBUG LVL 1: " _msg_log); \
+        }\
     } \
 } while(0) 
 
 #define DEBUG_PRINTF_2(...) do{ \
     if(debug_flag >=2) { \
-    DAQ_Inter->SendLog(__VA_ARGS__,2); \
-    printf("DEBUG LVL 2: " __VA_ARGS__); \
+        char _msg_log[1024]; \
+        int _len = snprintf(_msg_log, sizeof(_msg_log), __VA_ARGS__); \
+        if(_len > 0) { \
+            DAQ_Inter->SendLog(_msg_log,2); \
+            printf("DEBUG LVL 2: " _msg_log); \
+        }\
     } \
 } while(0) 
 
 #else
 
 #define LOG_PRINTF(...) do{ \
-    const char *_msg_log = (__VA_ARGS__); \
-    if(_msg_log) { \
+    char _msg_log[1024]; \
+    int _len = snprintf(_msg_log, sizeof(_msg_log), __VA_ARGS__); \
+    if(_len > 0) { \
         zmq_send(logging_publisher,_msg_log,strlen(_msg_log),0); \
         printf("INFO: %s ",_msg_log); \
     } \
@@ -64,20 +77,22 @@ extern "C" {
 
 #define DEBUG_PRINTF_1(...) do{ \
     if(debug_flag >=1) { \
-        const char *_msg_log = (__VA_ARGS__); \
-        if(_msg_log) { \
+        char _msg_log[1024]; \
+        int _len = snprintf(_msg_log, sizeof(_msg_log), __VA_ARGS__); \
+        if(_len > 0) { \
             zmq_send(logging_publisher,_msg_log,strlen(_msg_log),0); \
-            printf("DEBUG LVL 1: %s ",_msg_log); \
+            printf("INFO: %s ",_msg_log); \
         } \
     } \
 } while(0) 
 
 #define DEBUG_PRINTF_2(...) do{ \
     if(debug_flag >=2) { \
-        const char *_msg_log = (__VA_ARGS__); \
-        if(_msg_log) { \
+        char _msg_log[1024]; \
+        int _len = snprintf(_msg_log, sizeof(_msg_log), __VA_ARGS__); \
+        if(_len > 0) { \
             zmq_send(logging_publisher,_msg_log,strlen(_msg_log),0); \
-            printf("DEBUG LVL 2: %s ",_msg_log); \
+            printf("INFO: %s ",_msg_log); \
         } \
     } \
 } while(0)  
