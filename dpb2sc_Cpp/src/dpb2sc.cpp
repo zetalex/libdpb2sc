@@ -4385,6 +4385,19 @@ end:
 	return rc;
 }
 
+/**
+ * Parses a JSON configuration file and applies the configuration settings to the corresponding boards.
+ *
+ * This function takes a JSON configuration string and parses it to extract configuration parameters
+ * for different boards. It iterates through the predefined config_variables array and applies the
+ * corresponding settings to each board by calling the appropriate commands. If there is a configuration
+ * field missing, it is skipped, as there can be partial configurations.
+ *
+ * @param config_json A null-terminated string containing the JSON configuration data to parse.
+ *
+ * @return 0 on success, -EINVAL if the JSON is invalid or required fields are missing,
+ *         or an error code if any configuration command fails.
+ */
 int config_parse(char *config_json){
 	size_t N = sizeof(config_variables) / sizeof(config_variables[0]);
 	json_object *jobj = json_tokener_parse(config_json);
@@ -4443,6 +4456,15 @@ int config_parse(char *config_json){
 	return 0;
 }
 
+/**
+ * Retrieves the configuration data from the appropriate source and stores it in the global config_to_apply variable.
+ *
+ * This function obtains configuration data either from the DAQ interface (in DAQ_MODE) or from 
+ * a ZMQ configuration socket (in standalone mode). The retrieved configuration is stored in the
+ * global config_to_apply buffer for later use.
+ *
+ * @return 0 on success, -EIO if there's an error receiving configuration data from the socket.
+ */
 int config_get(){
 
 	char *config_json = NULL;
