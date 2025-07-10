@@ -235,6 +235,8 @@ int tdm_not_locked_alarm();
 int zmq_socket_init ();
 int zmq_socket_destroy();
 char* command_parse(const char *key);
+int config_parse(char *);
+int config_get();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_get_calib_values(int);
 int dig_command_handling(int, char *, char *);
