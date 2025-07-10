@@ -167,6 +167,7 @@ void *mon_publisher;
 void *alarm_publisher ;
 void *cmd_router;
 void *logging_publisher;
+void *config_router;
 /************************** Function Prototypes ******************************/
 
 int dpbsc_lib_init(struct DPB_I2cSensors *);
@@ -345,6 +346,7 @@ int count_fails_until_success = 0;
 int count_since_reset = 0;
 int daq_flag = 0;
 int debug_flag = 0; //Debug flag to control the debug level of the application
+char config_to_apply[4096];
 
 /************************** SFP Related Variables *****************************/
 /** @defgroup SFP_I2C SFP Related Variables
@@ -671,6 +673,105 @@ const char *ams_channels[] = {
         "PS Auxiliary voltage",
         "PL VCCADC voltage"
     };
+
+/******************************************************************************
+Configuration Data.
+****************************************************************************/
+
+struct config_element {
+    char board[8];
+    char json_word[16];
+    int env_chan;
+    char magnitude[32];
+    int chan_n;
+};
+
+struct config_element config_variables[90] = {
+    {"LV", "status", CHAN_PARAM, "SET_LV_STATUS", 8},
+    {"LV", "voltagelimit", CHAN_PARAM, "SET_LV_VOLT", 8},
+    {"LV", "currentlimit", CHAN_PARAM, "SET_LV_CURR", 8},
+    {"LV", "cpumain", ENV_PARAM, "SET_LV_CPU_MAIN", 0},
+    {"LV", "cpubackup", ENV_PARAM, "SET_LV_CPU_BACKUP", 0},
+
+    {"HV", "status", CHAN_PARAM, "SET_HV_STATUS", 24},
+    {"HV", "voltage", CHAN_PARAM, "SET_HV_VOLT", 24},
+    {"HV", "current", CHAN_PARAM, "SET_HV_CURR", 24},
+    {"HV", "rampup", CHAN_PARAM, "SET_HV_RAMPUP", 24},
+    {"HV", "rampdown", CHAN_PARAM, "SET_HV_RAMPDOWN", 24},
+    {"HV", "trip", CHAN_PARAM, "SET_HV_TRIP", 24},
+    {"HV", "cpumain", ENV_PARAM, "SET_HV_CPU_MAIN", 0},
+    {"HV", "cpubackup", ENV_PARAM, "SET_HV_CPU_BACKUP", 0},
+
+    {"DIG0", "status", CHAN_PARAM, "SET_DIG0_STATUS", 18},
+    {"DIG0", "disctres", CHAN_PARAM, "SET_DIG0_DISCTRES", 18},
+    {"DIG0", "inttime", CHAN_PARAM, "SET_DIG0_INTTIME", 18},
+    {"DIG0", "calib", CHAN_PARAM, "SET_DIG0_CALIB", 18},
+    {"DIG0", "calibtype", ENV_PARAM, "SET_DIG0_CALTYPE", 0},
+    {"DIG0", "calibmute", ENV_PARAM, "SET_DIG0_CALIBMUTE", 0},
+    {"DIG0", "calibper", ENV_PARAM, "SET_DIG0_CALIBPER", 0},
+    {"DIG0", "calibpwr", ENV_PARAM, "SET_DIG0_CALIBPWR", 0},
+    {"DIG0", "demux", ENV_PARAM, "SET_DIG0_DEMUX", 0},
+    {"DIG0", "caliblen", ENV_PARAM, "SET_DIG0_CALIBLEN", 0},
+    {"DIG0", "calibamp", ENV_PARAM, "SET_DIG0_CALIBAMP", 0},
+    {"DIG0", "calibpdn", ENV_PARAM, "SET_DIG0_CALIBPDN", 0},
+    {"DIG0", "calibmute", ENV_PARAM, "SET_DIG0_CALIBMUTE", 0},
+    {"DIG0", "calibsen", ENV_PARAM, "SET_DIG0_CALIBSEN", 0},
+    {"DIG0", "odsel", ENV_PARAM, "SET_DIG0_ODSEL", 0},
+    {"DIG0", "psc", ENV_PARAM, "SET_DIG0_PSC", 0},
+    {"DIG0", "festatus", CHAN_PARAM, "SET_DIG0_FESTATUS", 18},
+    {"DIG0", "daqstatus", CHAN_PARAM, "SET_DIG0_DAQSTATUS", 18},
+    {"DIG0", "pedtype", CHAN_PARAM, "SET_DIG0_PEDTYPE", 18},
+    {"DIG0", "pedstag", ENV_PARAM, "SET_DIG0_PEDSTAG", 0},
+    {"DIG0", "clock", ENV_PARAM, "SET_DIG0_CLOCK", 0},
+    {"DIG0", "rmont", ENV_PARAM, "SET_DIG0_RMONT", 0},
+    {"DIG0", "deadtime", CHAN_PARAM, "SET_DIG0_DEADTIME", 18},
+
+    {"DIG1", "status", CHAN_PARAM, "SET_DIG1_STATUS", 18},
+    {"DIG1", "disctres", CHAN_PARAM, "SET_DIG1_DISCTRES", 18},
+    {"DIG1", "inttime", CHAN_PARAM, "SET_DIG1_INTTIME", 18},
+    {"DIG1", "calib", CHAN_PARAM, "SET_DIG1_CALIB", 18},
+    {"DIG1", "calibtype", ENV_PARAM, "SET_DIG1_CALTYPE", 0},
+    {"DIG1", "calibmute", ENV_PARAM, "SET_DIG1_CALIBMUTE", 0},
+    {"DIG1", "calibper", ENV_PARAM, "SET_DIG1_CALIBPER", 0},
+    {"DIG1", "calibpwr", ENV_PARAM, "SET_DIG1_CALIBPWR", 0},
+    {"DIG1", "demux", ENV_PARAM, "SET_DIG1_DEMUX", 0},
+    {"DIG1", "caliblen", ENV_PARAM, "SET_DIG1_CALIBLEN", 0},
+    {"DIG1", "calibamp", ENV_PARAM, "SET_DIG1_CALIBAMP", 0},
+    {"DIG1", "calibpdn", ENV_PARAM, "SET_DIG1_CALIBPDN", 0},
+    {"DIG1", "calibmute", ENV_PARAM, "SET_DIG1_CALIBMUTE", 0},
+    {"DIG1", "calibsen", ENV_PARAM, "SET_DIG1_CALIBSEN", 0},
+    {"DIG1", "odsel", ENV_PARAM, "SET_DIG1_ODSEL", 0},
+    {"DIG1", "psc", ENV_PARAM, "SET_DIG1_PSC", 0},
+    {"DIG1", "festatus", CHAN_PARAM, "SET_DIG1_FESTATUS", 18},
+    {"DIG1", "daqstatus", CHAN_PARAM, "SET_DIG1_DAQSTATUS", 18},
+    {"DIG1", "pedtype", CHAN_PARAM, "SET_DIG1_PEDTYPE", 18},
+    {"DIG1", "pedstag", ENV_PARAM, "SET_DIG1_PEDSTAG", 0},
+    {"DIG1", "clock", ENV_PARAM, "SET_DIG1_CLOCK", 0},
+    {"DIG1", "rmont", ENV_PARAM, "SET_DIG1_RMONT", 0},
+    {"DIG1", "deadtime", CHAN_PARAM, "SET_DIG1_DEADTIME", 18},
+
+    {"DPB", "status", CHAN_PARAM, "SET_DPB_STATUS", 6},
+    {"DPB", "ethmain", ENV_PARAM, "SET_DPB_STATUS_ETH0", 0},
+    {"DPB", "ethbackup", ENV_PARAM, "SET_DPB_STATUS_ETH1", 0},
+    {"DPB", "templim", CHAN_PARAM, "SET_DPB_TEMP", 6},
+    {"DPB", "pcbtemplim", ENV_PARAM, "SET_DPB_TEMP_PCB", 0},
+    {"DPB", "fpgatemplim", ENV_PARAM, "SET_DPB_TEMP_FPGA", 0},
+    {"DPB", "lpdcputemplim", ENV_PARAM, "SET_DPB_TEMP_FPDCPU", 0},
+    {"DPB", "fpdcputemplim", ENV_PARAM, "SET_DPB_TEMP_LPDCPU", 0},
+    {"DPB", "lpdcpuvoltlim", ENV_PARAM, "SET_DPB_VOLT_FPDCPU", 0},
+    {"DPB", "fpdcpuvoltlim", ENV_PARAM, "SET_DPB_VOLT_LPDCPU", 0},
+    {"DPB", "currlim", CHAN_PARAM, "SET_DPB_CURR", 6},
+    {"DPB", "12Vcurrlim", ENV_PARAM, "SET_DPB_CURR_12V", 0},
+    {"DPB", "3V3currlim", ENV_PARAM, "SET_DPB_CURR_3V3", 0},
+    {"DPB", "1V8currlim", ENV_PARAM, "SET_DPB_CURR_1V8", 0},
+    {"DPB", "tdmlink", ENV_PARAM, "SET_DPB_TDMLINK", 0},
+    {"DPB", "tdmtxmain", ENV_PARAM, "SET_DPB_TDMTX_MAIN", 0},
+    {"DPB", "tdmtxbackup", ENV_PARAM, "SET_DPB_TDMTX_BACKUP", 0},
+    {"DPB", "tdmrxmain", ENV_PARAM, "SET_DPB_TDMRX_MAIN", 0},
+    {"DPB", "tdmrxbackup", ENV_PARAM, "SET_DPB_TDMRX_BACKUP", 0}, 
+    
+}; 
+
 /******************************************************************************
 LV Command Data.
 ****************************************************************************/

@@ -51,6 +51,8 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		const char *dev_name_c = dev_name.c_str();
 		LOG_PRINTF("Interface successfully built with device %s \n",dev_name_c);
 		DAQ_Inter->sc_vars["Status"]->SetValue("Initialising"); //setting status message
+		// Suscribe here to the DAQ alarms
+		
 	#else
 		rc = zmq_socket_init(); //Initialize ZMQ Sockets
 		if (rc) {
@@ -3169,10 +3171,10 @@ int zmq_socket_init (){
 
 	int rc = 0;
 	int linger = 0;
-	int sndhwm_mon_cmd = 1;
+	int sndhwm_mon_cmd_config = 1;
 	int sndhwm_alarms = 6;
 	int sndhwm_logging = 20;
-	size_t sndhwm_mon_cmd_size = sizeof(sndhwm_mon_cmd);
+	size_t sndhwm_mon_cmd_size = sizeof(sndhwm_mon_cmd_config);
 	size_t sndhwm_alarms_size = sizeof(sndhwm_alarms);
 	size_t linger_size = sizeof(linger);
 	size_t sndhwm_logging_size = sizeof(sndhwm_logging);
@@ -3180,8 +3182,8 @@ int zmq_socket_init (){
     zmq_context = zmq_ctx_new();
     mon_publisher = zmq_socket(zmq_context, ZMQ_PUB);
 
-    zmq_setsockopt(mon_publisher, ZMQ_SNDHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
-    zmq_setsockopt(mon_publisher, ZMQ_RCVHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
+    zmq_setsockopt(mon_publisher, ZMQ_SNDHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
+    zmq_setsockopt(mon_publisher, ZMQ_RCVHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
     zmq_setsockopt (mon_publisher, ZMQ_LINGER, &linger, linger_size);
     rc = zmq_bind(mon_publisher, "tcp://*:5555");
 	if (rc) {
@@ -3198,8 +3200,8 @@ int zmq_socket_init (){
 	}
 
     cmd_router = zmq_socket(zmq_context, ZMQ_REP);
-    zmq_setsockopt(cmd_router, ZMQ_SNDHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
-    zmq_setsockopt(cmd_router, ZMQ_RCVHWM, &sndhwm_mon_cmd, sndhwm_mon_cmd_size);
+    zmq_setsockopt(cmd_router, ZMQ_SNDHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
+    zmq_setsockopt(cmd_router, ZMQ_RCVHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
     zmq_setsockopt (cmd_router, ZMQ_LINGER, &linger, linger_size);
     rc = zmq_bind(cmd_router, "tcp://*:5557");
 	if (rc) {
@@ -3215,6 +3217,16 @@ int zmq_socket_init (){
 	if (rc) {
 		return rc;
 	}
+
+	config_router = zmq_socket(zmq_context, ZMQ_REP);
+    zmq_setsockopt(config_router, ZMQ_SNDHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
+    zmq_setsockopt(config_router, ZMQ_RCVHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
+    zmq_setsockopt (config_router, ZMQ_LINGER, &linger, linger_size);
+    rc = zmq_bind(config_router, "tcp://*:5559");
+	if (rc) {
+		return rc;
+	}
+
 	return 0;
 }
 
@@ -3239,6 +3251,10 @@ int zmq_socket_destroy (){
 		return errno;
 	}
 	rc = zmq_close(logging_publisher);
+	if(rc){
+		return errno;
+	}
+	rc = zmq_close(config_router);
 	if(rc){
 		return errno;
 	}
@@ -3579,11 +3595,7 @@ char* command_parse(const char *key){
 	int msg_id = 0;
 	// Put the appropiate separator
 	char separator[4];
-	#ifdef DAQ_MODE
-		strcpy(separator,"_");
-	#else
-		strcpy(separator," ");
-	#endif
+	strcpy(separator,"_");
 
 	// Copy const char key to variable
 	#ifdef DAQ_MODE
@@ -4373,6 +4385,85 @@ end:
 	return rc;
 }
 
+int config_parse(char *config_json){
+	size_t N = sizeof(config_variables) / sizeof(config_variables[0]);
+	json_object *jobj = json_tokener_parse(config_json);
+	if (jobj == NULL) {
+		DEBUG_PRINTF_1("Error parsing JSON config file\n");
+		return -EINVAL;
+	}
+	// Loop that covers the config_variables struct
+	for(int i = 0; i < N; i++){
+		struct config_element config_var = config_variables[i];
+		json_object *jboard = NULL;
+		if (!json_object_object_get_ex(jobj, config_var.board, &jboard)){
+			LOG_PRINTF("The board %s is not present in the configuration file\n",config_var.board);
+			return -EINVAL;
+		}
+		json_object *jmag = NULL;
+		if(!json_object_object_get_ex(jboard,config_var.json_word,&jmag)) {
+			LOG_PRINTF("The word %s is not present in the board %s in the configuration file\n",config_var.json_word,config_var.board);
+			return -EINVAL;
+		}
+		const char *mag_value;
+		mag_value = json_object_get_string(jmag);
+		if(mag_value == NULL) {
+			LOG_PRINTF("The value of %s in the board %s is not present in the configuration file\n",config_var.json_word,config_var.board);
+			return -EINVAL;
+		}
+		char cmd[64];
+		char *response;
+		if (config_var.env_chan == 0){
+			sprintf(cmd,"%s_%s",config_var.magnitude,mag_value);
+			response = command_parse(cmd);
+			if(strcmp(response,"OK")){
+				LOG_PRINTF("Error setting %s in the board %s\n",cmd,config_var.board);
+			}
+			else{
+				DEBUG_PRINTF_1("Setting %s in the board %s\n",cmd,config_var.board);
+			}
+		}
+		else{
+			//Concatenate the channel number up to the range specified in the struct
+			for(int j = 0; j < config_var.env_chan; j++){
+				sprintf(cmd,"%s_%d_%s",config_var.magnitude,j,mag_value);
+				response = command_parse(cmd);
+				if(strcmp(response,"OK")){
+					LOG_PRINTF("Error setting %s in the board %s\n",cmd,config_var.board);
+				}
+				else{
+					DEBUG_PRINTF_1("Setting %s in the board %s\n",cmd,config_var.board);
+				}
+			}
+		}
+		json_object_put(jboard);
+		json_object_put(jmag);
+	}
+	json_object_put(jobj); // Free the JSON object
+	return 0;
+}
+
+int config_get(){
+
+	char *config_json = NULL;
+	#ifdef DAQ_MODE
+		std::string config_json_str;
+		std::string dev_name;
+		dev_name = DAQ_Inter->GetDeviceName();
+		DAQ_Inter->GetDeviceConfig(config_json,1,dev_name);
+		strcpy(config_to_apply,config_json_str.c_str());
+	#else
+		// Get the configuration file from config socket
+		int size = 0;
+		size = zmq_recv(config_router, config_json, 4096, 0);
+		if(size < 0){
+			DEBUG_PRINTF_1("Error receiving configuration file from config socket\n");
+			return -EIO;
+		}
+		strcpy(config_to_apply,config_json);
+	#endif
+	return 0;
+}
 /**
  * Takes a COPacket-formatted command and sends it to the indicated digitizer in dig_num
  * through its specific serial port. This function must allocate in the future a way to use

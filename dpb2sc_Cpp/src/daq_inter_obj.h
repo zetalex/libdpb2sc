@@ -1,11 +1,12 @@
 #ifndef __DAQ_INTER_OBJ_H_INCLUDED__
 #define __DAQ_INTER_OBJ_H_INCLUDED__
 
+#define ENV_PARAM 0
+#define CHAN_PARAM 1
+
 #ifdef DAQ_MODE
     #include <daqinterface/DAQInterface.h>
 
-    #define ENV_PARAM 0
-    #define CHAN_PARAM 1
 	#define VARIABLE_TYPE 0
 	#define OPTIONS_TYPE 1
 	#define BUTTONS_TYPE 2
