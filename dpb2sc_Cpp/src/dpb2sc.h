@@ -701,7 +701,7 @@ struct config_element config_variables[] = {
     {"HV", "cpumain", ENV_PARAM, "SET_HV_CPU_MAIN", 0},
     {"HV", "cpubackup", ENV_PARAM, "SET_HV_CPU_BACKUP", 0},
 
-    {"Dig0", "chcontrol", CHAN_PARAM, "SET_DIG0_STATUS", 18},
+    {"Dig0", "chcontrol", CHAN_PARAM, "SET_DIG0_CHCONTROL", 18},
     {"Dig0", "disctres", CHAN_PARAM, "SET_DIG0_DISCTRES", 18},
     {"Dig0", "inttime", CHAN_PARAM, "SET_DIG0_INTTIME", 18},
     {"Dig0", "calib", ENV_PARAM, "SET_DIG0_CALIB", 0},
@@ -724,7 +724,7 @@ struct config_element config_variables[] = {
     {"Dig0", "rmont", ENV_PARAM, "SET_DIG0_RMONT", 0},
     {"Dig0", "deadtime", CHAN_PARAM, "SET_DIG0_DEADTIME", 18},
 
-    {"Dig1", "chcontrol", CHAN_PARAM, "SET_DIG1_STATUS", 18},
+    {"Dig1", "chcontrol", CHAN_PARAM, "SET_DIG1_CHCONTROL", 18},
     {"Dig1", "disctres", CHAN_PARAM, "SET_DIG1_DISCTRES", 18},
     {"Dig1", "inttime", CHAN_PARAM, "SET_DIG1_INTTIME", 18},
     {"Dig1", "calib", ENV_PARAM, "SET_DIG1_CALIB", 0},
