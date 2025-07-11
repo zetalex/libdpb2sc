@@ -4428,44 +4428,42 @@ int config_parse(char *config_json){
 			json_object *jarray_chan = NULL;
 			json_object *jchan = NULL;
 			// Get the channels array and look for the correct parameter
-			for(int j = 0; j < config_var.env_chan; j++){
-				if(!json_object_object_get_ex(jboard,channel_array_name,&jarray_chan)) {
-					LOG_PRINTF("The channel array %s is not present in the board %s in the configuration file\n",channel_array_name,config_var.board);
-					json_object_put(jarray_chan);
-					continue;
-				}
+			if(!json_object_object_get_ex(jboard,channel_array_name,&jarray_chan)) {
+				LOG_PRINTF("The channel array %s is not present in the board %s in the configuration file\n",channel_array_name,config_var.board);
+				continue;
+			}
+			for(int j = 0; j < config_var.chan_n; j++){
 				jchan = json_object_array_get_idx(jarray_chan, j);
 				if(jchan == NULL) {
 					LOG_PRINTF("The channel %d is not present in the board %s in the configuration file\n",j,config_var.board);
-					json_object_put(jarray_chan);
 					continue;
 				}
 				if(!json_object_object_get_ex(jchan,config_var.json_word,&jmag)) {
 					LOG_PRINTF("The word %s is not present in the board %s in the configuration file\n",config_var.json_word,config_var.board);
-					json_object_put(jarray_chan);
+					json_object_put(jchan);
 					continue;
 				}
 				mag_value = json_object_get_string(jmag);
 				if(mag_value == NULL) {
 					LOG_PRINTF("The value of %s in the board %s is not present in the configuration file\n",config_var.json_word,config_var.board);
-					json_object_put(jarray_chan);
+					json_object_put(jchan);
 					continue;
 				}
-			//Concatenate the channel number up to the range specified in the struct
+				//Concatenate the channel number up to the range specified in the struct
 				sprintf(cmd,"%s_%d_%s",config_var.magnitude,j,mag_value);
 				response = command_parse(cmd);
 				if(strcmp(response,"OK")){
 					LOG_PRINTF("Error setting %s in the board %s\n",cmd,config_var.board);
-					json_object_put(jarray_chan);
+					json_object_put(jchan);
 					continue;
 				}
 				else{
 					DEBUG_PRINTF_1("OK Setting %s in the board %s\n",cmd,config_var.board);
-					json_object_put(jarray_chan);
+					json_object_put(jchan);
 					continue;
 				}
-				json_object_put(jarray_chan);
 			}
+			json_object_put(jarray_chan); // Free the JSON array object
 
 		}
 		else{ //Environmental variable
