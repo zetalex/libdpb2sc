@@ -1843,7 +1843,7 @@ int ina3221_set_limits(struct DPB_I2cSensors *data,int n,int ch,int alarm_type ,
 	uint16_t volt_lim;
 	struct I2cDevice dev;
 
-	if(curr >= 1.5)
+	if(curr >= 3.2 || curr <= -3.2) //INA3221 current limits are between -3.2A and 3.2A
 		return EINVAL;
 	switch(n){
 		case DEV_SFP0_2_VOLT:
