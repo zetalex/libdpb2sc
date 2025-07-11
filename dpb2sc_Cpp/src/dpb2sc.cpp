@@ -4426,6 +4426,7 @@ int config_parse(char *config_json){
 				strcpy(channel_array_name,"channels");
 			}
 			json_object *jarray_chan = NULL;
+			json_object *jchan = NULL;
 			// Get the channels array and look for the correct parameter
 			for(int j = 0; j < config_var.env_chan; j++){
 				if(!json_object_object_get_ex(jboard,channel_array_name,&jarray_chan)) {
@@ -4433,12 +4434,13 @@ int config_parse(char *config_json){
 					json_object_put(jarray_chan);
 					continue;
 				}
-				if(!json_object_array_get_idx(jarray_chan, j)) {
+				jchan = json_object_array_get_idx(jarray_chan, j);
+				if(jchan == NULL) {
 					LOG_PRINTF("The channel %d is not present in the board %s in the configuration file\n",j,config_var.board);
 					json_object_put(jarray_chan);
 					continue;
 				}
-				if(!json_object_object_get_ex(jboard,config_var.json_word,&jmag)) {
+				if(!json_object_object_get_ex(jchan,config_var.json_word,&jmag)) {
 					LOG_PRINTF("The word %s is not present in the board %s in the configuration file\n",config_var.json_word,config_var.board);
 					json_object_put(jarray_chan);
 					continue;
