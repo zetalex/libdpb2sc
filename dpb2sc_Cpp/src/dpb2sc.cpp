@@ -3792,7 +3792,7 @@ char* command_parse(const char *key){
 					rc = dig_command_translation(digcmd, cmd, words_n);
 					if(rc){
 						DEBUG_PRINTF_1("DIG0 Command not valid \n");
-						strcpy(board_response,"ERROR: READ operation not successful");
+						strcpy(board_response,"ERROR: DIG0 operation not successful");
 						command_response_string_json(msg_id,board_response,reply);
 					}
 					else{
@@ -3837,7 +3837,7 @@ char* command_parse(const char *key){
 					rc = dig_command_translation(digcmd, cmd, words_n);
 					if(rc){
 						DEBUG_PRINTF_1("DIG1 Command not valid \n");
-						strcpy(board_response,"ERROR: READ operation not successful");
+						strcpy(board_response,"ERROR: DIG1 operation not successful");
 						command_response_string_json(msg_id,board_response,reply);
 					}
 					else{

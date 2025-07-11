@@ -701,7 +701,7 @@ struct config_element config_variables[] = {
     {"HV", "cpumain", ENV_PARAM, "SET_HV_CPU_MAIN", 0},
     {"HV", "cpubackup", ENV_PARAM, "SET_HV_CPU_BACKUP", 0},
 
-    {"Dig0", "status", CHAN_PARAM, "SET_DIG0_STATUS", 18},
+    {"Dig0", "chcontrol", CHAN_PARAM, "SET_DIG0_STATUS", 18},
     {"Dig0", "disctres", CHAN_PARAM, "SET_DIG0_DISCTRES", 18},
     {"Dig0", "inttime", CHAN_PARAM, "SET_DIG0_INTTIME", 18},
     {"Dig0", "calib", ENV_PARAM, "SET_DIG0_CALIB", 0},
@@ -724,7 +724,7 @@ struct config_element config_variables[] = {
     {"Dig0", "rmont", ENV_PARAM, "SET_DIG0_RMONT", 0},
     {"Dig0", "deadtime", CHAN_PARAM, "SET_DIG0_DEADTIME", 18},
 
-    {"Dig1", "status", CHAN_PARAM, "SET_DIG1_STATUS", 18},
+    {"Dig1", "chcontrol", CHAN_PARAM, "SET_DIG1_STATUS", 18},
     {"Dig1", "disctres", CHAN_PARAM, "SET_DIG1_DISCTRES", 18},
     {"Dig1", "inttime", CHAN_PARAM, "SET_DIG1_INTTIME", 18},
     {"Dig1", "calib", ENV_PARAM, "SET_DIG1_CALIB", 0},
@@ -751,7 +751,6 @@ struct config_element config_variables[] = {
     {"DPB", "status", CHAN_PARAM, "SET_DPB_STATUS", 6},
     {"DPB", "ethmain", ENV_PARAM, "SET_DPB_STATUS_ETH0", 0},
     {"DPB", "ethbackup", ENV_PARAM, "SET_DPB_STATUS_ETH1", 0},
-    {"DPB", "templim", CHAN_PARAM, "SET_DPB_TEMP", 6},
     {"DPB", "pcbtemplim", ENV_PARAM, "SET_DPB_TEMP_PCB", 0},
     {"DPB", "fpgatemplim", ENV_PARAM, "SET_DPB_TEMP_FPGA", 0},
     {"DPB", "lpdcputemplim", ENV_PARAM, "SET_DPB_TEMP_FPDCPU", 0},
@@ -910,7 +909,7 @@ const char *dig_dpb_words[] = {
     "READ HG",
     "READ STATUS", 
     "READ CHCONTROL",
-    "SET STATUS", // TODO: Ask Fabrizio
+    "SET CHCONTROL", // TODO: Ask Fabrizio
     "SET FESTATUS ON",
     "SET FESTATUS OFF",
     "SET DAQSTATUS ON",
