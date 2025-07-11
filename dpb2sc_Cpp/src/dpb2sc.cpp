@@ -4440,13 +4440,11 @@ int config_parse(char *config_json){
 				}
 				if(!json_object_object_get_ex(jchan,config_var.json_word,&jmag)) {
 					LOG_PRINTF("The word %s is not present in the board %s in the configuration file\n",config_var.json_word,config_var.board);
-					json_object_put(jchan);
 					continue;
 				}
 				mag_value = json_object_get_string(jmag);
 				if(mag_value == NULL) {
 					LOG_PRINTF("The value of %s in the board %s is not present in the configuration file\n",config_var.json_word,config_var.board);
-					json_object_put(jchan);
 					continue;
 				}
 				//Concatenate the channel number up to the range specified in the struct
@@ -4454,17 +4452,13 @@ int config_parse(char *config_json){
 				response = command_parse(cmd);
 				if(strcmp(response,"OK")){
 					LOG_PRINTF("Error setting %s in the board %s\n",cmd,config_var.board);
-					json_object_put(jchan);
 					continue;
 				}
 				else{
 					DEBUG_PRINTF_1("OK Setting %s in the board %s\n",cmd,config_var.board);
-					json_object_put(jchan);
 					continue;
 				}
 			}
-			json_object_put(jarray_chan); // Free the JSON array object
-
 		}
 		else{ //Environmental variable
 			if(!json_object_object_get_ex(jboard,config_var.json_word,&jmag)) {
@@ -4487,8 +4481,6 @@ int config_parse(char *config_json){
 				continue;
 			}
 		}
-		json_object_put(jboard);
-		json_object_put(jmag);
 	}
 	json_object_put(jobj); // Free the JSON object
 	return 0;
