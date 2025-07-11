@@ -4505,7 +4505,7 @@ int config_parse(char *config_json){
  */
 int config_get(){
 
-	char *config_json = NULL;
+	char config_json[MAX_CONFIG_SIZE];
 	#ifdef DAQ_MODE
 		std::string config_json_str;
 		std::string dev_name;
@@ -4515,7 +4515,7 @@ int config_get(){
 	#else
 		// Get the configuration file from config socket
 		int size = 0;
-		size = zmq_recv(config_router, config_json, 4096, 0);
+		size = zmq_recv(config_router, config_json, MAX_CONFIG_SIZE, 0);
 		if(size < 0){
 			DEBUG_PRINTF_1("Error receiving configuration file from config socket\n");
 			return -EIO;

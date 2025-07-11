@@ -348,7 +348,6 @@ int count_fails_until_success = 0;
 int count_since_reset = 0;
 int daq_flag = 0;
 int debug_flag = 0; //Debug flag to control the debug level of the application
-char config_to_apply[4096];
 
 /************************** SFP Related Variables *****************************/
 /** @defgroup SFP_I2C SFP Related Variables
@@ -773,6 +772,9 @@ struct config_element config_variables[90] = {
     
 }; 
 
+#define MAX_CONFIG_SIZE 32768
+/** @brief JSON variable to store current configuration */
+char config_to_apply[MAX_CONFIG_SIZE];
 /******************************************************************************
 LV Command Data.
 ****************************************************************************/
