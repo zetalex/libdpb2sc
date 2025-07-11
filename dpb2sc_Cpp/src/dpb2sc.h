@@ -687,7 +687,7 @@ struct config_element {
     int chan_n;
 };
 
-struct config_element config_variables[90] = {
+struct config_element config_variables[77] = {
     {"LV", "status", CHAN_PARAM, "SET_LV_STATUS", 8},
     {"LV", "voltagelimit", CHAN_PARAM, "SET_LV_VOLT", 8},
     {"LV", "currentlimit", CHAN_PARAM, "SET_LV_CURR", 8},
