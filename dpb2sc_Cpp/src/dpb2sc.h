@@ -681,13 +681,13 @@ Configuration Data.
 
 struct config_element {
     char board[8];
-    char json_word[16];
+    const char *json_word;
     int env_chan;
-    char magnitude[32];
+    const char *magnitude;
     int chan_n;
 };
 
-struct config_element config_variables[77] = {
+struct config_element config_variables[] = {
     {"LV", "status", CHAN_PARAM, "SET_LV_STATUS", 8},
     {"LV", "voltagelimit", CHAN_PARAM, "SET_LV_VOLT", 8},
     {"LV", "currentlimit", CHAN_PARAM, "SET_LV_CURR", 8},

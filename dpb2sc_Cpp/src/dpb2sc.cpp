@@ -4450,14 +4450,7 @@ int config_parse(char *config_json){
 				//Concatenate the channel number up to the range specified in the struct
 				sprintf(cmd,"%s_%d_%s",config_var.magnitude,j,mag_value);
 				response = command_parse(cmd);
-				if(strcmp(response,"OK")){
-					LOG_PRINTF("Error setting %s in the board %s. %s\n",cmd,config_var.board,response);
-					continue;
-				}
-				else{
-					DEBUG_PRINTF_1("OK Setting %s in the board %s\n",cmd,config_var.board);
-					continue;
-				}
+				LOG_PRINTF("Setting %s in the board %s with response %s\n",cmd,config_var.board,response);
 			}
 		}
 		else{ //Environmental variable
@@ -4472,14 +4465,7 @@ int config_parse(char *config_json){
 			}
 			sprintf(cmd,"%s_%s",config_var.magnitude,mag_value);
 			response = command_parse(cmd);
-			if(strcmp(response,"OK")){
-				LOG_PRINTF("Error setting %s in the board %s\n",cmd,config_var.board);
-				continue;
-			}
-			else{
-				DEBUG_PRINTF_1("OK Setting %s in the board %s\n",cmd,config_var.board);
-				continue;
-			}
+			LOG_PRINTF("Setting %s in the board %s with response %s\n",cmd,config_var.board,response);
 		}
 	}
 	json_object_put(jobj); // Free the JSON object
