@@ -4415,15 +4415,18 @@ int config_parse(char *config_json){
 		}
 		json_object *jmag = NULL;
 		char channel_array_name[12];
+		char channel_extra[12];
 		const char *mag_value;
 		char cmd[64];
 		char *response;
 		if(config_var.env_chan == CHAN_PARAM){ //Channel parameter
 			if(!strcmp(config_var.board,"DPB")){
 				strcpy(channel_array_name,"SFPs");
+				strcpy(channel_extra,"SFP");
 			}
 			else{
 				strcpy(channel_array_name,"channels");
+				strcpy(channel_extra,"");
 			}
 			json_object *jarray_chan = NULL;
 			json_object *jchan = NULL;
@@ -4448,7 +4451,7 @@ int config_parse(char *config_json){
 					continue;
 				}
 				//Concatenate the channel number up to the range specified in the struct
-				sprintf(cmd,"%s_%d_%s",config_var.magnitude,j,mag_value);
+				sprintf(cmd,"%s_%s%d_%s",config_var.magnitude,channel_extra,j,mag_value);
 				response = command_parse(cmd);
 				LOG_PRINTF("Setting %s in the board %s with response %s\n",cmd,config_var.board,response);
 			}
