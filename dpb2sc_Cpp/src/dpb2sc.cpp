@@ -4451,7 +4451,7 @@ int config_parse(char *config_json){
 				sprintf(cmd,"%s_%d_%s",config_var.magnitude,j,mag_value);
 				response = command_parse(cmd);
 				if(strcmp(response,"OK")){
-					LOG_PRINTF("Error setting %s in the board %s\n",cmd,config_var.board);
+					LOG_PRINTF("Error setting %s in the board %s. %s\n",cmd,config_var.board,response);
 					continue;
 				}
 				else{
