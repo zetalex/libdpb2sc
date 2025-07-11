@@ -3709,7 +3709,8 @@ char* command_parse(const char *key){
 				strcpy(board_dev,"/dev/ttyUL3");
 				#endif
 				//Command conversion
-				char hvlvcmd[40] =  "$BD:0,$CMD:";
+				char hvlvcmd[64];  
+				strcpy(hvlvcmd,"$BD:0,$CMD:");
 				rc = hv_lv_command_translation(hvlvcmd, cmd, words_n);
 				//RS485 communication
 				rc = hv_lv_command_handling(board_dev,hvlvcmd, board_response);
@@ -3744,7 +3745,8 @@ char* command_parse(const char *key){
 			else if(hv_connected){
 				char board_dev[64] = "/dev/ttyUL3";
 				//Command conversion
-				char hvlvcmd[40] =  "$BD:1,$CMD:";
+				char hvlvcmd[64];  
+				strcpy(hvlvcmd,"$BD:1,$CMD:");
 				rc = hv_lv_command_translation(hvlvcmd, cmd, words_n);
 				if(rc){
 					DEBUG_PRINTF_1("HV/LV Command not valid \n");

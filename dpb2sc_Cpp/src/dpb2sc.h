@@ -689,8 +689,6 @@ struct config_element {
 
 struct config_element config_variables[] = {
     {"LV", "status", CHAN_PARAM, "SET_LV_STATUS", 8},
-    {"LV", "voltagelimit", CHAN_PARAM, "SET_LV_VOLT", 8},
-    {"LV", "currentlimit", CHAN_PARAM, "SET_LV_CURR", 8},
     {"LV", "cpumain", ENV_PARAM, "SET_LV_CPU_MAIN", 0},
     {"LV", "cpubackup", ENV_PARAM, "SET_LV_CPU_BACKUP", 0},
 
