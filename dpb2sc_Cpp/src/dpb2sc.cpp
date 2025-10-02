@@ -2693,8 +2693,22 @@ int write_GPIO(int address, int value){
     snprintf(val_add, 64, "/sys/class/gpio/gpio%d/value", add);
 
     fd1 = fopen(dir_add,"w");
-    fwrite(dir, sizeof(dir), 1,fd1);
+	if(fd1 == NULL){
+		sem_post(&file_sync);
+		return -EINVAL;
+	}
+
+	/* Check that out is not already written, as rewriting it can cause unexpected changes of value*/
+	fseek(fd1, 0, SEEK_END);
+	long fsize = ftell(fd1);
+	fseek(fd1, 0, SEEK_SET);  /* same as rewind(f); */
+	char *dir_string = static_cast<char *>(malloc(fsize + 1));
+	fread(dir_string, fsize, 1, fd1);
+	if(strcmp(dir_string,"out")){
+		fwrite(dir, sizeof(dir), 1,fd1);
+	}
     fclose(fd1);
+	free(dir_string);
 
     fd2 = fopen(val_add,"w");
     fwrite(val,sizeof(val), 1,fd2);
