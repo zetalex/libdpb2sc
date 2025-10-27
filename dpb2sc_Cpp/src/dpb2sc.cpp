@@ -42,6 +42,11 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		return rc;
 	get_GPIO_base_address(&GPIO_BASE_ADDRESS);
 	init_GPIO();
+	zmq_context = zmq_ctx_new();
+	if (!zmq_context) {
+		printf("Error creating ZMQ context\r\n");
+		return -1;
+	}
 	#ifdef DAQ_MODE
 		std::string dev_name;
 		char interface_config_file[64];
@@ -60,6 +65,20 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 			return rc;
 		}
 	#endif
+	
+	// Initialize DAQ Readout Publisher for communicating with data taking app
+	int sndhwm_data_control = 2;
+	int linger = 0;
+	size_t sndhwm_data_control_size = sizeof(sndhwm_data_control);
+	size_t linger_size = sizeof(linger);
+	daq_readout_publisher = zmq_socket(zmq_context, ZMQ_PUB);
+    zmq_setsockopt(daq_readout_publisher, ZMQ_SNDHWM, &sndhwm_data_control, sndhwm_data_control_size);
+    zmq_setsockopt(daq_readout_publisher, ZMQ_RCVHWM, &sndhwm_data_control, sndhwm_data_control_size);
+    zmq_setsockopt (daq_readout_publisher, ZMQ_LINGER, &linger, linger_size);
+    rc = zmq_connect(daq_readout_publisher, "tcp://127.0.0.1:4444");
+	if (rc) {
+		return rc;
+	}
 	rc = init_I2cSensors(data); //Initialize i2c sensors
 	if (rc) {
 		DEBUG_PRINTF_1("Error initialising I2C Sensors\r\n");
@@ -3193,7 +3212,6 @@ int zmq_socket_init (){
 	size_t linger_size = sizeof(linger);
 	size_t sndhwm_logging_size = sizeof(sndhwm_logging);
 
-    zmq_context = zmq_ctx_new();
     mon_publisher = zmq_socket(zmq_context, ZMQ_PUB);
 
     zmq_setsockopt(mon_publisher, ZMQ_SNDHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
@@ -3251,36 +3269,23 @@ int zmq_socket_init (){
  * @return 0 if succeeded to destroy ZMQ sockets. Returns errno depending on the function that failed
  */
 int zmq_socket_destroy (){
-	int rc = 0;
-	rc = zmq_close(mon_publisher);
-	if(rc){
-		return errno;
-	}
-	rc = zmq_close(alarm_publisher);
-	if(rc){
-		return errno;
-	}
-	rc = zmq_close(cmd_router);
-	if(rc){
-		return errno;
-	}
-	rc = zmq_close(logging_publisher);
-	if(rc){
-		return errno;
-	}
-	rc = zmq_close(config_router);
-	if(rc){
-		return errno;
-	}
-	rc = zmq_ctx_shutdown(zmq_context);
-	if(rc){
-		return errno;
-	}
-	rc = zmq_ctx_destroy(zmq_context);
-	if(rc){
-		return errno;
-	}
-   return rc;
+	zmq_close(mon_publisher);
+
+	zmq_close(alarm_publisher);
+
+	zmq_close(cmd_router);
+
+	zmq_close(logging_publisher);
+
+	zmq_close(config_router);
+
+	zmq_close(daq_readout_publisher);
+
+	zmq_ctx_shutdown(zmq_context);
+
+	zmq_ctx_destroy(zmq_context);
+
+   return 0;
 }
 /** @} */
 /************************** Hash Tables Functions ******************************/
@@ -4025,7 +4030,41 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				LOG_PRINTF("DEBUG LEVEL SET TO %d \n",debug_flag);
 				goto end;
 			}
-
+			if(strcmp(cmd[2],"STATUS")==0){
+				if(strcmp(cmd[3],"DMA") == 0){
+					if(strcmp(cmd[0],"READ") == 0){
+						rc = command_status_response_json (msg_id,dma_flag,cmd_reply);
+						goto end;
+					}
+					else{
+						char dma_message[32];
+						char topic[32];
+						bool_set=((strcmp(cmd[4],"ON") == 0)?(1):(0));
+						dma_flag = bool_set;
+						strcpy(topic,"control");
+						if(dma_flag){
+							strcpy(dma_message,"start");
+						}
+						else{
+							strcpy(dma_message,"pause");
+						}
+						rc = zmq_send(daq_readout_publisher,topic,strlen(topic),ZMQ_SNDMORE);
+						if(rc < 0){
+							LOG_PRINTF("Error sending DMA START message to DAQ Readout\n");
+							rc = command_status_response_json(msg_id,-ERRSET,cmd_reply);
+						}
+						rc = zmq_send(daq_readout_publisher,dma_message,strlen(dma_message),0);
+						if(rc < 0){
+							LOG_PRINTF("Error sending DMA START message to DAQ Readout\n");
+							rc = command_status_response_json(msg_id,-ERRSET,cmd_reply);
+						}
+						else {
+							rc = command_status_response_json(msg_id,99,cmd_reply);
+							goto end;
+						}
+					}
+				}
+			}
 			if(strcmp(cmd[2],"STATUS") == 0){
 				if(strcmp(cmd[0],"READ") == 0){
 					if(strcmp(cmd[3],"ETH0") == 0){
@@ -4037,7 +4076,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						rc = command_status_response_json (msg_id,bool_read[0],cmd_reply);
 						goto end;
 					}
-					else{
+					else {
 						rc = eth_link_status("eth1",bool_read);
 						if(rc){
 							rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);

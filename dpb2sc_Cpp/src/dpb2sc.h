@@ -168,6 +168,7 @@ void *alarm_publisher ;
 void *cmd_router;
 void *logging_publisher;
 void *config_router;
+void *daq_readout_publisher;
 /************************** Function Prototypes ******************************/
 
 int dpbsc_lib_init(struct DPB_I2cSensors *);
@@ -348,6 +349,7 @@ int count_fails_until_success = 0;
 int count_since_reset = 0;
 int daq_flag = 0;
 int debug_flag = 0; //Debug flag to control the debug level of the application
+int dma_flag = 0; //DMA flag to indicate if DMA is enabled or not
 
 /************************** SFP Related Variables *****************************/
 /** @defgroup SFP_I2C SFP Related Variables
