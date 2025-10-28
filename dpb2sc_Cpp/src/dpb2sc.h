@@ -726,6 +726,9 @@ struct config_element config_variables[] = {
     {"Dig0", "clock", ENV_PARAM, "SET_DIG0_CLOCK", 0},
     {"Dig0", "rmont", ENV_PARAM, "SET_DIG0_RMONT", 0},
     {"Dig0", "deadtime", CHAN_PARAM, "SET_DIG0_DEADTIME", 18},
+    {"Dig0", "gainlow", ENV_PARAM, "SET_DIG0_GAINLOW", 0},
+    {"Dig0", "gainhigh", ENV_PARAM, "SET_DIG0_GAINHIGH", 0},
+    {"Dig0", "5v0a", ENV_PARAM, "SET_DIG0_5V0A", 0},
 
     {"Dig1", "chcontrol", CHAN_PARAM, "SET_DIG1_CHCONTROL", 18},
     {"Dig1", "disctres", CHAN_PARAM, "SET_DIG1_DISCTRES", 18},
@@ -750,6 +753,9 @@ struct config_element config_variables[] = {
     {"Dig1", "clock", ENV_PARAM, "SET_DIG1_CLOCK", 0},
     {"Dig1", "rmont", ENV_PARAM, "SET_DIG1_RMONT", 0},
     {"Dig1", "deadtime", CHAN_PARAM, "SET_DIG1_DEADTIME", 18},
+    {"Dig1", "gainlow", ENV_PARAM, "SET_DIG1_GAINLOW", 0},
+    {"Dig1", "gainhigh", ENV_PARAM, "SET_DIG1_GAINHIGH", 0},
+    {"Dig1", "5v0a", ENV_PARAM, "SET_DIG1_5V0A", 0},
 
     {"DPB", "status", CHAN_PARAM, "SET_DPB_STATUS", 6},
     {"DPB", "ethmain", ENV_PARAM, "SET_DPB_STATUS_ETH0", 0},
@@ -885,7 +891,7 @@ char HV_SN[8];
 Digitizer Command Data.
 ****************************************************************************/
 
-#define DIG_STANDARD_CMD_TABLE_SIZE 84
+#define DIG_STANDARD_CMD_TABLE_SIZE 96
 
 const char *dig_dpb_words[] = {
 	"READ DISCTRES",
@@ -908,6 +914,8 @@ const char *dig_dpb_words[] = {
     "SET CALIBMUTE",
     "SET CALIBSEN",
     "SET CALIBPER",
+    "SET GAINLOW",
+    "SET GAINHIGH",
     "READ LG",
     "READ HG",
     "READ STATUS", 
@@ -917,6 +925,7 @@ const char *dig_dpb_words[] = {
     "SET FESTATUS OFF",
     "SET DAQSTATUS ON",
     "SET DAQSTATUS OFF",
+    "READ FMON",
     "SET FESTATUS ALL ON",
     "SET FESTATUS ALL OFF",
     "SET DAQSTATUS ALL ON",
@@ -953,6 +962,8 @@ const char *dig_dpb_words[] = {
     "READ RMONMUX",
     "READ RMONRST",
     "SET RMONRUN",
+    "SET RMON ON",
+    "SET RMON OFF",
     "READ 3V3A",
     "READ 12VA",
     "READ I12V",
@@ -968,13 +979,20 @@ const char *dig_dpb_words[] = {
     "READ TFER",
     "READ TFPGAR",
     "READ TPWRR",
+    "READ TCH0",
+    "READ TCH11",
+    "READ TCH0R",
+    "READ TCH11R",
+    "READ 5V0D",
+    "READ I5V0D",
+    "SET 5V0A",
     "READ BME",
     "READ TEMP",
     "READ RELHUM",
     "READ PRESS",
     NULL
 };
-#define DIG_MON_BOARD_CODES_SIZE 28
+#define DIG_MON_BOARD_CODES_SIZE 34
 const int dig_monitor_mag_board_codes[] = {
     // Board monitoring
     HKDIG_GET_GW_VER,
@@ -999,16 +1017,22 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BOARD_I5VA,
     HKDIG_GET_BOARD_I3V3A,
     HKDIG_GET_BOARD_I12VA,
-    HKDIG_GET_BOARD_TU40,
-    HKDIG_GET_BOARD_TU41,
-    HKDIG_GET_BOARD_TU45,
+    HKDIG_GET_BOARD_TFE,
+    HKDIG_GET_BOARD_TFPGA,
+    HKDIG_GET_BOARD_TPWR,
     HKDIG_GET_PED_STAGGER,
     HKDIG_GET_PED_PERIOD,
+    HKDIG_GET_BOARD_TCH0,
+    HKDIG_GET_BOARD_TCH11,
+    HKDIG_GET_BOARD_TCH0R,
+    HKDIG_GET_BOARD_TCH11R,
+    HKDIG_GET_BOARD_5VOD,
+    HKDIG_GET_BOARD_I5VOD,
 	// BME280 commands
     HKDIG_GET_BME_DATA
 };
 
-#define DIG_MON_CHAN_CODES_SIZE 11
+#define DIG_MON_CHAN_CODES_SIZE 12
 const int dig_monitor_mag_chan_codes[] = {
     // Channel monitoring
     HKDIG_GET_THR_NUM,
@@ -1021,7 +1045,8 @@ const int dig_monitor_mag_chan_codes[] = {
     HKDIG_GET_RMON_TDC_N,
     HKDIG_GET_RMON_FMT_N,
     HKDIG_GET_CHN_LG_CHG,
-    HKDIG_GET_CHN_HG_CHG
+    HKDIG_GET_CHN_HG_CHG,
+    HKDIG_RO_FMON_N,
 };
 
 const char *dig_monitor_mag_board_names[] = {
@@ -1052,6 +1077,12 @@ const char *dig_monitor_mag_board_names[] = {
     "TPWR",
     "PEDSTAG",
     "PEDPERIOD",
+    "tch0",
+    "tch11",
+    "tch0r",
+    "tch11r",
+    "5V0D",
+    "I5V0D",
     "bmedata"
 };
 
@@ -1066,7 +1097,8 @@ const char *dig_monitor_mag_chan_names[] = {
     "rmontdc",
     "rmonfmt",
     "lgchg",
-    "hgchg"
+    "hgchg",
+    "fmon"
 };
 
 /** @brief Detected Dig0 Serial Number */

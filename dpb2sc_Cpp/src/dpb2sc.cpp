@@ -4807,11 +4807,11 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_BOARD_I12VA:
 
 		// Read Temperature from LTM84 sensors
-		case HKDIG_GET_BOARD_TU40:
+		case HKDIG_GET_BOARD_TFE:
 
-		case HKDIG_GET_BOARD_TU41:
+		case HKDIG_GET_BOARD_TFPGA:
 
-		case HKDIG_GET_BOARD_TU45:
+		case HKDIG_GET_BOARD_TPWR:
 
 		// Get all sensors data from BME280
 		case HKDIG_GET_BME_DATA:
@@ -4835,6 +4835,18 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		//Get Pedestal Stagger
 		case HKDIG_GET_PED_STAGGER:
+
+		//Get Board TCHs
+		case HKDIG_GET_BOARD_TCH0:
+		case HKDIG_GET_BOARD_TCH11:
+		case HKDIG_GET_BOARD_TCH0R:
+		case HKDIG_GET_BOARD_TCH11R:
+		case HKDIG_GET_BOARD_5VOD:
+		case HKDIG_GET_BOARD_I5VOD:
+
+		// Set RMON enable or disable
+		case HKDIG_RUN_RMON_EN:
+		case HKDIG_RUN_RMON_DIS:
 		
 			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
 			break;
@@ -4897,7 +4909,14 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_PED_STAGGER:
 
 		case HKDIG_SET_ADS_PSC:
+
+		case HKDIG_RO_FMON_N:
+
+		case HKDIG_SET_CAL_GAIN_LOW:
+		case HKDIG_SET_CAL_GAIN_HIGH:
 		
+		case HKDIG_SET_5V0A:
+
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
@@ -5017,9 +5036,9 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 						float_value = float_value / 1000;  // Convert from mA to A or from mV to V
 						command_response_json(msg_id,float_value,reply);
 						break;
-					case HKDIG_GET_BOARD_TU40:
-					case HKDIG_GET_BOARD_TU41:
-					case HKDIG_GET_BOARD_TU45:
+					case HKDIG_GET_BOARD_TFE:
+					case HKDIG_GET_BOARD_TFPGA:
+					case HKDIG_GET_BOARD_TPWR:
 						float_value = atof(value);
 						float_value = float_value / 100;  // Convert to degrees
 						command_response_json(msg_id,float_value,reply);
