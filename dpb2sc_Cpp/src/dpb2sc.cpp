@@ -4065,6 +4065,31 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					}
 				}
 			}
+
+			if(strcmp(cmd[2],"DMASOURCE") == 0){
+				char dma_source_str[16];
+				if(strcmp(cmd[0],"READ") == 0){
+					strcpy(dma_source_str,(dma_source_flag)?"DIG":"COUNTER");
+					rc = command_response_string_json(msg_id,dma_source_str,cmd_reply);
+					goto end;
+				}
+				else{
+					if(strcmp(cmd[3],"DIG") == 0){
+						dma_source_flag = 1;
+					}
+					else if(strcmp(cmd[3],"COUNTER") == 0){
+						dma_source_flag = 0;
+					}
+					else {
+						rc = command_status_response_json(msg_id,-EINVAL,cmd_reply);
+						goto end;
+					}
+					write_GPIO(DMA_SOURCE,dma_source_flag);
+					rc = command_status_response_json (msg_id,99,cmd_reply);
+					goto end;
+				}
+			}
+
 			if(strcmp(cmd[2],"STATUS") == 0){
 				if(strcmp(cmd[0],"READ") == 0){
 					if(strcmp(cmd[3],"ETH0") == 0){
