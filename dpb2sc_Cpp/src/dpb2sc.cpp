@@ -3212,6 +3212,9 @@ int zmq_socket_init (){
 	size_t linger_size = sizeof(linger);
 	size_t sndhwm_logging_size = sizeof(sndhwm_logging);
 
+	if(zmq_context == NULL){
+		zmq_context = zmq_ctx_new();
+	}
     mon_publisher = zmq_socket(zmq_context, ZMQ_PUB);
 
     zmq_setsockopt(mon_publisher, ZMQ_SNDHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
