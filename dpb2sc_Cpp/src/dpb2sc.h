@@ -729,6 +729,8 @@ struct config_element config_variables[] = {
     {"Dig0", "gainlow", ENV_PARAM, "SET_DIG0_GAINLOW", 0},
     {"Dig0", "gainhigh", ENV_PARAM, "SET_DIG0_GAINHIGH", 0},
     {"Dig0", "5v0a", ENV_PARAM, "SET_DIG0_5V0A", 0},
+    {"Dig0", "5v0e", ENV_PARAM, "SET_DIG0_5V0E", 0},
+    {"Dig0", "tbreg", ENV_PARAM, "SET_DIG0_TBREG", 0},
 
     {"Dig1", "chcontrol", CHAN_PARAM, "SET_DIG1_CHCONTROL", 18},
     {"Dig1", "disctres", CHAN_PARAM, "SET_DIG1_DISCTRES", 18},
@@ -756,6 +758,8 @@ struct config_element config_variables[] = {
     {"Dig1", "gainlow", ENV_PARAM, "SET_DIG1_GAINLOW", 0},
     {"Dig1", "gainhigh", ENV_PARAM, "SET_DIG1_GAINHIGH", 0},
     {"Dig1", "5v0a", ENV_PARAM, "SET_DIG1_5V0A", 0},
+    {"Dig1", "5v0e", ENV_PARAM, "SET_DIG1_5V0E", 0},
+    {"Dig1", "tbreg", ENV_PARAM, "SET_DIG1_TBREG", 0},
 
     {"DPB", "status", CHAN_PARAM, "SET_DPB_STATUS", 6},
     {"DPB", "ethmain", ENV_PARAM, "SET_DPB_STATUS_ETH0", 0},
