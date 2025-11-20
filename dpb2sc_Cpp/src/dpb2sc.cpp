@@ -3286,7 +3286,9 @@ int zmq_socket_destroy (){
 
 	zmq_ctx_shutdown(zmq_context);
 
-	zmq_ctx_destroy(zmq_context);
+	zmq_ctx_term(zmq_context);
+
+	zmq_context = NULL;
 
    return 0;
 }
