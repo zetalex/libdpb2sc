@@ -891,7 +891,7 @@ char HV_SN[8];
 Digitizer Command Data.
 ****************************************************************************/
 
-#define DIG_STANDARD_CMD_TABLE_SIZE 96
+#define DIG_STANDARD_CMD_TABLE_SIZE (sizeof(dig_dpb_words)/sizeof(dig_dpb_words[0]) - 1)
 
 const char *dig_dpb_words[] = {
 	"READ DISCTRES",
@@ -942,10 +942,10 @@ const char *dig_dpb_words[] = {
     "SET ODSEL",
     "READ ODSEL",
     "READ GWVER",
+    "READ GWDATE",
     "READ SWVER",
     "READ BDSTATUS",
     "READ BDCONTROL",
-    "READ BDCONTROL2",
     "READ UPTIME",
     "SET AURORARST",
     "SET CLOCK",
@@ -986,20 +986,23 @@ const char *dig_dpb_words[] = {
     "READ 5V0D",
     "READ I5V0D",
     "SET 5V0A",
+    "SET 5V0E",
+    "SET TBREG",
+    "READ TBREG",
     "READ BME",
     "READ TEMP",
     "READ RELHUM",
     "READ PRESS",
     NULL
 };
-#define DIG_MON_BOARD_CODES_SIZE 34
+#define DIG_MON_BOARD_CODES_SIZE sizeof(dig_monitor_mag_board_codes)/sizeof(dig_monitor_mag_board_codes[0])
 const int dig_monitor_mag_board_codes[] = {
     // Board monitoring
     HKDIG_GET_GW_VER,
+    HKDIG_GET_GW_DATE,
     HKDIG_GET_SW_VER,
     HKDIG_GET_BOARD_STATUS,
     HKDIG_GET_BOARD_CNTRL,
-    HKDIG_GET_BOARD_CNTRL2,
     HKDIG_GET_UPTIME,
     HKDIG_GET_RMON_PER,
     HKDIG_GET_RMON_MUX_N,
@@ -1028,11 +1031,12 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BOARD_TCH11R,
     HKDIG_GET_BOARD_5VOD,
     HKDIG_GET_BOARD_I5VOD,
+    HKDIG_GET_TB_REG,
 	// BME280 commands
     HKDIG_GET_BME_DATA
 };
 
-#define DIG_MON_CHAN_CODES_SIZE 12
+#define DIG_MON_CHAN_CODES_SIZE sizeof(dig_monitor_mag_chan_codes)/sizeof(dig_monitor_mag_chan_codes[0])
 const int dig_monitor_mag_chan_codes[] = {
     // Channel monitoring
     HKDIG_GET_THR_NUM,
@@ -1051,10 +1055,10 @@ const int dig_monitor_mag_chan_codes[] = {
 
 const char *dig_monitor_mag_board_names[] = {
 	"GWVer",
+    "GWDate",
     "SWVer",
     "BDStatus",
     "BDCntrl",
-    "BDCntrl2",
     "BDUptime",
     "RMONT",
     "RMONMUX",
@@ -1083,6 +1087,7 @@ const char *dig_monitor_mag_board_names[] = {
     "tch11r",
     "5V0D",
     "I5V0D",
+    "TBREG",
     "bmedata"
 };
 

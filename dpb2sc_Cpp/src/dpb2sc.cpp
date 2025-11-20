@@ -4739,6 +4739,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_RST_AURORA_LINK:
 		case HKDIG_GET_GW_VER:
 
+		case HKDIG_GET_GW_DATE:
+
 		// Calibration board commands
 		case HKDIG_GET_CAL_PLS_AMP:
 
@@ -4763,7 +4765,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		case HKDIG_GET_BOARD_CNTRL:
 
-		case HKDIG_GET_BOARD_CNTRL2:
+		case HKDIG_GET_TB_REG:
 
 		// Get TLink lock status
 		case HKDIG_GET_TLNK_LOCK:
@@ -4919,6 +4921,9 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_CAL_GAIN_HIGH:
 		
 		case HKDIG_SET_5V0A:
+		case HKDIG_SET_5V0A_EEPROM:
+
+		case HKDIG_SET_TB_REG:
 
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
