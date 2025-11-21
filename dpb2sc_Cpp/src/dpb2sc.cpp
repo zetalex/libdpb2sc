@@ -4134,7 +4134,9 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 
 			if(strcmp(cmd[2],"MULTIBOOTREG") == 0){
 				if(strcmp(cmd[0],"READ") == 0){
-					rc = command_response_json(msg_id,dpb_multiboot_reg,cmd_reply);
+					char multiboot_reg_str[12];
+					snprintf(multiboot_reg_str, sizeof(multiboot_reg_str), "0x%08X", dpb_multiboot_reg);
+					rc = command_response_string_json(msg_id,multiboot_reg_str,cmd_reply);
 					goto end;
 				}
 			}
