@@ -137,6 +137,36 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	#endif
 
 	usleep(500000);
+
+	// Read serial number
+	LOG_PRINTF("DPB Slow Control Library\n");
+	int fd_serial = open("/etc/dpb_serial_number", O_RDWR);
+	if(fd_serial < 0){
+		LOG_PRINTF("Error opening DPB serial number file\n");
+	}
+	else{
+		read(fd_serial, dpb_sn, 8);
+		LOG_PRINTF("DPB SN %s\n", dpb_sn);
+		close(fd_serial);
+	}
+
+	// Read and check multiboot register
+	int config_reg_fd = open("/sys/firmware/zynqmp/config_reg", O_RDWR);
+	char multiboot_reg_offset_str[32];
+	snprintf(multiboot_reg_offset_str, sizeof(multiboot_reg_offset_str), "0x%lx", CSU_MULTIBOOT_REGISTER_OFFSET);
+	write(config_reg_fd, multiboot_reg_offset_str, strlen(multiboot_reg_offset_str));
+	char multiboot_reg_value_str[32];
+	lseek(config_reg_fd, 0, SEEK_SET);
+	read(config_reg_fd, multiboot_reg_value_str, sizeof(multiboot_reg_value_str));
+	dpb_multiboot_reg = strtoul(multiboot_reg_value_str, NULL, 16);
+	if(dpb_multiboot_reg != 0){
+		uint16_t backup_image_n = dpb_multiboot_reg >> 9;
+		LOG_PRINTF("Warning: DPB loaded backup image %u. Multiboot register value: 0x%08X\n", backup_image_n, dpb_multiboot_reg);
+	}
+	else{
+		LOG_PRINTF("DPB loaded primary image . Multiboot register value: 0x%08X\n", dpb_multiboot_reg);
+	}
+
 	// Enable HV LV Primary driver only
 	write_GPIO(HVLV_DRV_ENABLE_PRI_GPIO_OFFSET,1);
 	write_GPIO(HVLV_DRV_ENABLE_SEC_GPIO_OFFSET,0);
@@ -4091,6 +4121,20 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					}
 					write_GPIO(DMA_SOURCE,dma_source_flag);
 					rc = command_status_response_json (msg_id,99,cmd_reply);
+					goto end;
+				}
+			}
+
+			if(strcmp(cmd[2],"SNUM") == 0){
+				if(strcmp(cmd[0],"READ") == 0){
+					rc = command_response_string_json (msg_id,dpb_sn,cmd_reply);
+					goto end;
+				}
+			}
+
+			if(strcmp(cmd[2],"MULTIBOOTREG") == 0){
+				if(strcmp(cmd[0],"READ") == 0){
+					rc = command_response_json(msg_id,dpb_multiboot_reg,cmd_reply);
 					goto end;
 				}
 			}

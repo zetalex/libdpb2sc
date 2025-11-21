@@ -276,6 +276,7 @@ int write_uio(int, uint32_t);
 #define SFP_NUM 6
 #define DIGITIZER_0 0
 #define DIGITIZER_1 1
+#define CSU_MULTIBOOT_REGISTER_OFFSET 0x00FFCA0010 
 
 #ifdef DAQ_MODE
 int daq_init_sc_vars();
@@ -647,6 +648,9 @@ int memoryID;
 /** @brief Shared Memory segment */
 struct wrapper *memory;
 /** @} */
+
+char dpb_sn[16];
+uint32_t dpb_multiboot_reg = 0;
 
 #define BIT(nr) (1UL << (nr))
 /******************************************************************************
