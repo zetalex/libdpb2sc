@@ -2137,6 +2137,25 @@ int parsing_mon_environment_data_into_object(json_object *jobj,const char *var_n
 }
 
 /**
+ * Parses monitoring integer data to include it directly in a JSON object
+ *
+ * @param jobj JSON object in which the data will be stored
+ * @param var_name Name of the measured magnitude
+ * @param val Measured magnitude value in integer format
+ *
+ * @return 0
+ */
+int parsing_mon_environment_integer_into_object(json_object *jobj,const char *var_name, int val) {
+
+	char buffer[512];
+	struct json_object *jint = NULL;
+	sprintf(buffer, "%d", val);
+	jint = json_object_new_int(val);
+	json_object_object_add(jobj,var_name,jint);
+	return 0;
+}
+
+/**
  * Parses monitoring status data to include it directly in a JSON object
  *
  * @param jobj JSON object in which the data will be stored
@@ -2551,7 +2570,13 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 	const char *serialized_json = json_object_to_json_string(jcmd_data2);
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
-		DEBUG_PRINTF_1("Error\r\n");
+		json_object_object_del(jcmd_data2,"msg_value");
+		jval2 = json_object_new_string("ERROR: Response not valid");
+		json_object_object_add(jcmd_data2,"msg_value", jval2);
+		serialized_json = json_object_to_json_string(jcmd_data2);
+		strcpy(cmd_reply,serialized_json);
+		json_object_put(jcmd_data2);
+		DEBUG_PRINTF_1("Error in command response status validation\r\n");
 		return rc;
 	}
 	strcpy(cmd_reply,serialized_json);
@@ -4064,6 +4089,92 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				rc = command_status_response_json (msg_id,99,cmd_reply);
 				LOG_PRINTF("DEBUG LEVEL SET TO %d \n",debug_flag);
 				goto end;
+			}
+			if(strcmp(cmd[2],"RMON")==0){
+				if(strcmp(cmd[0],"SET") == 0){
+					if(strcmp(cmd[3],"START") == 0) {
+						rc = write_uio(REG_RMON_CONFIG_START,0x8000);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						rc = command_status_response_json (msg_id,99,cmd_reply);
+						goto end;
+					}
+					else if(strcmp(cmd[3],"TIMEBASE") == 0){
+						rc = write_uio(REG_RMON_CONFIG_TIMEBASE,strtoul(cmd[4], NULL, 0));
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						rc = command_status_response_json (msg_id,99,cmd_reply);
+						goto end;
+					}
+				}
+				else{
+					uint32_t rmon_val;
+					char rmon_str[16];
+					if(strcmp(cmd[3],"DIG0") == 0){
+						rc = read_uio(REG_RMON_DIG0,&rmon_val);
+					}
+					else if(strcmp(cmd[3],"DIG1") == 0){
+						rc = read_uio(REG_RMON_DIG1,&rmon_val);
+					}
+					else if(strcmp(cmd[3],"DIG0MUX") == 0){
+						rc = read_uio(REG_RMON_DIG0_MUX,&rmon_val);
+					}
+					else if(strcmp(cmd[3],"DIG1MUX") == 0){
+						rc = read_uio(REG_RMON_DIG1_MUX,&rmon_val);
+					}
+					else if(strcmp(cmd[3],"DMASOURCE") == 0){
+						rc = read_uio(REG_RMON_DMA_SOURCE,&rmon_val);
+					}
+					else if(strcmp(cmd[3],"DMA") == 0){
+						rc = read_uio(REG_RMON_DMA,&rmon_val);
+					}
+					else {
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+						goto end;
+					}
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+						goto end;
+					}
+					snprintf(rmon_str, sizeof(rmon_str), "0x%08X", rmon_val);
+					rc = command_response_string_json(msg_id,rmon_str,cmd_reply);
+					goto end;
+				}
+			}
+			if(strcmp(cmd[2],"DMAPKT")==0){
+				uint32_t dma_packet_size;
+				char dma_pkt_size_str[16];
+				if(strcmp(cmd[0],"READ") == 0){
+					rc = read_uio(REG_DMA_BUF_SIZE,&dma_packet_size);
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
+						goto end;
+					}
+					// Add 1 to include last word
+					dma_packet_size = dma_packet_size + 1;
+					snprintf(dma_pkt_size_str, sizeof(dma_pkt_size_str), "%x", dma_packet_size);
+					rc = command_response_string_json(msg_id,dma_pkt_size_str,cmd_reply);
+					goto end;
+				}
+				else{
+					dma_packet_size = atoi(cmd[3]);
+					if(dma_packet_size < 1 || dma_packet_size > 131072){
+						rc = command_status_response_json(msg_id,-ERRSET,cmd_reply);
+						goto end;
+					}
+					dma_packet_size = dma_packet_size - 1;
+					rc = write_uio(REG_DMA_BUF_SIZE,dma_packet_size);
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+						goto end;
+					}
+					rc = command_status_response_json(msg_id,99,cmd_reply);
+					goto end;
+				}
 			}
 			if(strcmp(cmd[2],"STATUS")==0){
 				if(strcmp(cmd[3],"DMA") == 0){

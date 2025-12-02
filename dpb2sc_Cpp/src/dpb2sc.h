@@ -214,6 +214,7 @@ int parsing_mon_channel_data_into_object(json_object *, int, const char *, float
 int parsing_mon_channel_status_into_object(json_object *, int, const char *, int);
 int parsing_mon_channel_string_into_object(json_object *, int, const char *, char*);
 int parsing_mon_environment_data_into_object(json_object *, const char *, float);
+int parsing_mon_environment_integer_into_object(json_object *, const char *, int);
 int parsing_mon_environment_status_into_object(json_object *, const char *, int);
 int parsing_mon_environment_string_into_object(json_object *,const char *, char *);
 int alarm_json (const char*, const char *, const char *, int , float ,uint64_t ,const char *);
@@ -598,7 +599,15 @@ enum UIO_AXIREG {
     REG_DMA_BUF_SIZE,
     REG_TIMING_LINK_SWITCH,
     REG_TIMING_MGT_MAIN_SWITCH,
-    REG_TIMING_MGT_BACKUP_SWITCH
+    REG_TIMING_MGT_BACKUP_SWITCH,
+    REG_RMON_CONFIG_TIMEBASE,
+    REG_RMON_CONFIG_START,
+    REG_RMON_DIG0,
+    REG_RMON_DIG1,
+    REG_RMON_DIG0_MUX,
+    REG_RMON_DIG1_MUX,
+    REG_RMON_DMA_SOURCE,
+    REG_RMON_DMA
 };
 struct uio_axi_reg {
     uint32_t reg_name;
@@ -606,13 +615,21 @@ struct uio_axi_reg {
     uint32_t size;
 };
 struct uio_axi_reg uio_axi_regs[] = {
-    {REG_DPB_COMMIT_SHA,            0x00000000,32}, // DPB Commit SHA
-    {REG_DPB_VER,                   0x00000007,8}, // DPB Version
+    {REG_DPB_VER,                   0x00000003,8}, // DPB Version
+    {REG_DPB_COMMIT_SHA,            0x00000004,32}, // DPB Commit SHA
     {REG_DPB_COMMIT_DATE,           0x00000008,32}, // DPB Commit Date
-    {REG_DMA_BUF_SIZE,              0x0000000F,8}, // DMA Buffer Size
+    {REG_DMA_BUF_SIZE,              0x0000000C,32}, // DMA Buffer Size
     {REG_TIMING_LINK_SWITCH,        0x00000010,4}, // Timing Link Switch
     {REG_TIMING_MGT_MAIN_SWITCH,    0x00000011,4}, // Timing MGT Main Switch
-    {REG_TIMING_MGT_BACKUP_SWITCH,  0x00000012,4}  // Timing MGT Backup Switch
+    {REG_TIMING_MGT_BACKUP_SWITCH,  0x00000012,4},  // Timing MGT Backup Switch
+    {REG_RMON_CONFIG_TIMEBASE,      0x00000014,16}, // RMON Config Register for Timebase
+    {REG_RMON_CONFIG_START,         0x00000016,16}, // RMON Config Register for Start measurement
+    {REG_RMON_DIG0,                 0x00000018,32}, // RMON Digitizer 0 Register
+    {REG_RMON_DIG1,                 0x0000001C,32}, // RMON Digitizer 1 Register
+    {REG_RMON_DIG0_MUX,             0x00000020,32}, // RMON Digitizer 0 MUX Register
+    {REG_RMON_DIG1_MUX,             0x00000024,32}, // RMON Digitizer 1 MUX Register
+    {REG_RMON_DMA_SOURCE,           0x00000028,32}, // RMON DMA Source Register
+    {REG_RMON_DMA,                  0x0000002C,32}  // RMON DMA Register
 };
 
 /******************************************************************************
@@ -783,7 +800,9 @@ struct config_element config_variables[] = {
     {"DPB", "tdmtxbackup", ENV_PARAM, "SET_DPB_TDMTX_BACKUP", 0},
     {"DPB", "tdmrxmain", ENV_PARAM, "SET_DPB_TDMRX_MAIN", 0},
     {"DPB", "tdmrxbackup", ENV_PARAM, "SET_DPB_TDMRX_BACKUP", 0}, 
-    
+    {"DPB", "dmapktsize", ENV_PARAM, "SET_DPB_DMAPKT", 0},
+    {"DPB", "dmasource", ENV_PARAM, "SET_DPB_DMASOURCE", 0},
+    {"DPB", "rmontimebase", ENV_PARAM, "SET_DPB_RMON_TIMEBASE", 0}
 }; 
 
 #define MAX_CONFIG_SIZE 32768
