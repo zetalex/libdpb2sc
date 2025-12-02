@@ -4156,7 +4156,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					}
 					// Add 1 to include last word
 					dma_packet_size = dma_packet_size + 1;
-					snprintf(dma_pkt_size_str, sizeof(dma_pkt_size_str), "%x", dma_packet_size);
+					snprintf(dma_pkt_size_str, sizeof(dma_pkt_size_str), "%u", dma_packet_size);
 					rc = command_response_string_json(msg_id,dma_pkt_size_str,cmd_reply);
 					goto end;
 				}
