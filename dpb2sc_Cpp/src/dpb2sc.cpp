@@ -6306,6 +6306,7 @@ int write_uio(int reg, uint32_t val){
 			break;
 		case 32:
 			*((uint32_t *)p) = (uint32_t)val;
+			break;
 		default:
 			DEBUG_PRINTF_2("Invalid register size for reg %d\n", reg);
 			return -EINVAL;

@@ -593,8 +593,8 @@ int GPIO_BASE_ADDRESS = 0;
 #define UIO_ADDR "/sys/class/uio/uio4/maps/map0/addr"
 #define UIO_DEV "/dev/uio4"
 enum UIO_AXIREG {
-    REG_DPB_COMMIT_SHA,
     REG_DPB_VER,
+    REG_DPB_COMMIT_SHA,
     REG_DPB_COMMIT_DATE,
     REG_DMA_BUF_SIZE,
     REG_TIMING_LINK_SWITCH,
