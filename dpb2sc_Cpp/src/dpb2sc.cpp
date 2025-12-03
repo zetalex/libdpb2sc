@@ -4110,6 +4110,19 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						rc = command_status_response_json (msg_id,99,cmd_reply);
 						goto end;
 					}
+					else if(strcmp(cmd[3],"STOP") == 0) {
+						rc = write_uio(REG_RMON_CONFIG_START,0x0000);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						rc = command_status_response_json (msg_id,99,cmd_reply);
+						goto end;
+					}
+					else {
+						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+						goto end;
+					}
 				}
 				else{
 					uint32_t rmon_val;
@@ -4162,7 +4175,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				}
 				else{
 					dma_packet_size = atoi(cmd[3]);
-					if(dma_packet_size < 1 || dma_packet_size > 131072){
+					if(dma_packet_size < 1 || dma_packet_size > 32768){
 						rc = command_status_response_json(msg_id,-ERRSET,cmd_reply);
 						goto end;
 					}
