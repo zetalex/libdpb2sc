@@ -4167,8 +4167,8 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						goto end;
 					}
-					// Add 1 to include last word
-					dma_packet_size = dma_packet_size + 1;
+					// Add 1 to include last word and get only the 16 LSBs
+					dma_packet_size = (dma_packet_size + 1) & 0xFFFF;
 					snprintf(dma_pkt_size_str, sizeof(dma_pkt_size_str), "%u", dma_packet_size);
 					rc = command_response_string_json(msg_id,dma_pkt_size_str,cmd_reply);
 					goto end;
@@ -4179,7 +4179,8 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						rc = command_status_response_json(msg_id,-ERRSET,cmd_reply);
 						goto end;
 					}
-					dma_packet_size = dma_packet_size - 1;
+					// Substract 1 to match internal representation and set also the MSB to 1.
+					dma_packet_size = (dma_packet_size - 1) | 0x80000000;
 					rc = write_uio(REG_DMA_BUF_SIZE,dma_packet_size);
 					if(rc){
 						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
