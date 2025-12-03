@@ -4092,8 +4092,14 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 			}
 			if(strcmp(cmd[2],"RMON")==0){
 				if(strcmp(cmd[0],"SET") == 0){
-					if(strcmp(cmd[3],"START") == 0) {
+					if(strcmp(cmd[3],"RUN") == 0) {
 						rc = write_uio(REG_RMON_CONFIG_START,0x8000);
+						if(rc){
+							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+							goto end;
+						}
+						usleep(20);
+						rc = write_uio(REG_RMON_CONFIG_START,0x0000);
 						if(rc){
 							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 							goto end;
@@ -4103,15 +4109,6 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					}
 					else if(strcmp(cmd[3],"TIMEBASE") == 0){
 						rc = write_uio(REG_RMON_CONFIG_TIMEBASE,strtoul(cmd[4], NULL, 0));
-						if(rc){
-							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
-							goto end;
-						}
-						rc = command_status_response_json (msg_id,99,cmd_reply);
-						goto end;
-					}
-					else if(strcmp(cmd[3],"STOP") == 0) {
-						rc = write_uio(REG_RMON_CONFIG_START,0x0000);
 						if(rc){
 							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 							goto end;
