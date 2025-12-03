@@ -4098,7 +4098,6 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 							goto end;
 						}
-						usleep(20);
 						rc = write_uio(REG_RMON_CONFIG_START,0x0000);
 						if(rc){
 							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
@@ -4123,6 +4122,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				}
 				else{
 					uint32_t rmon_val;
+					uint16_t time_base;
 					char rmon_str[16];
 					if(strcmp(cmd[3],"DIG0") == 0){
 						rc = read_uio(REG_RMON_DIG0,&rmon_val);
@@ -4150,7 +4150,14 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						goto end;
 					}
-					snprintf(rmon_str, sizeof(rmon_str), "0x%08X", rmon_val);
+					// Compute value in Hz using timebase in 10ms units
+					rc = read_uio(REG_RMON_CONFIG_TIMEBASE,&time_base);
+					if(rc){
+						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+						goto end;
+					}
+					rmon_val = rmon_val * (100 / time_base);
+					snprintf(rmon_str, sizeof(rmon_str), "%u", rmon_val);
 					rc = command_response_string_json(msg_id,rmon_str,cmd_reply);
 					goto end;
 				}
