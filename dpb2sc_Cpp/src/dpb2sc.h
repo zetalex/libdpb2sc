@@ -1059,6 +1059,7 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BOARD_5VOD,
     HKDIG_GET_BOARD_I5VOD,
     HKDIG_GET_TB_REG,
+    HKDIG_GET_OD_SEL_REG,
 	// BME280 commands
     HKDIG_GET_BME_DATA
 };
@@ -1078,7 +1079,6 @@ const int dig_monitor_mag_chan_codes[] = {
     HKDIG_GET_CHN_LG_CHG,
     HKDIG_GET_CHN_HG_CHG,
     HKDIG_RO_FMON_N,
-    HKDIG_GET_OD_SEL_REG,
 };
 
 const char *dig_monitor_mag_board_names[] = {
@@ -1116,6 +1116,7 @@ const char *dig_monitor_mag_board_names[] = {
     "5V0D",
     "I5V0D",
     "TBREG",
+    "odsel",
     "bmedata"
 };
 
@@ -1131,8 +1132,7 @@ const char *dig_monitor_mag_chan_names[] = {
     "rmonfmt",
     "lgchg",
     "hgchg",
-    "fmon",
-    "odsel"
+    "fmon"
 };
 
 /** @brief Detected Dig0 Serial Number */

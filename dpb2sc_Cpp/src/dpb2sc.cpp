@@ -5015,6 +5015,9 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		//Get Pedestal Stagger
 		case HKDIG_GET_PED_STAGGER:
 
+		// OD Commands
+		case HKDIG_GET_OD_SEL_REG:
+
 		//Get Board TCHs
 		case HKDIG_GET_BOARD_TCH0:
 		case HKDIG_GET_BOARD_TCH11:
@@ -5053,9 +5056,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_CHN_STATUS:
 
 		case HKDIG_GET_CHN_CNTRL:
-
-		// OD Commands
-		case HKDIG_GET_OD_SEL_REG:
 
 		// Calibration board commands
 		case HKDIG_SET_CAL_POWER:
