@@ -4921,9 +4921,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		// Calibration board commands
 		case HKDIG_GET_CAL_PLS_AMP:
 
-		// OD Commands
-		case HKDIG_GET_OD_SEL_REG:
-
 		// Disable all FE clearing bit in Board control register
 		case HKDIG_STOP_FE_ALL:
 		// Enable all FE setting bit in Board control register
@@ -5057,6 +5054,9 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		case HKDIG_GET_CHN_CNTRL:
 
+		// OD Commands
+		case HKDIG_GET_OD_SEL_REG:
+
 		// Calibration board commands
 		case HKDIG_SET_CAL_POWER:
 		case HKDIG_SET_CAL_PLS_LEN:
@@ -5064,9 +5064,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_CAL_NPDN:
 		case HKDIG_SET_CAL_MUTE:
 		case HKDIG_SET_CAL_PLSEN:
-
-		// OD Commands
-		case HKDIG_SET_OD_SEL_REG:
 
 		// Set RMon interval
 		case HKDIG_SET_RMON_PER:
@@ -5125,6 +5122,9 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		// Setting Channel control
 		case HKDIG_SET_CHN_CNTRL:
+
+		// OD Commands
+		case HKDIG_SET_OD_SEL_REG:
 
 		value1 = atoi(cmd[3]);
 		value2 = atoi(cmd[4]);
@@ -5255,7 +5255,7 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 							}
 						}
 						else{
-							command_response_string_json(msg_id,"ERROR",reply);
+							command_status_response_json (msg_id,-ERRSET,reply);
 						}
 						break;
 					default:
@@ -5268,7 +5268,7 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 			command_response_string_json(msg_id,"OK",reply);
 		}
 		else{
-			command_response_string_json(msg_id,"ERROR",reply);
+			command_status_response_json(msg_id,-ERRSET,reply);
 		}
 	}
 
