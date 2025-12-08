@@ -758,7 +758,6 @@ struct config_element config_variables[] = {
     {"Dig1", "inttime", CHAN_PARAM, "SET_DIG1_INTTIME", 18},
     {"Dig1", "calib", ENV_PARAM, "SET_DIG1_CALIB", 0},
     {"Dig1", "calibtype", ENV_PARAM, "SET_DIG1_CALTYPE", 0},
-    {"Dig1", "calibmute", ENV_PARAM, "SET_DIG1_CALIBMUTE", 0},
     {"Dig1", "calibper", ENV_PARAM, "SET_DIG1_CALIBPER", 0},
     {"Dig1", "calibpwr", ENV_PARAM, "SET_DIG1_CALIBPWR", 0},
     {"Dig1", "demux", ENV_PARAM, "SET_DIG1_DEMUX", 0},
