@@ -5220,12 +5220,11 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 	}
 	// Get Command field of the received response
 	int16_t cmdIdx = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
-	if(cmdIdx == HKDIG_ERRO){
-		sprintf(daq_response,"ERROR: %s operation not successful",cmd[0]);
-		command_response_string_json(msg_id,daq_response,reply);
-		return 0;
-	}
 	if(!strcmp(cmd[0],"READ")){
+		if(cmdIdx == HKDIG_ERRO){
+			command_status_response_json(msg_id,-ERRREAD,reply);
+			return 0;
+		}
 		while(temp = pkt.GetNextField()) {
 			value = temp;
 		}
