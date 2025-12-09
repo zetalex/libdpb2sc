@@ -2571,7 +2571,9 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 	int rc = json_schema_validate("JSONSchemaSlowControl.json",serialized_json, "cmd_temp.json");
 	if (rc) {
 		json_object_object_del(jcmd_data2,"msg_value");
-		jval2 = json_object_new_string("ERROR: Response not valid");
+		char not_valid[128];
+		sprintf(not_valid, "ERROR: Response not valid, it was %s", val);
+		jval2 = json_object_new_string(not_valid);
 		json_object_object_add(jcmd_data2,"msg_value", jval2);
 		serialized_json = json_object_to_json_string(jcmd_data2);
 		strcpy(cmd_reply,serialized_json);
