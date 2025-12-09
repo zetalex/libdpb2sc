@@ -4933,6 +4933,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		// Run Rate monitor
 		case HKDIG_RUN_RMON:
 		// Get Software date and time of compilation. Use menu_str to store data
+		case HKDIG_GET_HW_VER:
+
 		case HKDIG_GET_SW_VER:
 
 		case HKDIG_GET_BOARD_STATUS:
@@ -5039,9 +5041,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_IT_NUM:
 		case HKDIG_GET_DT_NUM:
 		case HKDIG_GET_PED_ENABLE:
-		case HKDIG_EN_CAL_N:// Enable channel calibration input
-		// Disable calibration input for channel n
-		case HKDIG_DIS_CAL_N:
 		
 		// Enable FE for channel n
 		case HKDIG_START_FE_N:
@@ -5079,9 +5078,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_CAL_PERIOD:
 		case HKDIG_SET_CAL_TYPE:
 		
-		// Data Transmission commands
-		case HKDIG_AUR_DEMUX_EN:
-		case HKDIG_AUR_DEMUX_DIS:
 
 		// Pedestal commands
 		case HKDIG_SET_PED_PERIOD:
@@ -5090,9 +5086,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_ADS_PSC:
 
 		case HKDIG_RO_FMON_N:
-
-		case HKDIG_SET_CAL_GAIN_LOW:
-		case HKDIG_SET_CAL_GAIN_HIGH:
 		
 		case HKDIG_SET_5V0A:
 		case HKDIG_SET_5V0A_EEPROM:
@@ -5109,6 +5102,24 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_DT_ALL:
 
 		value1 = atoi(cmd[4]);
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
+		break;
+		
+		case HKDIG_SET_AUR_DEMUX:
+		if(!strcmp(cmd[3],"ON"))
+			value1 = 1;
+		else {
+			value1 = 0;
+		}
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
+		break;
+		// Set calibrator gain to HIGH (1) or LOW (0)
+		case HKDIG_SET_CAL_GAIN:
+		if(!strcmp(cmd[3],"HIGH"))
+			value1 = 1;
+		else {
+			value1 = 0;
+		}
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
 
@@ -5139,6 +5150,18 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		}
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
+
+		// ON OFF settings
+		case HKDIG_SET_CAL_N:
+		value1 = atoi(cmd[3]);
+		if(!strcmp(cmd[4],"ON"))
+			value2 = 1;
+		else {
+			value2 = 0;
+		}
+		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1, (uint32_t)value2);
+		break;
+
 
 		case HKDIG_ERRO:
 			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
