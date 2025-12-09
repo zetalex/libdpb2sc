@@ -3857,19 +3857,31 @@ char* command_parse(const char *key){
 			if(cmd[3] != NULL && !strcmp(cmd[3],"AUR0")){
 				//read_GPIO(DIG0_MAIN_AURORA_LINK,&aurora_status);
 				if(!strcmp(cmd[0],"READ")){
-					command_status_response_json(0,dig0_aurora_main_val,reply);
+					command_status_response_json(msg_id,dig0_aurora_main_val,reply);
 				}
 				else if(!strcmp(cmd[0],"SET")){
-					write_GPIO(DIG0_LINK_SEL,0);
+					rc = write_GPIO(DIG0_LINK_SEL,0);
+					if(!rc){
+						command_status_response_json(msg_id,99,reply);
+					}
+					else{
+						command_status_response_json(msg_id,-ERRSET,reply);
+					}
 				}
 			}
 			else if(cmd[3] != NULL && !strcmp(cmd[3],"AUR1")){
 				//read_GPIO(DIG0_BACKUP_AURORA_LINK,&aurora_status);
 				if(!strcmp(cmd[0],"READ")){
-					command_status_response_json(0,dig0_aurora_backup_val,reply);
+					command_status_response_json(msg_id,dig0_aurora_backup_val,reply);
 				}
 				else if(!strcmp(cmd[0],"SET")){
-					write_GPIO(DIG0_LINK_SEL,1);
+					rc = write_GPIO(DIG0_LINK_SEL,1);
+					if(!rc){
+						command_status_response_json(msg_id,99,reply);
+					}
+					else{
+						command_status_response_json(msg_id,-ERRSET,reply);
+					}
 				}
 			}		
 			else {
@@ -3902,19 +3914,31 @@ char* command_parse(const char *key){
 			if(cmd[3] != NULL && !strcmp(cmd[3],"AUR0")){
 				//read_GPIO(DIG1_MAIN_AURORA_LINK,&aurora_status);
 				if(!strcmp(cmd[0],"READ")){
-					command_status_response_json(0,dig1_aurora_main_val,reply);
+					command_status_response_json(msg_id,dig1_aurora_main_val,reply);
 				}
 				else if(!strcmp(cmd[0],"SET")){
-					write_GPIO(DIG1_LINK_SEL,0);
+					rc = write_GPIO(DIG1_LINK_SEL,0);
+					if(!rc){
+						command_status_response_json(msg_id,99,reply);
+					}
+					else{
+						command_status_response_json(msg_id,-ERRSET,reply);
+					}
 				}
 			}
 			else if(cmd[3] != NULL && !strcmp(cmd[3],"AUR1")){
 				//read_GPIO(DIG1_BACKUP_AURORA_LINK,&aurora_status);
 				if(!strcmp(cmd[0],"READ")){
-					command_status_response_json(0,dig1_aurora_backup_val,reply);
+					command_status_response_json(msg_id,dig1_aurora_backup_val,reply);
 				}
 				else if(!strcmp(cmd[0],"SET")){
-					write_GPIO(DIG1_LINK_SEL,1);
+					rc = write_GPIO(DIG1_LINK_SEL,1);
+					if(!rc){
+						command_status_response_json(msg_id,99,reply);
+					}
+					else{
+						command_status_response_json(msg_id,-ERRSET,reply);
+					}
 				}
 			}		
 			else {
