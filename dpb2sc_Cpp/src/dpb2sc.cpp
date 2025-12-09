@@ -3472,22 +3472,29 @@ int get_dig_hash_table_command(char **cmd, int *value) {
 	strcat(str_dpb_format," ");
 	strcat(str_dpb_format,cmd[2]);
 
-	if(cmd[3] != NULL && (!strcmp(cmd[3],"ALL") || !strcmp(cmd[3],"ON") || !strcmp(cmd[3],"OFF"))){
-		strcat(str_dpb_format," ");
-		strcat(str_dpb_format,cmd[3]);
-	}
-	if(cmd[4] != NULL && (!strcmp(cmd[4],"ON") || !strcmp(cmd[4],"OFF"))){
-		strcat(str_dpb_format," ");
-		strcat(str_dpb_format,cmd[4]);
-	}
 	// Find the Digitizer command ID in the Uthash table
 	HASH_FIND_STR(dig_cmd_table,str_dpb_format,s);
 	if(s != NULL){
 		*value = s->dig_cmd_num;
 		return 0;
 	}
-	else{
-		return -EINVAL;
+	else{ // Try with the special commands
+		if(cmd[3] != NULL && (!strcmp(cmd[3],"ALL") || !strcmp(cmd[3],"ON") || !strcmp(cmd[3],"OFF"))){
+			strcat(str_dpb_format," ");
+			strcat(str_dpb_format,cmd[3]);
+		}
+		if(cmd[4] != NULL && (!strcmp(cmd[4],"ON") || !strcmp(cmd[4],"OFF"))){
+			strcat(str_dpb_format," ");
+			strcat(str_dpb_format,cmd[4]);
+		}
+		HASH_FIND_STR(dig_cmd_table,str_dpb_format,s);
+		if(s != NULL){
+			*value = s->dig_cmd_num;
+			return 0;
+		}
+		else {
+			return -EINVAL;
+		}
 	}
 }
 
