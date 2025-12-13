@@ -153,8 +153,8 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	// Read and check multiboot register
 	int config_reg_fd = open("/sys/firmware/zynqmp/config_reg", O_RDWR);
 	char multiboot_reg_offset_str[32];
-	snprintf(multiboot_reg_offset_str, sizeof(multiboot_reg_offset_str), "0x%lx", CSU_MULTIBOOT_REGISTER_OFFSET);
-	write(config_reg_fd, multiboot_reg_offset_str, strlen(multiboot_reg_offset_str));
+	snprintf(multiboot_reg_offset_str, sizeof(multiboot_reg_offset_str), "0x%x", CSU_MULTIBOOT_REGISTER_OFFSET);
+	write(config_reg_fd, multiboot_reg_offset_str, sizeof(multiboot_reg_offset_str));
 	char multiboot_reg_value_str[32];
 	lseek(config_reg_fd, 0, SEEK_SET);
 	read(config_reg_fd, multiboot_reg_value_str, sizeof(multiboot_reg_value_str));
