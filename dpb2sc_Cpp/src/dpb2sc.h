@@ -266,6 +266,7 @@ int check_digs_presence();
 int check_hv_lv_presence();
 int read_uio(int, void*);
 int write_uio(int, uint32_t);
+uint64_t timestamp_ms(void);
 
 /******************************************************************************/
 /************************** Constant Definitions *****************************/

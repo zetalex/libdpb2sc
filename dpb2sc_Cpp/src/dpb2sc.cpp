@@ -678,25 +678,25 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 	sem_post(&alarm_sync);
 	rc = init_tempSensor(&data->dev_pcb_temp);
 	if (rc) {
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		rc = status_alarm_json("DPB","PCB Temperature Sensor I2C Bus Status",99,timestamp,"critical","OFF");
 	}
 
 	// INA 3221 voltage and current sensors
 	rc = init_voltSensor(&data->dev_sfp0_2_volt);
 	if (rc) {
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",0,timestamp,"critical","OFF");
 	}
 
 	rc = init_voltSensor(&data->dev_sfp3_5_volt);
 	if (rc) {
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",1,timestamp,"critical","OFF");
 	}
 	rc = init_voltSensor(&data->dev_som_volt);
 	if (rc) {
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		rc = status_alarm_json("DPB","Voltage-Current Sensor I2C Bus Status",2,timestamp,"critical","OFF");
 	}
 	// SFP I2C buses
@@ -704,7 +704,7 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 	rc = init_I2C_SFP(i,data);
 
 	if (rc) {
-			timestamp = time(NULL);
+			timestamp = timestamp_ms();
 			rc = status_alarm_json("DPB","SFP I2C Bus Status",i,timestamp,"critical","OFF");
 		}
 	}
@@ -957,15 +957,15 @@ int mcp9844_interruptions(struct DPB_I2cSensors *data, uint8_t flag_buf){
 	mcp9844_read_temperature(data,res);
 
 	if((flag_buf & 0x80) == 0x80){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		rc = alarm_json("DPB","PCB Temperature","critical", 99, res[0],timestamp,"critical");
 	}
 	if((flag_buf & 0x40) == 0x40){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		rc = alarm_json("DPB","PCB Temperature","rising", 99, res[0],timestamp,"warning");
 	}
 	if((flag_buf & 0x20) == 0x20){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		rc = alarm_json("DPB","PCB Temperature","falling", 99, res[0],timestamp,"warning");
 	}
 	return rc;
@@ -1054,7 +1054,7 @@ int check_sfp_presence(struct DPB_I2cSensors *data){
 	int rc_check = 0;
 	int rc_status = 0;
 	struct I2cDevice dev;
-	uint64_t timestamp = time(NULL);
+	uint64_t timestamp = timestamp_ms();
 	for(int i = 0; i < SFP_NUM; i++){
 		// Check if SFP is powered on
 		if(sfp_switch_on[i] == 0){
@@ -1436,12 +1436,12 @@ int sfp_avago_status_interruptions(uint8_t status, int n){
 	int rc = 0;
 
 	if(((status & 0x02) != 0) & ((status_mask[n] & 0x02) == 0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		rc = status_alarm_json("DPB","SFP RX_LOS Status",n,timestamp,"critical","ON");
 		status_mask[n] |= 0x02;
 	}
 	if(((status & 0x04) != 0) & ((status_mask[n] & 0x04) == 0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		rc = status_alarm_json("DPB","SFP TX_FAULT Status", n,timestamp,"critical","ON");
 		status_mask[n] |= 0x04;
 	}
@@ -1462,61 +1462,61 @@ int sfp_avago_alarms_interruptions(struct DPB_I2cSensors *data,uint16_t flags, i
 	int rc = 0;
 
 	if(((flags & 0x0080) == 0x0080)&((alarms_mask[n]&0x0080)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_rx_av_optical_pwr(data,n,res);
 		rc = alarm_json("DPB","SFP RX Power","rising", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x0080;
 	}
 	if(((flags & 0x0040) == 0x0040)&((alarms_mask[n]&0x0040)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_rx_av_optical_pwr(data,n,res);
 		rc = alarm_json("DPB","SFP RX Power","falling", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x0040;
 	}
 	if(((flags & 0x0200) == 0x0200)&((alarms_mask[n]&0x0200)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_tx_av_optical_pwr(data,n,res);
 		rc = alarm_json("DPB","SFP TX Power","rising", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x0200;
 	}
 	if(((flags & 0x0100) == 0x0100)&((alarms_mask[n]&0x0100)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_tx_av_optical_pwr(data,n,res);
 		rc = alarm_json("DPB","SFP TX Power","falling", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x0100;
 	}
 	if(((flags & 0x0800) == 0x0800)&((alarms_mask[n]&0x0800)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_lbias_current(data,n,res);
 		rc = alarm_json("DPB","SFP Laser Bias Current","rising", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x0800;
 	}
 	if(((flags & 0x0400) == 0x0400)&((alarms_mask[n]&0x0400)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_lbias_current(data,n,res);
 		rc = alarm_json("DPB","SFP Laser Bias Current","falling", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x0400;
 	}
 	if(((flags & 0x2000) == 0x2000)&((alarms_mask[n]&0x2000)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_voltage(data,n,res);
 		rc = alarm_json("DPB","SFP Voltage Monitor","rising", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x2000;
 	}
 	if(((flags & 0x1000) == 0x1000)&((alarms_mask[n]&0x1000)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_voltage(data,n,res);
 		rc = alarm_json("DPB","SFP Voltage Monitor","falling", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x1000;
 	}
 	if(((flags & 0x8000) == 0x8000)&((alarms_mask[n]&0x8000)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_temperature(data,n,res);
 		rc = alarm_json("DPB","SFP Temperature","rising", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x8000;
 	}
 	if(((flags & 0x4000) == 0x4000)&((alarms_mask[n]&0x4000)==0)){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		sfp_avago_read_temperature(data,n,res);
 		rc = alarm_json("DPB","SFP Temperature","falling", n, res[0],timestamp,"warning");
 		alarms_mask[n] |= 0x4000;
@@ -1767,19 +1767,19 @@ int ina3221_critical_interruptions(struct DPB_I2cSensors *data,uint16_t mask, in
 		k = 3;
 
 	if((mask & 0x0080) == 0x0080){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		if(n == 2)
 			rc = alarm_json("DPB","Current Monitor (+12V)","rising", 99, res[2],timestamp,"critical");
 		else
 			rc = alarm_json("DPB","SFP Current Monitor","rising", k+2, res[2],timestamp,"critical");		}
 	if((mask & 0x0100) == 0x0100){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		if(n == 2)
 			rc = alarm_json("DPB","Current Monitor (+3.3V)","rising", 99, res[2],timestamp,"critical");
 		else
 			rc = alarm_json("DPB","SFP Current Monitor","rising", k+2, res[2],timestamp,"critical");	}
 	if((mask & 0x0200) == 0x0200){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		if(n == 2)
 			rc = alarm_json("DPB","Current Monitor (+1.8V)","rising", 99, res[2],timestamp,"critical");
 		else
@@ -1806,19 +1806,19 @@ int ina3221_warning_interruptions(struct DPB_I2cSensors *data,uint16_t mask, int
 		k = 3;
 
 	if((mask & 0x0008) == 0x0008){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		if(n == 2)
 			rc = alarm_json("DPB","Current Monitor (+12V)","rising", 99, res[0],timestamp,"warning");
 		else
 			rc = alarm_json("DPB","SFP Current Monitor","rising", k, res[0],timestamp,"warning");	}
 	if((mask & 0x0010) == 0x0010){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		if(n == 2)
 			rc = alarm_json("DPB","Current Monitor (+3.3V)","rising", 99, res[1],timestamp,"warning");
 		else
 			rc = alarm_json("DPB","SFP Current Monitor","rising", k+1, res[1],timestamp,"warning");	}
 	if((mask & 0x0020) == 0x0020){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		if(n == 2)
 			rc = alarm_json("DPB","Current Monitor (+1.8V)","rising", 99, res[2],timestamp,"warning");
 		else
@@ -2255,7 +2255,7 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 		char buffer[512];
 
 		if(timestamp == 0)
-			timestamp = time(NULL)*1000;
+			timestamp = timestamp_ms();
 
 		sprintf(buffer, "%lf", (double) val);
 
@@ -2267,7 +2267,7 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 		jdouble = json_object_new_double_s((double) val,buffer);
 		jchip = json_object_new_string(chip);
 		jev_type = json_object_new_string(ev_type);
-		jtimestamp = json_object_new_int64(timestamp*1000);
+		jtimestamp = json_object_new_int64(timestamp);
 
 		json_object_object_add(jalarm_data,"magnitudename", jchip);
 		json_object_object_add(jalarm_data,"eventtype", jev_type);
@@ -2352,7 +2352,7 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jstatus,*j_level = NULL;
 		jalarm_data = json_object_new_object();
 
-		uint64_t timestamp_msg = (time(NULL))*1000;
+		uint64_t timestamp_msg = timestamp_ms();
 
 		jboard = json_object_new_string(board);
 
@@ -2411,7 +2411,7 @@ int command_response_json (int msg_id, float val, char* cmd_reply)
 	char buffer[512];
 	char msg_date[64];
 	char uuid[64];
-	time_t t = time(NULL);
+	time_t t = timestamp_ms();
 	struct tm  tms = * localtime(&t);
 	struct timespec now;
 
@@ -2468,7 +2468,7 @@ int command_status_response_json (int msg_id,int val,char* cmd_reply)
 	json_object *jcmd_data = json_object_new_object();
 	char msg_date[64];
 	char uuid[64];
-	time_t t = time(NULL);
+	time_t t = timestamp_ms();
 	struct tm  tms = * localtime(&t);
 	struct timespec now;
 
@@ -2539,7 +2539,7 @@ int command_response_string_json(int msg_id, char *val, char* cmd_reply)
 	json_object *jcmd_data2 = json_object_new_object();
 	char msg_date[64];
 	char uuid[64];
-	time_t t = time(NULL);
+	time_t t = timestamp_ms();
 	struct tm  tms = * localtime(&t);
 	struct timespec now;
 
@@ -3095,12 +3095,12 @@ int eth_down_alarm(const char *str,int *flag){
 	if((flag[0] == 0) & (eth_status[0] == 1)){
 		flag[0] = eth_status[0];
 	if(!(strcmp(str,"eth0"))){
-			timestamp = time(NULL);
+			timestamp = timestamp_ms();
 			rc = status_alarm_json("DPB","Main Ethernet Link Status",99,timestamp,"info","ON");
 			return rc;
 		}
 		else if(!(strcmp(str,"eth1"))){
-			timestamp = time(NULL);
+			timestamp = timestamp_ms();
 			rc = status_alarm_json("DPB","Backup Ethernet Link Status",99,timestamp,"info","ON");
 			return rc;
 		}	
@@ -3108,12 +3108,12 @@ int eth_down_alarm(const char *str,int *flag){
 	if((flag[0] == 1) & (eth_status[0] == 0)){
 		flag[0] = eth_status[0];
 		if(!(strcmp(str,"eth0"))){
-			timestamp = time(NULL);
+			timestamp = timestamp_ms();
 			rc = status_alarm_json("DPB","Main Ethernet Link Status",99,timestamp,"critical","OFF");
 			return rc;
 		}
 		else if(!(strcmp(str,"eth1"))){
-			timestamp = time(NULL);
+			timestamp = timestamp_ms();
 			rc = status_alarm_json("DPB","Backup Ethernet Link Status",99,timestamp,"critical","OFF");
 			return rc;
 		}
@@ -3174,24 +3174,24 @@ int aurora_down_alarm(int aurora_link, int *flag){
 	if(rc_poll == -ALARMTRG){
 		if(aurora_status[0] == 1){
 			if(aurora_link<2){
-				timestamp = time(NULL);
+				timestamp = timestamp_ms();
 				rc = status_alarm_json("DIG0",link_id,99,timestamp,"info", "ON");
 				return rc;
 			}
 			else{
-				timestamp = time(NULL);
+				timestamp = timestamp_ms();
 				rc = status_alarm_json("DIG1",link_id,99,timestamp,"info", "ON");
 				return rc;
 			}
 		}
 		else if(aurora_status[0] == 0){
 			if(aurora_link<2){
-				timestamp = time(NULL);
+				timestamp = timestamp_ms();
 				rc = status_alarm_json("DIG0",link_id,99,timestamp,"critical", "OFF");
 				return rc;
 			}
 			else{
-				timestamp = time(NULL);
+				timestamp = timestamp_ms();
 				rc = status_alarm_json("DIG1",link_id,99,timestamp,"critical", "OFF");
 				return rc;
 			}
@@ -3211,7 +3211,7 @@ int pll_not_locked_alarm(){
 	uint64_t timestamp ;
 	rc = poll_GPIO(pll_locked_fd,PLL_LOL_N,&pll_locked_val);
 	if(rc == -ALARMTRG){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		if(pll_locked_val){
 			rc = status_alarm_json("DPB","PLL Lock",99,timestamp,"info", "ON");
 		}
@@ -3234,7 +3234,7 @@ int tdm_not_locked_alarm(){
 	uint64_t timestamp ;
 	rc = poll_GPIO(tdm_locked_fd,TDM_DPB_LOCK,&tdm_locked_val);
 	if(rc == -ALARMTRG){
-		timestamp = time(NULL);
+		timestamp = timestamp_ms();
 		if(tdm_locked_val){
 			rc = status_alarm_json("DPB","TDM Lock",99,timestamp,"info", "ON");
 		}
@@ -5664,7 +5664,7 @@ int hv_read_alarms(){
 	strcpy(board_dev,"/dev/ttyUL3");
 	//Get Timestamp
 	uint64_t timestamp;
-	timestamp = time(NULL);
+	timestamp = timestamp_ms();
 
 	//Parse all channels
 	for(int i = 0 ; i < 24; i++){
@@ -6388,6 +6388,20 @@ int write_uio(int reg, uint32_t val){
 	munmap(ptr, uio_size);
 	close(GPIO_UIO);
     return 0;
+}
+
+/**
+ * Get current timestamp in milliseconds
+ *
+ * @return Timestamp in milliseconds
+ */
+uint64_t timestamp_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    return (uint64_t)ts.tv_sec * 1000ULL +
+           ts.tv_nsec / 1000000ULL;
 }
 /** @} */
 }
