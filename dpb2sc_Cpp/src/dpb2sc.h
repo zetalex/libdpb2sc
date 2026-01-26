@@ -809,10 +809,11 @@ char config_to_apply[MAX_CONFIG_SIZE];
 /******************************************************************************
 LV Command Data.
 ****************************************************************************/
-#define LV_CMD_TABLE_SIZE 10
+#define LV_CMD_TABLE_SIZE 11
 
 const char *lv_daq_words[] = {
 	"BDSNUM",
+    "BDFWVER",
     "TEMP",
     "BCMTEMP",
     "RELHUM",
@@ -827,6 +828,7 @@ const char *lv_daq_words[] = {
 
 const char *lv_board_words[] = {
 	"BDSNUM",
+    "BDFREL",
     "BDTEMP",
     "BCTEMP",
     "RH",
@@ -840,6 +842,7 @@ const char *lv_board_words[] = {
 
 const char *lv_mag_names[] = {
 	"bdsnum",
+    "bdfwver",
     "boardtemp",
     "bcmtemp",
     "relathumidity",
@@ -854,18 +857,25 @@ const char *lv_mag_names[] = {
 // Detected LV Serial Number
 char LV_SN[8];
 
+// Detected LV Firmware Number
+char LV_FW[8];
+
 /******************************************************************************
 HV Command Data.
 ****************************************************************************/
 
-#define HV_CMD_TABLE_SIZE 12
+#define HV_CMD_TABLE_SIZE 16
 
 const char *hv_daq_words[] = {
 	"BDSNUM",
+    "BDFWVER",
 	"TEMP",
     "STATUS",
     "VOLT",
+    "VOLTSET",
     "CURR",
+    "ISET",
+    "PW",
     "CHANTEMP",
     "RAMPUP",
     "RAMPDOWN",
@@ -878,10 +888,14 @@ const char *hv_daq_words[] = {
 
 const char *hv_board_words[] = {
 	"BDSNUM",
+    "FWREL",
 	"BDTEMP",
     "STATUS",
     "VMON",
+    "VSET",
     "IMON",
+    "ISET",
+    "PW",
     "TEMP",
     "RUP",
     "RDWN",
@@ -893,10 +907,14 @@ const char *hv_board_words[] = {
 
 const char *hv_mag_names[] = {
 	"bdsnum",
+    "bdfwver",
 	"boardtemp",
     "status",
     "voltage", 
+    "voltageset",
     "current" , 
+    "currentset",
+    "powered", 
     "temperature",
     "rampup" , 
     "rampdown" ,
@@ -911,6 +929,9 @@ int hv_sd_channels[] = {0,1,6,7,12,13,18,19};
 
 /** @brief  Detected HV Serial Number */
 char HV_SN[8];
+
+/** @brief  Detected HV Firmware Number */
+char HV_FW[8];
 
 /******************************************************************************
 Digitizer Command Data.
