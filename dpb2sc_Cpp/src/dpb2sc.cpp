@@ -6014,20 +6014,20 @@ int check_hv_lv_presence(){
 	write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:1,$CMD:MON,PAR:BDSNUM\r\n"));
 	usleep(1000000);
 	n = read(serial_port_fd, buffer, sizeof(buffer));
-	buffer[n] = '\0';
 	if(n > 0){
 		if(!hv_connected){
-			for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
+			for(int i = 12; i <=16; i++ ){ // Take just serial number from the response
 				HV_SN[i-12] = buffer[i];
 			}
+			HV_SN[5] = '\0';
 			tcflush(serial_port_fd,TCIOFLUSH);
 			write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:1,$CMD:MON,PAR:BDFREL\r\n"));
 			usleep(1000000);
 			n = read(serial_port_fd, buffer, sizeof(buffer));
-			buffer[n] = '\0';
 			for(int i = 12; i <=15; i++ ){ // Take just firmware from the response
 				HV_FW[i-12] = buffer[i];
 			}
+			HV_FW[4] = '\0';
 			LOG_PRINTF("Hotplug event: HV has been detected: S/N %s FW %s \n",HV_SN, HV_FW);
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
 			hv_connected = 1;
@@ -6050,20 +6050,20 @@ int check_hv_lv_presence(){
 	write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
 	usleep(1000000);
 	n = read(serial_port_fd, buffer, sizeof(buffer));
-	buffer[n] = '\0';
 	if(n > 0){
 		if(!lv_connected){
-			for(int i = 12; i <=17; i++ ){ // Take just serial number from the response
+			for(int i = 12; i <=16; i++ ){ // Take just serial number from the response
 				LV_SN[i-12] = buffer[i];
 			}
+			LV_SN[5] = '\0';
 			tcflush(serial_port_fd,TCIOFLUSH);
 			write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:0,$CMD:MON,PAR:BDFREL\r\n"));
 			usleep(1000000);
 			n = read(serial_port_fd, buffer, sizeof(buffer));
-			buffer[n] = '\0';
 			for(int i = 12; i <=15; i++ ){ // Take just firmware from the response
 				LV_FW[i-12] = buffer[i];
 			}
+			LV_FW[4] = '\0';
 			LOG_PRINTF("Hotplug event: LV has been detected: S/N %s FW %s \n", LV_SN, LV_FW);
 			status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
 			lv_connected = 1;
