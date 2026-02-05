@@ -673,6 +673,8 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 	data->dev_sfp0_2_volt.addr = 0x40;
 	strcpy(data->dev_sfp3_5_volt.filename , "/dev/i2c-3");
 	data->dev_sfp3_5_volt.addr = 0x41;
+	strcpy(data->dev_pll_si5345.filename , "/dev/i2c-4");
+	data->dev_pll_si5345.addr = 0x68;
 
 	// PCB Temperature sensor
 	sem_post(&alarm_sync);
@@ -709,6 +711,11 @@ int init_I2cSensors(struct DPB_I2cSensors *data){
 		}
 	}
 
+	// PLL Si5345 Initialization
+	rc = i2c_start(&data->dev_pll_si5345);
+	if (rc) {
+		DEBUG_PRINTF_1("Failed to initialize PLL Si5345\r\n");
+	}
 	// PCB Temperature set temperature limits
 		rc = mcp9844_set_limits(data,0,60);
 	if (rc) {
@@ -735,6 +742,7 @@ int stop_I2cSensors(struct DPB_I2cSensors *data){
 	i2c_stop(&data->dev_sfp0_2_volt);
 	i2c_stop(&data->dev_sfp3_5_volt);
 	i2c_stop(&data->dev_som_volt);
+	i2c_stop(&data->dev_pll_si5345);
 
 	for (int i = 0; i < SFP_NUM; i++){
 		i2c_stop(&data->dev_sfp_A0[i]);
@@ -2007,6 +2015,28 @@ int ina3221_set_config(struct DPB_I2cSensors *data,uint8_t *bit_ena,uint8_t *bit
 		return rc;
 	return 0;
 }
+/**
+ * @brief Resets the PLL Si5345 device by setting the reset bit in its reset register.
+ * 
+ * @return int Returns 0 on success, or a negative error code on failure.
+ */
+int reset_PLL_Si5345(struct DPB_I2cSensors *data){
+	int rc = 0;
+	struct I2cDevice dev = data->dev_pll_si5345;
+	uint8_t page_buf[2] = {SI5345_PAGE_REG,0x00};
+	uint8_t reset_buf[2] = {SI5345_RESET_REG,0x01};
+	// Write page in page register
+	rc = i2c_write(&dev,page_buf,2);
+	if(rc < 0)
+		return rc;
+
+	// Write reset command
+	rc = i2c_write(&dev,reset_buf,2);
+	if(rc < 0)
+		return rc;
+
+	return 0;
+}
 /** @} */
 /************************** JSON functions ******************************/
 /** @defgroup json JSON related functions
@@ -3229,7 +3259,7 @@ int pll_not_locked_alarm(){
  *
  * @return  always 0
  */
-int tdm_not_locked_alarm(){
+int tdm_not_locked_alarm(struct DPB_I2cSensors *data){
 	int rc;
 	uint64_t timestamp ;
 	rc = poll_GPIO(tdm_locked_fd,TDM_DPB_LOCK,&tdm_locked_val);
@@ -3240,6 +3270,8 @@ int tdm_not_locked_alarm(){
 		}
 		else {
 			rc = status_alarm_json("DPB","TDM Lock",99,timestamp,"critical", "OFF");
+			DEBUG_PRINTF_1("TDM Lock lost, resetting PLL\r\n");
+			reset_PLL_Si5345(data);
 		}
 	}
 	return 0;

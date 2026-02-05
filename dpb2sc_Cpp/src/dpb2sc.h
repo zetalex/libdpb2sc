@@ -121,6 +121,7 @@ struct DPB_I2cSensors{
 	struct I2cDevice dev_som_volt;
     struct I2cDevice dev_sfp_A0[6];
     struct I2cDevice dev_sfp_A2[6];
+    struct I2cDevice dev_pll_si5345;
 };
 /******************************************************************************
 *Local Semaphores.
@@ -210,6 +211,7 @@ int ina3221_warning_interruptions(struct DPB_I2cSensors *,uint16_t , int );
 int ina3221_read_alarms(struct DPB_I2cSensors *,int);
 int ina3221_set_limits(struct DPB_I2cSensors *,int ,int ,int  ,float );
 int ina3221_set_config(struct DPB_I2cSensors *,uint8_t *,uint8_t *, int );
+int reset_PLL_Si5345(struct DPB_I2cSensors *);
 int parsing_mon_channel_data_into_object(json_object *, int, const char *, float);
 int parsing_mon_channel_status_into_object(json_object *, int, const char *, int);
 int parsing_mon_channel_string_into_object(json_object *, int, const char *, char*);
@@ -233,7 +235,7 @@ int eth_link_status_config (char *, int );
 int eth_down_alarm(const char *,int *);
 int aurora_down_alarm(int ,int *);
 int pll_not_locked_alarm();
-int tdm_not_locked_alarm();
+int tdm_not_locked_alarm(struct DPB_I2cSensors *);
 int zmq_socket_init ();
 int zmq_socket_destroy();
 char* command_parse(const char *key);
@@ -565,6 +567,11 @@ int hv_lv_sleep_delay = 0;
 ****************************************************************************/
 #define INA3221_MANUF_ID_REG 0xFE
 #define INA3221_DIE_ID_REG 0xFF
+/******************************************************************************
+* PLL SI5345 Register Set - Device Configuration
+****************************************************************************/
+#define SI5345_PAGE_REG 0x01
+#define SI5345_RESET_REG 0x1C
 /******************************************************************************
 *SFP set.
 ****************************************************************************/
