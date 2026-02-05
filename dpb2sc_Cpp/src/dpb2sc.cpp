@@ -5256,6 +5256,7 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 	if(!strcmp(cmd[0],"READ")){
 		if(cmdIdx == HKDIG_ERRO){
 			command_status_response_json(msg_id,-ERRREAD,reply);
+			DEBUG_PRINTF_1("Error in digitizer %d response for READ command %s\n",dig_num,board_response);
 			return 0;
 		}
 		while(temp = pkt.GetNextField()) {
@@ -5324,6 +5325,7 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 		}
 		else{
 			command_status_response_json(msg_id,-ERRSET,reply);
+			DEBUG_PRINTF_1("Error in digitizer %d response for SET command %s\n",dig_num,board_response);
 		}
 	}
 
@@ -5542,9 +5544,11 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
 			else {
 				if(!strcmp(cmd[0],"READ")){
 					strcpy(mag_str,"ERROR: READ operation not successful");
+					DEBUG_PRINTF_1("Error in READ HV/LV command , got %s",board_response);
 				}
 				else {
 					strcpy(mag_str,"ERROR: SET operation not successful");
+					DEBUG_PRINTF_1("Error in SET HV/LV command , got %s",board_response);
 				}
 				goto end;
 			}
@@ -5553,9 +5557,11 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
 		else {
 			if(!strcmp(cmd[0],"READ")){
 				strcpy(mag_str,"ERROR: READ operation not successful");
+				DEBUG_PRINTF_1("Error in READ HV/LV command , got %s",board_response);
 			}
 			else {
 				strcpy(mag_str,"ERROR: SET operation not successful");
+				DEBUG_PRINTF_1("Error in SET HV/LV command , got %s",board_response);
 			}
 			goto end;
 		}
@@ -5563,9 +5569,11 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
 	else {
 		if(!strcmp(cmd[0],"READ")){
 			strcpy(mag_str,"ERROR: READ operation not successful");
+			DEBUG_PRINTF_1("Error in READ HV/LV command , got %s",board_response);
 		}
 		else {
 			strcpy(mag_str,"ERROR: SET operation not successful");
+			DEBUG_PRINTF_1("Error in SET HV/LV command , got %s",board_response);
 		}
 		goto end;
 	}
