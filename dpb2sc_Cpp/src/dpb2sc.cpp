@@ -89,38 +89,44 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		DEBUG_PRINTF_1("Error initialising shared memory\r\n");
 		return rc;
 	}
+	if(dig0_used){
+		// try to create lock file in /var/lock
+		var_lock = open("/var/lock/LCK..ttyUL1", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+		if(var_lock < 0){
+			LOG_PRINTF("Cannot lock file ttyUL1. Already in use by other process \n");
+			return errno;
+		}
+		write(var_lock, "%4d\n", getpid());
+		close(var_lock);
+	}
 
-	// try to create lock file in /var/lock
-	var_lock = open("/var/lock/LCK..ttyUL1", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-	if(var_lock < 0){
-		LOG_PRINTF("Cannot lock file ttyUL1. Already in use by other process \n");
-		return errno;
+	if(dig1_used){
+		var_lock = open("/var/lock/LCK..ttyUL2", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+		if(var_lock < 0){
+			LOG_PRINTF("Cannot lock file ttyUL2. Already in use by other process \n");
+			return errno;
+		}
+		write(var_lock, "%4d\n", getpid());
+		close(var_lock);
 	}
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
-	var_lock = open("/var/lock/LCK..ttyUL2", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-	if(var_lock < 0){
-		LOG_PRINTF("Cannot lock file ttyUL2. Already in use by other process \n");
-		return errno;
-	}
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
-	// try to create lock file in /var/lock
-	var_lock = open("/var/lock/LCK..ttyUL3", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-	if(var_lock < 0){
-		LOG_PRINTF("Cannot lock file ttyUL3. Already in use by other process \n");
-		return errno;
-	}
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
-	var_lock = open("/var/lock/LCK..ttyUL4", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
-	if(var_lock < 0){
-		LOG_PRINTF("Cannot lock file ttyUL4. Already in use by other process \n");
-		return errno;
-	}
-	write(var_lock, "%4d\n", getpid());
-	close(var_lock);
 
+	if(hv_lv_used){
+		// try to create lock file in /var/lock
+		var_lock = open("/var/lock/LCK..ttyUL3", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+		if(var_lock < 0){
+			LOG_PRINTF("Cannot lock file ttyUL3. Already in use by other process \n");
+			return errno;
+		}
+		write(var_lock, "%4d\n", getpid());
+		close(var_lock);
+		var_lock = open("/var/lock/LCK..ttyUL4", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
+		if(var_lock < 0){
+			LOG_PRINTF("Cannot lock file ttyUL4. Already in use by other process \n");
+			return errno;
+		}
+		write(var_lock, "%4d\n", getpid());
+		close(var_lock);
+	}
 	// Populate all electronics hash tables
 	populate_lv_hash_table(LV_CMD_TABLE_SIZE,lv_daq_words,lv_board_words);
 	populate_hv_hash_table(HV_CMD_TABLE_SIZE,hv_daq_words,hv_board_words);
@@ -180,18 +186,17 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	write_GPIO(HV_MAIN_CPU_GPIO_OFFSET,1);
 	usleep(6000000);
 	check_hv_lv_presence();
-
-
-	int serial_port_fd;
-	serial_port_fd = open("/dev/ttyUL3",O_RDWR);
-	setup_serial_port(serial_port_fd);
-	// Turn on the digitizers
-	usleep(1000000);
-	write(serial_port_fd, "$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
-	usleep(1000000);
-	write(serial_port_fd, "$BD:0,$CMD:SET,CH:6,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
-
-	close(serial_port_fd);
+	if(hv_lv_used){
+		int serial_port_fd;
+		serial_port_fd = open("/dev/ttyUL3",O_RDWR);
+		setup_serial_port(serial_port_fd);
+		// Turn on the digitizers
+		usleep(1000000);
+		write(serial_port_fd, "$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
+		usleep(1000000);
+		write(serial_port_fd, "$BD:0,$CMD:SET,CH:6,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
+		close(serial_port_fd);
+	}
 	// FIXME: Wait for digitizers to be turned on (Very time consuming!)
 	usleep(12000000);
 	check_digs_presence();
@@ -318,10 +323,15 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    unexport_GPIO();
    zmq_socket_destroy();
    // Release all locks
-   unlink("/var/lock/LCK..ttyUL1");
-   unlink("/var/lock/LCK..ttyUL2");
-   unlink("/var/lock/LCK..ttyUL3");
-   unlink("/var/lock/LCK..ttyUL4");
+   if(dig0_used)
+	   unlink("/var/lock/LCK..ttyUL1");
+   if(dig1_used)
+   	   unlink("/var/lock/LCK..ttyUL2");
+	
+   if(hv_lv_used){
+	   unlink("/var/lock/LCK..ttyUL3");
+	   unlink("/var/lock/LCK..ttyUL4");
+   }
    //Destroy all semaphores
    sem_destroy(&i2c_sync);
    sem_destroy(&file_sync);
@@ -3821,7 +3831,7 @@ char* command_parse(const char *key){
 				write_GPIO(gpio_cpu_addr,gpio_cpu_val);
 				command_status_response_json (msg_id,99,reply);
 			}
-			else if(lv_connected){	
+			else if(lv_connected && hv_lv_used){	
 				char board_dev[64];
 				#ifdef HVLV_NORESISTORS
 				strcpy(board_dev,"/dev/ttyUL4");
@@ -3862,7 +3872,7 @@ char* command_parse(const char *key){
 				write_GPIO(gpio_cpu_addr,gpio_cpu_val);
 				command_status_response_json (msg_id,99,reply);
 			}
-			else if(hv_connected){
+			else if(hv_connected && hv_lv_used){
 				char board_dev[64] = "/dev/ttyUL3";
 				//Command conversion
 				char hvlvcmd[64];  
@@ -3918,7 +3928,7 @@ char* command_parse(const char *key){
 			}		
 			else {
 				char board_response[64];
-				if(dig0_connected){
+				if(dig0_connected && dig0_used){
 					char digcmd[32];
 					//Command conversion
 					rc = dig_command_translation(digcmd, cmd, words_n);
@@ -3975,7 +3985,7 @@ char* command_parse(const char *key){
 			}		
 			else {
 				char board_response[64];
-				if(dig1_connected){
+				if(dig1_connected && dig1_used){
 					char digcmd[32];
 					//Command conversion
 					rc = dig_command_translation(digcmd, cmd, words_n);
@@ -5551,7 +5561,7 @@ int hv_lv_command_response(char *board_response,char *reply,int msg_id, char **c
 	char *target = NULL;
 	char *start, *end;
 	char start_string[32];
-	if((!strcmp(cmd[1],"LV") && !lv_connected) || (!strcmp(cmd[1],"HV") && !hv_connected )){
+	if((!strcmp(cmd[1],"LV") && !(lv_connected || hv_lv_used)) || (!strcmp(cmd[1],"HV") && !(hv_connected || hv_lv_used))){
 		command_response_string_json(msg_id,board_response,reply);
 		return 0;
 	}
@@ -6048,75 +6058,77 @@ int check_hv_lv_presence(){
 
 	// Check if HV and LV are there
 	sem_wait(&sem_hvlv);
-	serial_port_fd = open("/dev/ttyUL3",O_RDWR | O_NONBLOCK);
-	setup_serial_port(serial_port_fd);
-	tcflush(serial_port_fd,TCIOFLUSH);
-	write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:1,$CMD:MON,PAR:BDSNUM\r\n"));
-	usleep(1000000);
-	n = read(serial_port_fd, buffer, sizeof(buffer));
-	if(n > 0){
-		if(!hv_connected){
-			for(int i = 12; i <=16; i++ ){ // Take just serial number from the response
-				HV_SN[i-12] = buffer[i];
+	if(hv_lv_used){
+		serial_port_fd = open("/dev/ttyUL3",O_RDWR | O_NONBLOCK);
+		setup_serial_port(serial_port_fd);
+		tcflush(serial_port_fd,TCIOFLUSH);
+		write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:1,$CMD:MON,PAR:BDSNUM\r\n"));
+		usleep(1000000);
+		n = read(serial_port_fd, buffer, sizeof(buffer));
+		if(n > 0){
+			if(!hv_connected){
+				for(int i = 12; i <=16; i++ ){ // Take just serial number from the response
+					HV_SN[i-12] = buffer[i];
+				}
+				HV_SN[5] = '\0';
+				tcflush(serial_port_fd,TCIOFLUSH);
+				write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:1,$CMD:MON,PAR:BDFREL\r\n"));
+				usleep(1000000);
+				n = read(serial_port_fd, buffer, sizeof(buffer));
+				for(int i = 12; i <=15; i++ ){ // Take just firmware from the response
+					HV_FW[i-12] = buffer[i];
+				}
+				HV_FW[4] = '\0';
+				LOG_PRINTF("Hotplug event: HV has been detected: S/N %s FW %s \n",HV_SN, HV_FW);
+				status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
+				hv_connected = 1;
 			}
-			HV_SN[5] = '\0';
-			tcflush(serial_port_fd,TCIOFLUSH);
-			write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:1,$CMD:MON,PAR:BDFREL\r\n"));
-			usleep(1000000);
-			n = read(serial_port_fd, buffer, sizeof(buffer));
-			for(int i = 12; i <=15; i++ ){ // Take just firmware from the response
-				HV_FW[i-12] = buffer[i];
+		}
+		else{
+			if(hv_connected){
+				status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
 			}
-			HV_FW[4] = '\0';
-			LOG_PRINTF("Hotplug event: HV has been detected: S/N %s FW %s \n",HV_SN, HV_FW);
-			status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
-			hv_connected = 1;
+			hv_connected = 0;
 		}
-	}
-	else{
-		if(hv_connected){
-			status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
-		}
-		hv_connected = 0;
-	}
 
-	#ifdef HVLV_NORESISTORS
-	close(serial_port_fd);
-	serial_port_fd = open("/dev/ttyUL4",O_RDWR | O_NONBLOCK);
-	setup_serial_port(serial_port_fd);
-	#endif
+		#ifdef HVLV_NORESISTORS
+		close(serial_port_fd);
+		serial_port_fd = open("/dev/ttyUL4",O_RDWR | O_NONBLOCK);
+		setup_serial_port(serial_port_fd);
+		#endif
 
-	tcflush(serial_port_fd,TCIOFLUSH);
-	write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
-	usleep(1000000);
-	n = read(serial_port_fd, buffer, sizeof(buffer));
-	if(n > 0){
-		if(!lv_connected){
-			for(int i = 12; i <=16; i++ ){ // Take just serial number from the response
-				LV_SN[i-12] = buffer[i];
+		tcflush(serial_port_fd,TCIOFLUSH);
+		write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
+		usleep(1000000);
+		n = read(serial_port_fd, buffer, sizeof(buffer));
+		if(n > 0){
+			if(!lv_connected){
+				for(int i = 12; i <=16; i++ ){ // Take just serial number from the response
+					LV_SN[i-12] = buffer[i];
+				}
+				LV_SN[5] = '\0';
+				tcflush(serial_port_fd,TCIOFLUSH);
+				write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:0,$CMD:MON,PAR:BDFREL\r\n"));
+				usleep(1000000);
+				n = read(serial_port_fd, buffer, sizeof(buffer));
+				for(int i = 12; i <=15; i++ ){ // Take just firmware from the response
+					LV_FW[i-12] = buffer[i];
+				}
+				LV_FW[4] = '\0';
+				LOG_PRINTF("Hotplug event: LV has been detected: S/N %s FW %s \n", LV_SN, LV_FW);
+				status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
+				lv_connected = 1;
 			}
-			LV_SN[5] = '\0';
-			tcflush(serial_port_fd,TCIOFLUSH);
-			write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:0,$CMD:MON,PAR:BDFREL\r\n"));
-			usleep(1000000);
-			n = read(serial_port_fd, buffer, sizeof(buffer));
-			for(int i = 12; i <=15; i++ ){ // Take just firmware from the response
-				LV_FW[i-12] = buffer[i];
+		}
+		else{
+			if(lv_connected){
+				status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
 			}
-			LV_FW[4] = '\0';
-			LOG_PRINTF("Hotplug event: LV has been detected: S/N %s FW %s \n", LV_SN, LV_FW);
-			status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
-			lv_connected = 1;
+			lv_connected = 0;
 		}
+		tcflush(serial_port_fd,TCIOFLUSH);
+		close(serial_port_fd);
 	}
-	else{
-		if(lv_connected){
-			status_alarm_json("HV/LV","UART Lite 3", 99,0,"critical","OFF");
-		}
-		lv_connected = 0;
-	}
-	tcflush(serial_port_fd,TCIOFLUSH);
-	close(serial_port_fd);
 	sem_post(&sem_hvlv);
 
 	return 0;
@@ -6132,92 +6144,95 @@ int check_digs_presence(){
 
 	int serial_port_fd,n;
 	char buffer[40];
-
-	sem_wait(&sem_dig0);
 	// Check if Dig0 and Dig1 are there
 	CCOPacket pkt(COPKT_DEFAULT_START, COPKT_DEFAULT_STOP, COPKT_DEFAULT_SEP);
+	if(dig0_used){
+		sem_wait(&sem_dig0);
 
-	serial_port_fd = open("/dev/ttyUL1",O_RDWR | O_NONBLOCK);
-	setup_serial_port(serial_port_fd);
-	tcflush(serial_port_fd,TCIOFLUSH);
-	// Check digitizer with empty command to see if errno is received. If anything else than COPACKET error is received, the digitizer firmware is not compatible
-	strcpy(buffer,"$#");
-	write(serial_port_fd, buffer, strlen(buffer));
-	usleep(100000);
-	n = read(serial_port_fd, buffer, sizeof(buffer));
-	buffer[n] = '\0';
-	sem_post(&sem_dig0);
-	if(n > 0){
-		if(!dig0_connected){
-			pkt.LoadString(buffer);
-			int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
-			if(cmd_id == HKDIG_ERRO){
-				pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
-				write(serial_port_fd, buffer, strlen(buffer));
-				usleep(100000);
-				n = read(serial_port_fd, buffer, sizeof(buffer));	
-				char* gw_ver_str;
-				gw_ver_str = pkt.GetNextField();
-				strcpy(DIG0_SN,gw_ver_str); // Digitizer gateway is in hex format	
-				LOG_PRINTF("Hotplug event: Digitizer 0 has been detected GW Ver %s\n",DIG0_SN);
-				status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
-				dig0_connected = 1;
-				dig_get_calib_values(DIGITIZER_0);
-			}
-			else{
-				LOG_PRINTF("WARNING: Digitizer 0 is using a non compatible firmware\n");
+		serial_port_fd = open("/dev/ttyUL1",O_RDWR | O_NONBLOCK);
+		setup_serial_port(serial_port_fd);
+		tcflush(serial_port_fd,TCIOFLUSH);
+		// Check digitizer with empty command to see if errno is received. If anything else than COPACKET error is received, the digitizer firmware is not compatible
+		strcpy(buffer,"$#");
+		write(serial_port_fd, buffer, strlen(buffer));
+		usleep(100000);
+		n = read(serial_port_fd, buffer, sizeof(buffer));
+		buffer[n] = '\0';
+		sem_post(&sem_dig0);
+		if(n > 0){
+			if(!dig0_connected){
+				pkt.LoadString(buffer);
+				int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
+				if(cmd_id == HKDIG_ERRO){
+					pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+					write(serial_port_fd, buffer, strlen(buffer));
+					usleep(100000);
+					n = read(serial_port_fd, buffer, sizeof(buffer));	
+					char* gw_ver_str;
+					gw_ver_str = pkt.GetNextField();
+					strcpy(DIG0_SN,gw_ver_str); // Digitizer gateway is in hex format	
+					LOG_PRINTF("Hotplug event: Digitizer 0 has been detected GW Ver %s\n",DIG0_SN);
+					status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
+					dig0_connected = 1;
+					dig_get_calib_values(DIGITIZER_0);
+				}
+				else{
+					LOG_PRINTF("WARNING: Digitizer 0 is using a non compatible firmware\n");
+				}
 			}
 		}
-	}
-	else{
-		if(dig0_connected){
-			status_alarm_json("DIG0","Serial Port", 99,0,"critical","OFF");
+		else{
+			if(dig0_connected){
+				status_alarm_json("DIG0","Serial Port", 99,0,"critical","OFF");
+			}
+			dig0_connected = 0;
 		}
-		dig0_connected = 0;
+		close(serial_port_fd);
 	}
-	close(serial_port_fd);
 
-	sem_wait(&sem_dig1);
-	serial_port_fd = open("/dev/ttyUL2",O_RDWR | O_NONBLOCK);
-	setup_serial_port(serial_port_fd);
-	tcflush(serial_port_fd,TCIOFLUSH);
+	if(dig1_used){
+		sem_wait(&sem_dig1);
+		serial_port_fd = open("/dev/ttyUL2",O_RDWR | O_NONBLOCK);
+		setup_serial_port(serial_port_fd);
+		tcflush(serial_port_fd,TCIOFLUSH);
 
-	// Check with empty command to see if errno is received. If anything else than COPACKET error is received, the digitizer firmware is not compatible
-	strcpy(buffer,"$#");
-	write(serial_port_fd, buffer, strlen(buffer));
-	usleep(100000);
-	n = read(serial_port_fd, buffer, sizeof(buffer));
-	buffer[n] = '\0';
-	sem_post(&sem_dig1);
-	if(n > 0){
-		if(!dig1_connected){
-			pkt.LoadString(buffer);
-			int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
-			if(cmd_id == HKDIG_ERRO){
-				pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
-				write(serial_port_fd, buffer, strlen(buffer));
-				usleep(100000);
-				n = read(serial_port_fd, buffer, sizeof(buffer));
-				char* gw_ver_str;
-				gw_ver_str = pkt.GetNextField();
-				strcpy(DIG1_SN,gw_ver_str); // Digitizer gateway is in hex format	
-				LOG_PRINTF("Hotplug event: Digitizer 1 has been detected GW Ver %s\n",DIG1_SN);
-				status_alarm_json("DIG1","Serial Port", 99,0,"info","ON");
-				dig1_connected = 1;
-				dig_get_calib_values(DIGITIZER_1);
-			}
-			else{
-				LOG_PRINTF("WARNING: Digitizer 1 is using a non compatible firmware\n");
+		// Check with empty command to see if errno is received. If anything else than COPACKET error is received, the digitizer firmware is not compatible
+		strcpy(buffer,"$#");
+		write(serial_port_fd, buffer, strlen(buffer));
+		usleep(100000);
+		n = read(serial_port_fd, buffer, sizeof(buffer));
+		buffer[n] = '\0';
+		sem_post(&sem_dig1);
+		if(n > 0){
+			if(!dig1_connected){
+				pkt.LoadString(buffer);
+				int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
+				if(cmd_id == HKDIG_ERRO){
+					pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+					write(serial_port_fd, buffer, strlen(buffer));
+					usleep(100000);
+					n = read(serial_port_fd, buffer, sizeof(buffer));
+					char* gw_ver_str;
+					gw_ver_str = pkt.GetNextField();
+					strcpy(DIG1_SN,gw_ver_str); // Digitizer gateway is in hex format	
+					LOG_PRINTF("Hotplug event: Digitizer 1 has been detected GW Ver %s\n",DIG1_SN);
+					status_alarm_json("DIG1","Serial Port", 99,0,"info","ON");
+					dig1_connected = 1;
+					dig_get_calib_values(DIGITIZER_1);
+				}
+				else{
+					LOG_PRINTF("WARNING: Digitizer 1 is using a non compatible firmware\n");
+				}
 			}
 		}
-	}
-	else{
-		if(dig1_connected){
-			status_alarm_json("DIG1","Serial Port", 99,0,"critical","OFF");
+		else{
+			if(dig1_connected){
+				status_alarm_json("DIG1","Serial Port", 99,0,"critical","OFF");
+			}
+			dig1_connected = 0;
 		}
-		dig1_connected = 0;
+		close(serial_port_fd);
 	}
-	close(serial_port_fd);
 	return 0;
 }
 
