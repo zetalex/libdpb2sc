@@ -170,6 +170,7 @@ void *cmd_router;
 void *logging_publisher;
 void *config_router;
 void *daq_readout_publisher;
+void *bypass_cmd_router;
 /************************** Function Prototypes ******************************/
 
 int dpbsc_lib_init(struct DPB_I2cSensors *);

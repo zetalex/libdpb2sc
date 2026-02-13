@@ -3361,6 +3361,15 @@ int zmq_socket_init (){
 		return rc;
 	}
 
+	bypass_cmd_router = zmq_socket(zmq_context, ZMQ_REP);
+    zmq_setsockopt(bypass_cmd_router, ZMQ_SNDHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
+    zmq_setsockopt(bypass_cmd_router, ZMQ_RCVHWM, &sndhwm_mon_cmd_config, sndhwm_mon_cmd_size);
+    zmq_setsockopt (bypass_cmd_router, ZMQ_LINGER, &linger, linger_size);
+    rc = zmq_bind(bypass_cmd_router, "tcp://*:5560");
+	if (rc) {
+		return rc;
+	}
+
 	return 0;
 }
 
@@ -3382,6 +3391,8 @@ int zmq_socket_destroy (){
 	zmq_close(config_router);
 
 	zmq_close(daq_readout_publisher);
+
+	zmq_close(bypass_cmd_router);
 
 	zmq_ctx_shutdown(zmq_context);
 
