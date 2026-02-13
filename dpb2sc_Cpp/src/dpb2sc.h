@@ -360,7 +360,6 @@ int daq_flag = 0;
 int debug_flag = 0; //Debug flag to control the debug level of the application
 int dma_flag = 0; //DMA flag to indicate if DMA is enabled or not
 int dma_source_flag = 0; //DMA source flag to indicate the source of the DMA transfers
-int command_validation_flag = 0;
 
 /************************** SFP Related Variables *****************************/
 /** @defgroup SFP_I2C SFP Related Variables

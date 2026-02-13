@@ -3816,12 +3816,9 @@ char* command_parse(const char *key){
 	}
 	//Check JSON schema valid
 	serialized_json = json_object_to_json_string(jobj);
-	if(command_validation_flag){
-		rc = json_schema_validate("JSONSchemaCommandRequest.json",serialized_json, "cmd_temp.json");
-		if(rc){
-			rc = command_status_response_json (msg_id,-EINCMD,reply);
-			goto send_msg;
-		}
+	rc = json_schema_validate("JSONSchemaCommandRequest.json",serialized_json, "cmd_temp.json");
+	if(rc){
+		rc = command_status_response_json (msg_id,-EINCMD,reply);
 	}
 	else{
 		char board_response[64];
@@ -4027,7 +4024,7 @@ char* command_parse(const char *key){
 		}
 	}
 	// Free JSON objects after using them
-	send_msg: json_object_put(jobj);
+	json_object_put(jobj);
 	// For DAQ, we are only interested in the msg_value
 	#ifdef DAQ_MODE
 		json_object * jcmd;
