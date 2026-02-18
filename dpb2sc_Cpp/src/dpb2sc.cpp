@@ -4837,7 +4837,7 @@ int config_get(){
 		std::string config_json_str;
 		std::string dev_name;
 		dev_name = DAQ_Inter->GetDeviceName();
-		DAQ_Inter->GetDeviceConfig(config_json,1,dev_name);
+		DAQ_Inter->GetDeviceConfig(config_json_str,1,dev_name);
 		strcpy(config_to_apply,config_json_str.c_str());
 	#else
 		// Get the configuration file from config socket
