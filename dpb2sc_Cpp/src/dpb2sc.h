@@ -1107,7 +1107,6 @@ const int dig_monitor_mag_chan_codes[] = {
     HKDIG_GET_RMON_FMT_N,
     HKDIG_GET_CHN_LG_CHG,
     HKDIG_GET_CHN_HG_CHG,
-    HKDIG_RO_FMON_N,
 };
 
 const char *dig_monitor_mag_board_names[] = {
@@ -1161,8 +1160,7 @@ const char *dig_monitor_mag_chan_names[] = {
     "rmontdc",
     "rmonfmt",
     "lgchg",
-    "hgchg",
-    "fmon"
+    "hgchg"
 };
 
 /** @brief Detected Dig0 Serial Number */
