@@ -217,6 +217,7 @@ int parsing_mon_channel_data_into_object(json_object *, int, const char *, float
 int parsing_mon_channel_status_into_object(json_object *, int, const char *, int);
 int parsing_mon_channel_string_into_object(json_object *, int, const char *, char*);
 int parsing_mon_environment_data_into_object(json_object *, const char *, float);
+int parsing_mon_channel_integer_into_object(json_object *, int, const char *, int);
 int parsing_mon_environment_integer_into_object(json_object *, const char *, int);
 int parsing_mon_environment_status_into_object(json_object *, const char *, int);
 int parsing_mon_environment_string_into_object(json_object *,const char *, char *);
