@@ -135,12 +135,12 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	// Enable RS485 driver to ttyUL3
 	write_GPIO(HVLV_RS485_PRI_PWR_EN_GPIO_OFFSET,1);
 
-	// Enable RS485 driver to ttyUL4 also in case the bus is not shared
-	#ifdef HVLV_NORESISTORS
+	// Enable RS485 driver to ttyUL4
 	write_GPIO(HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,1);
-	#else
-	write_GPIO(HVLV_RS485_SEC_PWR_EN_GPIO_OFFSET,0);
-	#endif
+
+	// Use Main RS485 driver as default for HV and LV communication
+	strcpy(hv_rs485_driver,"/dev/ttyUL3");
+	strcpy(lv_rs485_driver,"/dev/ttyUL3");
 
 	usleep(500000);
 
@@ -188,7 +188,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	check_hv_lv_presence();
 	if(hv_lv_used){
 		int serial_port_fd;
-		serial_port_fd = open("/dev/ttyUL3",O_RDWR);
+		serial_port_fd = open(lv_rs485_driver,O_RDWR);
 		setup_serial_port(serial_port_fd);
 		// Turn on the digitizers
 		usleep(1000000);
@@ -3870,21 +3870,36 @@ char* command_parse(const char *key){
 					gpio_cpu_val = 0;
 				}
 				write_GPIO(gpio_cpu_addr,gpio_cpu_val);
-				command_status_response_json (msg_id,99,reply);
+				command_status_response_json(msg_id,99,reply);
+			}
+			else if(!strcmp(cmd[2],"RS485")){
+				if(!strcmp(cmd[0],"READ")){
+					if(!strcmp(lv_rs485_driver,"/dev/ttyUL3")){
+						strcpy(board_response, "MAIN");
+					}
+					else {
+						strcpy(board_response, "BACKUP");
+					}
+					command_response_string_json(msg_id,board_response,reply);
+				}
+				else {
+					if(!strcmp(cmd[3],"MAIN")){
+						strcpy(lv_rs485_driver,"/dev/ttyUL3");
+					}
+					else{
+						strcpy(lv_rs485_driver,"/dev/ttyUL4");
+					}
+					command_status_response_json(msg_id,99,reply);
+				}
 			}
 			else if(lv_connected && hv_lv_used){	
 				char board_dev[64];
-				#ifdef HVLV_NORESISTORS
-				strcpy(board_dev,"/dev/ttyUL4");
-				#else
-				strcpy(board_dev,"/dev/ttyUL3");
-				#endif
 				//Command conversion
 				char hvlvcmd[64];  
 				strcpy(hvlvcmd,"$BD:0,$CMD:");
 				rc = hv_lv_command_translation(hvlvcmd, cmd, words_n);
 				//RS485 communication
-				rc = hv_lv_command_handling(board_dev,hvlvcmd, board_response);
+				rc = hv_lv_command_handling(lv_rs485_driver,hvlvcmd, board_response);
 				// Generate the JSON message depending on reading or setting
 				rc = hv_lv_command_response(board_response,reply,msg_id,cmd);
 			}
@@ -3913,8 +3928,27 @@ char* command_parse(const char *key){
 				write_GPIO(gpio_cpu_addr,gpio_cpu_val);
 				command_status_response_json (msg_id,99,reply);
 			}
+			else if(!strcmp(cmd[2],"RS485")){
+				if(!strcmp(cmd[0],"READ")){
+					if(!strcmp(hv_rs485_driver,"/dev/ttyUL3")){
+						strcpy(board_response, "MAIN");
+					}
+					else {
+						strcpy(board_response, "BACKUP");
+					}
+					command_response_string_json(msg_id,board_response,reply);
+				}
+				else {
+					if(!strcmp(cmd[3],"MAIN")){
+						strcpy(hv_rs485_driver,"/dev/ttyUL3");
+					}
+					else{
+						strcpy(hv_rs485_driver,"/dev/ttyUL4");
+					}
+					command_status_response_json(msg_id,99,reply);
+				}
+			}
 			else if(hv_connected && hv_lv_used){
-				char board_dev[64] = "/dev/ttyUL3";
 				//Command conversion
 				char hvlvcmd[64];  
 				strcpy(hvlvcmd,"$BD:1,$CMD:");
@@ -3926,7 +3960,7 @@ char* command_parse(const char *key){
 				}
 				else{
 				//RS485 communication
-				rc = hv_lv_command_handling(board_dev,hvlvcmd, board_response);
+				rc = hv_lv_command_handling(hv_rs485_driver,hvlvcmd, board_response);
 				// Generate the JSON message depending on reading or setting
 				rc = hv_lv_command_response(board_response,reply,msg_id,cmd);
 				}
@@ -5745,14 +5779,12 @@ int setup_serial_port(int serial_port){
  */
 int hv_read_alarms(){
 	// // We just read the Status register from the HV
-	char board_dev[16];
 	char hvlvcmd[40];
 	char buffer[8];
 	char response[40];
 	char mag_str[32];
 	int rc = 0;
 	int OVC_flag, OVV_flag, UNV_flag, TRIP_flag;
-	strcpy(board_dev,"/dev/ttyUL3");
 	//Get Timestamp
 	uint64_t timestamp;
 	timestamp = timestamp_ms();
@@ -5763,7 +5795,7 @@ int hv_read_alarms(){
 		sprintf(buffer, "%d",i);
 		strcat(hvlvcmd,buffer);
 		strcat(hvlvcmd,",PAR:STATUS\r\n");
-		hv_lv_command_handling(board_dev,hvlvcmd,response);
+		hv_lv_command_handling(hv_rs485_driver,hvlvcmd,response);
 		char *target = NULL;
 		char *start, *end;
 		if ( (start = strstr( response, "#CMD:OK,VAL:" ) )){
@@ -6100,7 +6132,7 @@ int check_hv_lv_presence(){
 	// Check if HV and LV are there
 	sem_wait(&sem_hvlv);
 	if(hv_lv_used){
-		serial_port_fd = open("/dev/ttyUL3",O_RDWR | O_NONBLOCK);
+		serial_port_fd = open(hv_rs485_driver,O_RDWR | O_NONBLOCK);
 		setup_serial_port(serial_port_fd);
 		tcflush(serial_port_fd,TCIOFLUSH);
 		write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:1,$CMD:MON,PAR:BDSNUM\r\n"));
@@ -6131,13 +6163,11 @@ int check_hv_lv_presence(){
 			}
 			hv_connected = 0;
 		}
-
-		#ifdef HVLV_NORESISTORS
 		close(serial_port_fd);
-		serial_port_fd = open("/dev/ttyUL4",O_RDWR | O_NONBLOCK);
-		setup_serial_port(serial_port_fd);
-		#endif
 
+
+		serial_port_fd = open(lv_rs485_driver,O_RDWR | O_NONBLOCK);
+		setup_serial_port(serial_port_fd);
 		tcflush(serial_port_fd,TCIOFLUSH);
 		write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
 		usleep(1000000);

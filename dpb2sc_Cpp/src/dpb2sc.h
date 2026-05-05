@@ -728,6 +728,7 @@ struct config_element config_variables[] = {
     {"LV", "status", CHAN_PARAM, "SET_LV_STATUS", 8},
     {"LV", "cpumain", ENV_PARAM, "SET_LV_CPU_MAIN", 0},
     {"LV", "cpubackup", ENV_PARAM, "SET_LV_CPU_BACKUP", 0},
+    {"LV", "rs485driver", ENV_PARAM, "SET_LV_RS485", 0},
 
     {"HV", "status", CHAN_PARAM, "SET_HV_STATUS", 24},
     {"HV", "voltage", CHAN_PARAM, "SET_HV_VOLT", 24},
@@ -737,6 +738,7 @@ struct config_element config_variables[] = {
     {"HV", "trip", CHAN_PARAM, "SET_HV_TRIP", 24},
     {"HV", "cpumain", ENV_PARAM, "SET_HV_CPU_MAIN", 0},
     {"HV", "cpubackup", ENV_PARAM, "SET_HV_CPU_BACKUP", 0},
+    {"HV", "rs485driver", ENV_PARAM, "SET_HV_RS485", 0},
 
     {"Dig0", "chcontrol", CHAN_PARAM, "SET_DIG0_CHCONTROL", 18},
     {"Dig0", "disctres", CHAN_PARAM, "SET_DIG0_DISCTRES", 18},
@@ -821,7 +823,7 @@ char config_to_apply[MAX_CONFIG_SIZE];
 /******************************************************************************
 LV Command Data.
 ****************************************************************************/
-#define LV_CMD_TABLE_SIZE 11
+#define LV_CMD_TABLE_SIZE (sizeof(lv_daq_words)/sizeof(lv_daq_words[0]) - 1)
 
 const char *lv_daq_words[] = {
 	"BDSNUM",
@@ -834,7 +836,6 @@ const char *lv_daq_words[] = {
     "STATUS",
     "VOLT",
     "CURR",
-    "CPU",
     NULL
 };
 
@@ -848,8 +849,7 @@ const char *lv_board_words[] = {
     "H2OALARM",
     "SDEN",
     "VMON",
-    "IMON",
-    "CPU"
+    "IMON"
 };
 
 const char *lv_mag_names[] = {
@@ -862,21 +862,23 @@ const char *lv_mag_names[] = {
     "waterleak",
     "status",
     "voltage",
-    "current",
-    "cpustatus"
+    "current"
 };
 
-// Detected LV Serial Number
+/** @brief  Detected LV Serial Number */
 char LV_SN[8];
 
-// Detected LV Firmware Number
+/** @brief  Detected LV Firmware Number */
 char LV_FW[8];
+
+/** @brief Selected RS485 driver for LV */
+char lv_rs485_driver[32];
 
 /******************************************************************************
 HV Command Data.
 ****************************************************************************/
 
-#define HV_CMD_TABLE_SIZE 16
+#define HV_CMD_TABLE_SIZE (sizeof(hv_daq_words)/sizeof(hv_daq_words[0]) - 1)
 
 const char *hv_daq_words[] = {
 	"BDSNUM",
@@ -944,6 +946,9 @@ char HV_SN[8];
 
 /** @brief  Detected HV Firmware Number */
 char HV_FW[8];
+
+/** @brief  Selected RS485 driver for HV */
+char hv_rs485_driver[32];
 
 /******************************************************************************
 Digitizer Command Data.
