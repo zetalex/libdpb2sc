@@ -6167,12 +6167,14 @@ int check_hv_lv_presence(){
 		usleep(1000000);
 		n = read(serial_port_fd, buffer, sizeof(buffer));
 		if(n > 0){
+			buffer[n] = '\0';
 			if(!hv_connected){
 				strcpy(HV_SN,buffer + 12); // Take just serial number from the response
 				tcflush(serial_port_fd,TCIOFLUSH);
 				write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:1,$CMD:MON,PAR:BDFREL\r\n"));
 				usleep(1000000);
 				n = read(serial_port_fd, buffer, sizeof(buffer));
+				buffer[n] = '\0';
 				strcpy(HV_FW,buffer + 12); // Take just firmware from the response
 				LOG_PRINTF("Hotplug event: HV has been detected: S/N %s FW %s \n",HV_SN, HV_FW);
 				status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
@@ -6195,12 +6197,14 @@ int check_hv_lv_presence(){
 		usleep(1000000);
 		n = read(serial_port_fd, buffer, sizeof(buffer));
 		if(n > 0){
+			buffer[n] = '\0';
 			if(!lv_connected){
 				strcpy(LV_SN,buffer + 12); // Take just serial number from the response
 				tcflush(serial_port_fd,TCIOFLUSH);
 				write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:0,$CMD:MON,PAR:BDFREL\r\n"));
 				usleep(1000000);
-				n = read(serial_port_fd, buffer, sizeof(buffer));+
+				n = read(serial_port_fd, buffer, sizeof(buffer));
+				buffer[n] = '\0';
 				strcpy(LV_FW,buffer + 12); // Take just firmware from the response
 				LOG_PRINTF("Hotplug event: LV has been detected: S/N %s FW %s \n", LV_SN, LV_FW);
 				status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
@@ -6255,6 +6259,7 @@ int check_digs_presence(){
 					write(serial_port_fd, buffer, strlen(buffer));
 					usleep(100000);
 					n = read(serial_port_fd, buffer, sizeof(buffer));	
+					buffer[n] = '\0';
 					char* gw_ver_str;
 					gw_ver_str = pkt.GetNextField();
 					strcpy(DIG0_SN,gw_ver_str); // Digitizer gateway is in hex format	
@@ -6288,7 +6293,6 @@ int check_digs_presence(){
 		write(serial_port_fd, buffer, strlen(buffer));
 		usleep(100000);
 		n = read(serial_port_fd, buffer, sizeof(buffer));
-		buffer[n] = '\0';
 		sem_post(&sem_dig1);
 		if(n > 0){
 			if(!dig1_connected){
@@ -6299,6 +6303,7 @@ int check_digs_presence(){
 					write(serial_port_fd, buffer, strlen(buffer));
 					usleep(100000);
 					n = read(serial_port_fd, buffer, sizeof(buffer));
+					buffer[n] = '\0';
 					char* gw_ver_str;
 					gw_ver_str = pkt.GetNextField();
 					strcpy(DIG1_SN,gw_ver_str); // Digitizer gateway is in hex format	
