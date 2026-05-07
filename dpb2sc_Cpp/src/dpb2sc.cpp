@@ -4934,6 +4934,10 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	int serial_port_fd;
 	uint16_t *alarm_flag;
 	int n;
+	#ifdef USE_TIMERS
+	struct timespec start_monotonic, stop_monotonic;
+	struct timespec start_thread_time, stop_thread_time;
+	#endif
 	char read_buf[128];
 	char error[128];
 	char board_dev[32];
@@ -4961,6 +4965,10 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 	}
 	sem_wait(sem_temp);
 	//Open one device
+	#ifdef USE_TIMERS
+	clock_gettime(CLOCK_MONOTONIC, &start_monotonic);
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_thread_time);
+	#endif
 	serial_port_fd = open(board_dev,O_RDWR);
 	if (serial_port_fd < 0) {
 		//Send alarm
@@ -5030,6 +5038,12 @@ success:
 	alarm_flag[0] = 0;  // Set back the alarm_flag to send any alarm in case of an error
 	flock(serial_port_fd, LOCK_UN);
 	sem_post(sem_temp);
+	#ifdef USE_TIMERS
+	clock_gettime(CLOCK_MONOTONIC, &stop_monotonic);
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &stop_thread_time);
+	LOG_PRINTF("Time taken for Dig command %s: %f ms\n", cmd, (stop_monotonic.tv_sec - start_monotonic.tv_sec)*1e3 + (stop_monotonic.tv_nsec - start_monotonic.tv_nsec) / 1e6);
+	LOG_PRINTF("Thread CPU time taken for Dig command %s: %f ms\n", cmd, (stop_thread_time.tv_sec - start_thread_time.tv_sec)*1e3 + (stop_thread_time.tv_nsec - start_thread_time.tv_nsec) / 1e6);
+	#endif
 	return 0;
 }
 
@@ -5462,6 +5476,10 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	int serial_port_UL3;
 	int n;
+	#ifdef USE_TIMERS
+	struct timespec start_monotonic, stop_monotonic;
+	struct timespec start_thread_time, stop_thread_time;
+	#endif
 	uint16_t *alarm_flag;
 	char read_buf[128];
 	char error[128];
@@ -5480,6 +5498,10 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 	}
 	//Open one device
 	errno = 0;
+	#ifdef USE_TIMERS
+	clock_gettime(CLOCK_MONOTONIC, &start_monotonic);
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_thread_time);
+	#endif
 	serial_port_UL3 = open(board_dev,O_RDWR);
 	if (serial_port_UL3 < 0) {
 		//Send alarm
@@ -5549,6 +5571,12 @@ success:
 	// Release the two locking mechanisms
 	flock(serial_port_UL3, LOCK_UN);
 	sem_post(&sem_hvlv);
+	#ifdef USE_TIMERS
+	clock_gettime(CLOCK_MONOTONIC, &stop_monotonic);
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &stop_thread_time);
+	LOG_PRINTF("Time taken for HV/LV command %s: %f ms\n", cmd, (stop_monotonic.tv_sec - start_monotonic.tv_sec)*1e3 + (stop_monotonic.tv_nsec - start_monotonic.tv_nsec) / 1e6);
+	LOG_PRINTF("Thread CPU time taken for HV/LV command %s: %f ms\n", cmd, (stop_thread_time.tv_sec - start_thread_time.tv_sec)*1e3 + (stop_thread_time.tv_nsec - start_thread_time.tv_nsec) / 1e6);
+	#endif
 	return 0;
 }
 
