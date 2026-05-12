@@ -4886,6 +4886,146 @@ int config_parse(char *config_json){
 }
 
 /**
+ * Parses a JSON configuration file and applies the configuration settings to the corresponding boards
+ * in the order specified in the JSON file.
+ *
+ * This function takes a JSON configuration string and parses it to extract configuration parameters
+ * for different boards. It iterates through the predefined config_variables array to find the correct command
+ * and applies it to the corresponding board. The whole or just a subset of the parameters can be sent in the JSON
+ *
+ * @param config_json A null-terminated string containing the JSON configuration data to parse.
+ *
+ * @return 0 on success, -EINVAL if the JSON is invalid,
+ *         or an error code if any configuration command fails.
+ */
+
+int config_parse_ordered(char *config_json){
+	json_object *jobj_config_root = json_tokener_parse(config_json);
+	if (jobj_config_root == NULL) {
+		DEBUG_PRINTF_1("Error parsing JSON config file\n");
+		return -EINVAL;
+	}
+
+	struct json_object_iterator it_root;
+	struct json_object_iterator itEnd_root;
+	const char* board_name;
+	const char* mag_name;
+	json_object *jobj_interval;
+	int interval_ms;
+	if(!json_object_object_get_ex(jobj_config_root,"interval_ms",&jobj_interval)){
+		LOG_PRINTF("The interval_ms field is not present in the configuration file. Using 100ms as a default\n");
+		interval_ms = 100;
+	}
+	else{
+		interval_ms = json_object_get_int(jobj_interval);
+	}
+
+	it_root = json_object_iter_begin(jobj_config_root);
+	itEnd_root = json_object_iter_end(jobj_config_root);
+	while (!json_object_iter_equal(&it_root, &itEnd_root)) {
+
+		json_object *jboard = json_object_iter_peek_value(&it_root);
+		if(!json_object_is_type(jboard,json_type_object)){
+			json_object_iter_next(&it_root);
+			continue;
+		}
+		board_name = json_object_iter_peek_name(&it_root);
+		struct json_object_iterator it_board;
+		struct json_object_iterator itEnd_board;
+		it_board = json_object_iter_begin(jboard);
+		itEnd_board = json_object_iter_end(jboard);
+		while (!json_object_iter_equal(&it_board, &itEnd_board)) {
+			json_object *jmag = json_object_iter_peek_value(&it_board);
+			mag_name = json_object_iter_peek_name(&it_board);
+			
+			// Check if it is a channel variable
+			if((!strcmp(board_name,"DPB") && !strcmp(mag_name,"SFPs")) || (!strcmp(mag_name,"channels"))){
+				char chan_name[16];
+				size_t chan_N = json_object_array_length(jmag);
+				for(size_t i = 0; i < chan_N; i++){
+					json_object *jchan_elem = json_object_array_get_idx(jmag, i);
+					struct json_object_iterator it_chan;
+					struct json_object_iterator itEnd_chan;
+					it_chan = json_object_iter_begin(jchan_elem);
+					itEnd_chan = json_object_iter_end(jchan_elem);
+
+					while(!json_object_iter_equal(&it_chan, &itEnd_chan)) {
+						json_object *j_chan_mag = json_object_iter_peek_value(&it_chan);
+						const char* mag_value_str = json_object_get_string(j_chan_mag);
+						const char* mag_name_chan = json_object_iter_peek_name(&it_chan);
+						char cmd[64];
+						config_search_for_cmd(mag_name_chan,board_name,i,mag_value_str,cmd);
+						if(strlen(cmd) == 0){
+							LOG_PRINTF("No matching configuration variable found for the magnitude %s in the board %s. Skipping this configuration.\n",mag_name_chan,board_name);
+							json_object_iter_next(&it_chan);
+							continue;
+						}
+						char* response = command_parse(cmd);
+						LOG_PRINTF("Setting %s in the board %s with response %s\n",cmd,board_name,response);
+						usleep(interval_ms * 1000); //Sleep the configured interval between commands
+						json_object_iter_next(&it_chan);
+					}
+				}
+			}
+			else{
+				const char* mag_value_str = json_object_get_string(jmag);
+				char cmd[64];
+				config_search_for_cmd(mag_name,board_name,0,mag_value_str,cmd);
+				if(strlen(cmd) == 0){
+					LOG_PRINTF("No matching configuration variable found for the magnitude %s in the board %s. Skipping this configuration.\n",mag_name,board_name);
+					json_object_iter_next(&it_board);
+					continue;
+				}
+				char* response = command_parse(cmd);
+				LOG_PRINTF("Setting %s in the board %s with response %s\n",cmd,board_name,response);
+				usleep(interval_ms * 1000); //Sleep the configured interval between commands
+			}
+			json_object_iter_next(&it_board);
+		}
+		json_object_iter_next(&it_root);
+	}
+
+	json_object_put(jobj_config_root);
+	return 0;
+}
+
+/**
+ * Generates the command that corresponds to the mag_name, board_name, channel and value to be configured.
+ * 
+ * @param mag_name Name of the magnitude to be configured, e.g. "VOLT", "CURR", "TEMP", "RMON", etc
+ * @param board_name Name of the board to be configured, e.g. "DPB
+ * @param chan_idx Channel index to be configured, only used for channel parameters, e.g. 0, 1, 2, etc
+ * @param mag_value_str Value to be configured in string format, e.g. "ON", "OFF", "1.2", "1000", etc
+ * @param cmd Output parameter where the generated command will be stored. It must be allocated by the caller with enough space to store the command.
+ * 
+ * @return 0 if the command is generated correctly, -EINVAL if no matching configuration variable is found for the given parameters
+ */
+int config_search_for_cmd(const char* mag_name, const char* board_name, int chan_idx, const char* mag_value_str, char* cmd){
+	size_t N = sizeof(config_variables) / sizeof(config_variables[0]);
+	for(int i = 0; i < N; i++){
+		struct config_element config_var = config_variables[i];
+		if(!strcmp(config_var.board,board_name) && !strcmp(config_var.json_word,mag_name)){
+			char channel_extra[12];
+			if(config_var.env_chan == CHAN_PARAM){
+				if(!strcmp(config_var.board,"DPB")){
+					strcpy(channel_extra,"SFP");
+				}
+				else{
+					strcpy(channel_extra,"");
+				}
+				sprintf(cmd,"%s_%s%d_%s",config_var.magnitude,channel_extra,chan_idx,mag_value_str);
+			}
+			else{
+				sprintf(cmd,"%s_%s",config_var.magnitude,mag_value_str);
+			}
+			return 0;
+		}
+	}
+	strcpy(cmd,"");
+	return -EINVAL;
+}
+
+/**
  * Retrieves the configuration data from the appropriate source and stores it in the global config_to_apply variable.
  *
  * This function obtains configuration data either from the DAQ interface (in DAQ_MODE) or from 

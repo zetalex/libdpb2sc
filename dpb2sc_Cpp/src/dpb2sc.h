@@ -242,6 +242,8 @@ int zmq_socket_init ();
 int zmq_socket_destroy();
 char* command_parse(const char *key);
 int config_parse(char *);
+int config_parse_ordered(char *);
+int config_search_for_cmd(const char *, const char *, int, const char *, char *);
 int config_get();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_get_calib_values(int);
