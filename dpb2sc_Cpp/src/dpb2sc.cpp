@@ -3531,7 +3531,6 @@ int get_hv_hash_table_command(char *key, char *value) {
 int get_lv_hash_table_command(char *key, char *value) {
 	struct cmd_uthash *s;
 	HASH_FIND_STR(lv_cmd_table,key,s);
-	strcpy(value,s->board_word);
 	if(s != NULL){
 		strcpy(value,s->board_word);
 		return 0;
@@ -3659,7 +3658,7 @@ int daq_init_sc_vars(){
 		else{
 			for(int i= 0; i < DAQ_chan_cmd_list[n].chan_n; i++){
 				strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
-				char chan[4];
+				char chan[16];
 				sprintf(chan, "%d",i);
 				strcat(cmd_string, "_");
 				strcat(cmd_string,chan);
@@ -3828,7 +3827,7 @@ char* command_parse(const char *key){
 			}
 			else{
 				json_object *jempty = json_object_new_string("");
-				cmd[3] = "";
+				cmd[3] = 0;
 				json_object_object_add(jobj,"channel", jempty);
 			}
 			if(words_n == 5){
@@ -3836,7 +3835,7 @@ char* command_parse(const char *key){
 			}
 			else{
 				json_object *jempty = json_object_new_string("");
-				cmd[4] = "";
+				cmd[4] = 0;
 				json_object_object_add(jobj,"write_value", jempty);
 			}
 		}
@@ -5592,7 +5591,9 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 	}
 	else{ // If it is SET, we just return OK in case digitizer doesnt reply with an error
 		if(cmdIdx != HKDIG_ERRO){
-			command_response_string_json(msg_id,"OK",reply);
+			char response_str[32];
+			strcpy(response_str,"OK");
+			command_response_string_json(msg_id,response_str,reply);
 		}
 		else{
 			command_status_response_json(msg_id,-ERRSET,reply);
@@ -6670,18 +6671,19 @@ int write_uio(int reg, uint32_t val){
 	switch(uio_axi_regs[reg].size) {
 		case 4:
 			*((uint8_t *)p) = (uint8_t)val & 0x0F;
-			DEBUG_PRINTF_2("Wrote 1 nibble to reg %d: %u\n", reg, *((uint8_t *)val));
+			DEBUG_PRINTF_2("Wrote 1 nibble to reg %d: %u\n", reg, (uint8_t)val);
 			break;
 		case 8:
 			*((uint8_t *)p) = (uint8_t)val;
-			DEBUG_PRINTF_2("Wrote 1 byte to reg %d: %u\n", reg, *((uint8_t *)val));
+			DEBUG_PRINTF_2("Wrote 1 byte to reg %d: %u\n", reg, (uint8_t)val);
 			break;
 		case 16:
 			*((uint16_t *)p) = (uint16_t)val;
-			DEBUG_PRINTF_2("Wrote 2 bytes to reg %d: %u\n", reg, *((uint16_t *)val));
+			DEBUG_PRINTF_2("Wrote 2 bytes to reg %d: %u\n", reg, (uint16_t)val);
 			break;
 		case 32:
 			*((uint32_t *)p) = (uint32_t)val;
+			DEBUG_PRINTF_2("Wrote 4 bytes to reg %d: %u\n", reg, (uint32_t)val);
 			break;
 		default:
 			DEBUG_PRINTF_2("Invalid register size for reg %d\n", reg);
