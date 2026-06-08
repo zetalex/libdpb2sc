@@ -6308,15 +6308,15 @@ int check_hv_lv_presence(){
 		usleep(1000000);
 		n = read(serial_port_fd, buffer, sizeof(buffer));
 		if(n > 0){
-			buffer[n] = '\0';
+			buffer[n-2] = '\0';
 			if(!hv_connected){
-				strcpy(HV_SN,buffer + 12); // Take just serial number from the response
+				strcpy(HV_SN,buffer + 12); // Take just serial number from the response, skipping \r and \n
 				tcflush(serial_port_fd,TCIOFLUSH);
 				write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:1,$CMD:MON,PAR:BDFREL\r\n"));
 				usleep(1000000);
 				n = read(serial_port_fd, buffer, sizeof(buffer));
-				buffer[n] = '\0';
-				strcpy(HV_FW,buffer + 12); // Take just firmware from the response
+				buffer[n-2] = '\0';
+				strcpy(HV_FW,buffer + 12); // Take just firmware from the response, skipping \r and \n
 				LOG_PRINTF("Hotplug event: HV has been detected: S/N %s FW %s \n",HV_SN, HV_FW);
 				status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
 				hv_connected = 1;
@@ -6338,15 +6338,15 @@ int check_hv_lv_presence(){
 		usleep(1000000);
 		n = read(serial_port_fd, buffer, sizeof(buffer));
 		if(n > 0){
-			buffer[n] = '\0';
+			buffer[n-2] = '\0';
 			if(!lv_connected){
-				strcpy(LV_SN,buffer + 12); // Take just serial number from the response
+				strcpy(LV_SN,buffer + 12); // Take just serial number from the response, skipping \r and \n
 				tcflush(serial_port_fd,TCIOFLUSH);
 				write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDFREL\r\n", strlen("$BD:0,$CMD:MON,PAR:BDFREL\r\n"));
 				usleep(1000000);
 				n = read(serial_port_fd, buffer, sizeof(buffer));
-				buffer[n] = '\0';
-				strcpy(LV_FW,buffer + 12); // Take just firmware from the response
+				buffer[n-2] = '\0';
+				strcpy(LV_FW,buffer + 12); // Take just firmware from the response, skipping \r and \n
 				LOG_PRINTF("Hotplug event: LV has been detected: S/N %s FW %s \n", LV_SN, LV_FW);
 				status_alarm_json("HV/LV","UART Lite 3", 99,0,"info","ON");
 				lv_connected = 1;
