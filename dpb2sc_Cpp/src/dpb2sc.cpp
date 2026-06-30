@@ -2311,13 +2311,13 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 		strcat(DAQ_alarm_msg,value_string);
 
 		if(!strcmp(info_type,"warning")){
-			DAQ_Inter->SendLog(DAQ_alarm_msg,2);
+			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Warning);
 		}
 		else if(!strcmp(info_type,"critical")){
 			DAQ_Inter->SendAlarm(DAQ_alarm_msg);
 		}
 		else{
-			DAQ_Inter->SendLog(DAQ_alarm_msg,3);
+			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Debug);
 		}
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type, *j_level = NULL;
@@ -2408,13 +2408,13 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 		strcat(DAQ_alarm_msg,status);
 
 		if(!strcmp(info_type,"warning")){
-			DAQ_Inter->SendLog(DAQ_alarm_msg,2);
+			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Warning);
 		}
 		else if(!strcmp(info_type,"critical")){
-			DAQ_Inter->SendAlarm(DAQ_alarm_msg,0);
+			DAQ_Inter->SendAlarm(DAQ_alarm_msg);
 		}
 		else{
-			DAQ_Inter->SendLog(DAQ_alarm_msg,3);
+			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Debug);
 		}
 
 		strcpy(DAQ_alarm_msg,"");
