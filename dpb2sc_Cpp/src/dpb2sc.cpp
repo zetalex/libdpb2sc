@@ -3713,9 +3713,11 @@ int daq_find_struct(const char *key, char *cmd){
 						switch(DAQ_chan_cmd_list[n].type){
 						case VARIABLE_TYPE:
 							sprintf(cmd,"%s_%d",cmd_string,DAQ_Inter->sc_vars[key]->GetValue<int>());
+							DAQ_Inter->sc_vars[key]->SetValue<int>(value_set);
 							break;
 						case OPTIONS_TYPE:
 							sprintf(cmd,"%s_%s",cmd_string,DAQ_Inter->sc_vars[key]->GetValue<std::string>().c_str());
+							DAQ_Inter->sc_vars[key]->SetValue<std::string>(value_set);
 							break;
 						case BUTTONS_TYPE:
 							sprintf(cmd,"%s",cmd_string);
@@ -3730,9 +3732,11 @@ int daq_find_struct(const char *key, char *cmd){
 					switch(DAQ_chan_cmd_list[n].type){
 						case VARIABLE_TYPE:
 							sprintf(cmd,"%s_%d",key,DAQ_Inter->sc_vars[key]->GetValue<int>());
+							DAQ_Inter->sc_vars[key]->SetValue<int>(value_set);
 							break;
 						case OPTIONS_TYPE:
 							sprintf(cmd,"%s_%s",key,DAQ_Inter->sc_vars[key]->GetValue<std::string>().c_str());
+							DAQ_Inter->sc_vars[key]->SetValue<std::string>(value_set);
 							break;
 						case BUTTONS_TYPE:
 							sprintf(cmd,"%s",key);
@@ -3775,16 +3779,8 @@ char* command_parse(const char *key){
 			return const_cast<char*>(msg_cmd.c_str());
 		}
 		// Set the value in the data base
-		char temp_to_get_value[64];
 		char *command;
-		char *value_set;
-		strcpy(temp_to_get_value,key);
-		command = strtok(temp_to_get_value," ");
-		value_set = strtok(NULL," ");
-		LOG_PRINTF("command: %s, value_set: %s\n",command,value_set);
-		if(value_set != NULL){
-			DAQ_Inter->sc_vars[command]->SetValue(value_set);
-		}
+		strcpy(command,key);
 		// Get the value of the slow control variable
 		int pos = daq_find_struct(command,buffer);
 	#else
