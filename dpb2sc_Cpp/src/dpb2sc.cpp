@@ -3700,6 +3700,8 @@ int daq_init_sc_vars(){
  */
 int daq_find_struct(const char *key, char *cmd){
 	int n;
+	int value_set;
+	std::string string_set;
 	size_t var_N = sizeof(DAQ_chan_cmd_list) / sizeof(DAQ_chan_cmd_list[0]);
 	for (n = 0 ; n < var_N ; n++){
 			if(DAQ_chan_cmd_list[n].chan_or_env == CHAN_PARAM){
@@ -3712,17 +3714,20 @@ int daq_find_struct(const char *key, char *cmd){
 					if(!strcmp(key,cmd_string)){
 						switch(DAQ_chan_cmd_list[n].type){
 						case VARIABLE_TYPE:
-							sprintf(cmd,"%s_%d",cmd_string,DAQ_Inter->sc_vars[key]->GetValue<int>());
+							value_set = DAQ_Inter->sc_vars[key]->GetValue<int>();
+							sprintf(cmd,"%s_%d",cmd_string,value_set);
 							DAQ_Inter->sc_vars[key]->SetValue<int>(value_set);
 							break;
 						case OPTIONS_TYPE:
-							sprintf(cmd,"%s_%s",cmd_string,DAQ_Inter->sc_vars[key]->GetValue<std::string>().c_str());
-							DAQ_Inter->sc_vars[key]->SetValue<std::string>(value_set);
+							string_set = DAQ_Inter->sc_vars[key]->GetValue<std::string>();
+							sprintf(cmd,"%s_%s",cmd_string,string_set.c_str());
+							DAQ_Inter->sc_vars[key]->SetValue<std::string>(string_set);
 							break;
 						case BUTTONS_TYPE:
 							sprintf(cmd,"%s",cmd_string);
 							break;
 						}
+						DEBUG_PRINTF_1("DAQ command: %s\n",cmd);
 						return n;
 					}
 				}
@@ -3731,17 +3736,20 @@ int daq_find_struct(const char *key, char *cmd){
 				if(!strcmp(DAQ_chan_cmd_list[n].name,key)){
 					switch(DAQ_chan_cmd_list[n].type){
 						case VARIABLE_TYPE:
-							sprintf(cmd,"%s_%d",key,DAQ_Inter->sc_vars[key]->GetValue<int>());
+							value_set = DAQ_Inter->sc_vars[key]->GetValue<int>();
+							sprintf(cmd,"%s_%d",key,value_set);
 							DAQ_Inter->sc_vars[key]->SetValue<int>(value_set);
 							break;
 						case OPTIONS_TYPE:
-							sprintf(cmd,"%s_%s",key,DAQ_Inter->sc_vars[key]->GetValue<std::string>().c_str());
-							DAQ_Inter->sc_vars[key]->SetValue<std::string>(value_set);
+							string_set = DAQ_Inter->sc_vars[key]->GetValue<std::string>();
+							sprintf(cmd,"%s_%s",key,string_set.c_str());
+							DAQ_Inter->sc_vars[key]->SetValue<std::string>(string_set);
 							break;
 						case BUTTONS_TYPE:
 							sprintf(cmd,"%s",key);
 							break;
 					}
+					DEBUG_PRINTF_1("DAQ command: %s\n",cmd);
 					return n;
 				}
 			}
