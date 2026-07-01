@@ -4,7 +4,7 @@
 	ToolFramework::DAQInterface* DAQ_Inter;
 
 
-   struct slow_control_var_struct DAQ_chan_cmd_list[94] = {
+   struct slow_control_var_struct DAQ_chan_cmd_list[95] = {
     //LV SC Vars
          {OPTIONS_TYPE, CHAN_PARAM, 8, "SET_LV_STATUS", 0, 0, 0, 0, {"ON", "OFF"}},
          {OPTIONS_TYPE, ENV_PARAM, 0, "SET_LV_CPU_MAIN", 0, 0, 0, 0, {"ON", "OFF"}},
@@ -107,7 +107,8 @@
         {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_TDMTX_BACKUP", 0, 0, 0, 0, {"ON", "OFF"}},
         {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_TDMRX_MAIN", 0, 0, 0, 0, {"ON", "OFF"}},
         {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_TDMRX_BACKUP", 0, 0, 0, 0, {"ON", "OFF"}},
-        {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_STATUS_DMA", 0, 0, 0, 0, {"OFF", "ON"}}
+        {OPTIONS_TYPE, ENV_PARAM, 0, "SET_DPB_STATUS_DMA", 0, 0, 0, 0, {"OFF", "ON"}},
+        {VARIABLE_TYPE, ENV_PARAM, 0, "SET_DPB_DEBUGLVL", 0, 2, 1, 0,{}}
 };
 
 #endif

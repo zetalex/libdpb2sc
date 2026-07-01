@@ -3781,6 +3781,7 @@ char* command_parse(const char *key){
 		strcpy(temp_to_get_value,key);
 		command = strtok(temp_to_get_value," ");
 		value_set = strtok(NULL," ");
+		LOG_PRINTF("command: %s, value_set: %s\n",command,value_set);
 		if(value_set != NULL){
 			DAQ_Inter->sc_vars[command]->SetValue(value_set);
 		}
