@@ -2314,7 +2314,7 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Warning);
 		}
 		else if(!strcmp(info_type,"critical")){
-			DAQ_Inter->SendAlarm(DAQ_alarm_msg);
+			DAQ_Inter->SendAlarm(DAQ_alarm_msg,true);
 		}
 		else{
 			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Debug);
@@ -2411,7 +2411,7 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Warning);
 		}
 		else if(!strcmp(info_type,"critical")){
-			DAQ_Inter->SendAlarm(DAQ_alarm_msg);
+			DAQ_Inter->SendAlarm(DAQ_alarm_msg,true);
 		}
 		else{
 			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Debug);
