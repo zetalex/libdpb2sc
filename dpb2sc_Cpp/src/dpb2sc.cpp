@@ -3787,7 +3787,7 @@ char* command_parse(const char *key){
 			return const_cast<char*>(msg_cmd.c_str());
 		}
 		// Set the value in the data base
-		char *command;
+		char command[64];
 		strcpy(command,key);
 		// Get the value of the slow control variable
 		int pos = daq_find_struct(command,buffer);
