@@ -192,11 +192,13 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		flock(serial_port_fd, LOCK_EX);
 		setup_serial_port(serial_port_fd);
 		// Turn on the digitizers
-		usleep(1000000);
 		write(serial_port_fd, "$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
 		usleep(1000000);
+		tcflush(serial_port_fd,TCIOFLUSH);
 		write(serial_port_fd, "$BD:0,$CMD:SET,CH:6,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
-		flock(serial_port_fd, LOCK_UN);
+		usleep(1000000);
+		tcflush(serial_port_fd,TCIOFLUSH);
+    flock(serial_port_fd, LOCK_UN);
 		close(serial_port_fd);
 	}
 	// FIXME: Wait for digitizers to be turned on (Very time consuming!)
@@ -2313,13 +2315,13 @@ int alarm_json (const char *board,const char *chip,const char *ev_type, int chan
 		strcat(DAQ_alarm_msg,value_string);
 
 		if(!strcmp(info_type,"warning")){
-			DAQ_Inter->SendLog(DAQ_alarm_msg,2);
+			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Warning);
 		}
 		else if(!strcmp(info_type,"critical")){
-			DAQ_Inter->SendAlarm(DAQ_alarm_msg);
+			DAQ_Inter->SendAlarm(DAQ_alarm_msg,true);
 		}
 		else{
-			DAQ_Inter->SendLog(DAQ_alarm_msg,3);
+			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Debug);
 		}
 	#else
 		struct json_object *jalarm_data,*jboard,*jchip,*jtimestamp,*jchan,*jdouble,*jev_type, *j_level = NULL;
@@ -2410,13 +2412,13 @@ int status_alarm_json (const char *board,const char *chip, int chan,uint64_t tim
 		strcat(DAQ_alarm_msg,status);
 
 		if(!strcmp(info_type,"warning")){
-			DAQ_Inter->SendLog(DAQ_alarm_msg,2);
+			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Warning);
 		}
 		else if(!strcmp(info_type,"critical")){
-			DAQ_Inter->SendAlarm(DAQ_alarm_msg,0);
+			DAQ_Inter->SendAlarm(DAQ_alarm_msg,true);
 		}
 		else{
-			DAQ_Inter->SendLog(DAQ_alarm_msg,3);
+			DAQ_Inter->SendLog(DAQ_alarm_msg,ToolFramework::LogLevel::Debug);
 		}
 
 		strcpy(DAQ_alarm_msg,"");
@@ -3702,6 +3704,8 @@ int daq_init_sc_vars(){
  */
 int daq_find_struct(const char *key, char *cmd){
 	int n;
+	int value_set;
+	std::string string_set;
 	size_t var_N = sizeof(DAQ_chan_cmd_list) / sizeof(DAQ_chan_cmd_list[0]);
 	for (n = 0 ; n < var_N ; n++){
 			if(DAQ_chan_cmd_list[n].chan_or_env == CHAN_PARAM){
@@ -3714,15 +3718,20 @@ int daq_find_struct(const char *key, char *cmd){
 					if(!strcmp(key,cmd_string)){
 						switch(DAQ_chan_cmd_list[n].type){
 						case VARIABLE_TYPE:
-							sprintf(cmd,"%s_%d",cmd_string,DAQ_Inter->sc_vars[key]->GetValue<int>());
+							value_set = DAQ_Inter->sc_vars[key]->GetValue<int>();
+							sprintf(cmd,"%s_%d",cmd_string,value_set);
+							DAQ_Inter->sc_vars[key]->SetValue<int>(value_set);
 							break;
 						case OPTIONS_TYPE:
-							sprintf(cmd,"%s_%s",cmd_string,DAQ_Inter->sc_vars[key]->GetValue<std::string>().c_str());
+							string_set = DAQ_Inter->sc_vars[key]->GetValue<std::string>();
+							sprintf(cmd,"%s_%s",cmd_string,string_set.c_str());
+							DAQ_Inter->sc_vars[key]->SetValue<std::string>(string_set);
 							break;
 						case BUTTONS_TYPE:
 							sprintf(cmd,"%s",cmd_string);
 							break;
 						}
+						DEBUG_PRINTF_1("DAQ command: %s\n",cmd);
 						return n;
 					}
 				}
@@ -3731,15 +3740,20 @@ int daq_find_struct(const char *key, char *cmd){
 				if(!strcmp(DAQ_chan_cmd_list[n].name,key)){
 					switch(DAQ_chan_cmd_list[n].type){
 						case VARIABLE_TYPE:
-							sprintf(cmd,"%s_%d",key,DAQ_Inter->sc_vars[key]->GetValue<int>());
+							value_set = DAQ_Inter->sc_vars[key]->GetValue<int>();
+							sprintf(cmd,"%s_%d",key,value_set);
+							DAQ_Inter->sc_vars[key]->SetValue<int>(value_set);
 							break;
 						case OPTIONS_TYPE:
-							sprintf(cmd,"%s_%s",key,DAQ_Inter->sc_vars[key]->GetValue<std::string>().c_str());
+							string_set = DAQ_Inter->sc_vars[key]->GetValue<std::string>();
+							sprintf(cmd,"%s_%s",key,string_set.c_str());
+							DAQ_Inter->sc_vars[key]->SetValue<std::string>(string_set);
 							break;
 						case BUTTONS_TYPE:
 							sprintf(cmd,"%s",key);
 							break;
 					}
+					DEBUG_PRINTF_1("DAQ command: %s\n",cmd);
 					return n;
 				}
 			}
@@ -3777,15 +3791,8 @@ char* command_parse(const char *key){
 			return const_cast<char*>(msg_cmd.c_str());
 		}
 		// Set the value in the data base
-		char temp_to_get_value[64];
-		char *command;
-		char *value_set;
-		strcpy(temp_to_get_value,key);
-		command = strtok(temp_to_get_value," ");
-		value_set = strtok(NULL," ");
-		if(value_set != NULL){
-			DAQ_Inter->sc_vars[command]->SetValue(value_set);
-		}
+		char command[64];
+		strcpy(command,key);
 		// Get the value of the slow control variable
 		int pos = daq_find_struct(command,buffer);
 	#else
