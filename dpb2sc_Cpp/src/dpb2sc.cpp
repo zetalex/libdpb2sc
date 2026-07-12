@@ -191,10 +191,12 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		serial_port_fd = open(lv_rs485_driver,O_RDWR);
 		setup_serial_port(serial_port_fd);
 		// Turn on the digitizers
-		usleep(1000000);
 		write(serial_port_fd, "$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
 		usleep(1000000);
+		tcflush(serial_port_fd,TCIOFLUSH);
 		write(serial_port_fd, "$BD:0,$CMD:SET,CH:6,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
+		usleep(1000000);
+		tcflush(serial_port_fd,TCIOFLUSH);
 		close(serial_port_fd);
 	}
 	// FIXME: Wait for digitizers to be turned on (Very time consuming!)
