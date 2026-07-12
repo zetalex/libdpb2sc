@@ -189,6 +189,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	if(hv_lv_used){
 		int serial_port_fd;
 		serial_port_fd = open(lv_rs485_driver,O_RDWR);
+		flock(serial_port_fd, LOCK_EX);
 		setup_serial_port(serial_port_fd);
 		// Turn on the digitizers
 		write(serial_port_fd, "$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
@@ -197,6 +198,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		write(serial_port_fd, "$BD:0,$CMD:SET,CH:6,PAR:SDEN,VAL:ON\r\n", strlen("$BD:0,$CMD:SET,CH:4,PAR:SDEN,VAL:ON\r\n"));
 		usleep(1000000);
 		tcflush(serial_port_fd,TCIOFLUSH);
+    flock(serial_port_fd, LOCK_UN);
 		close(serial_port_fd);
 	}
 	// FIXME: Wait for digitizers to be turned on (Very time consuming!)
@@ -5125,12 +5127,12 @@ int dig_command_handling(int dig_num, char *cmd, char *result){
 		return -EACCES;
 	}
 
-	// Flush serial port before reading
-	tcflush(serial_port_fd,TCIOFLUSH);
 	// Wait until acquiring non-blocking BSD exclusive lock
 	while(flock(serial_port_fd, LOCK_EX | LOCK_NB) == -1) {
 		usleep(5000);
 	}
+	// Flush serial port before reading
+	tcflush(serial_port_fd,TCIOFLUSH);
 
 	setup_serial_port(serial_port_fd);
 	write(serial_port_fd, cmd, strlen(cmd));
@@ -5661,14 +5663,15 @@ int hv_lv_command_handling(char *board_dev, char *cmd, char *result){
 		strcpy(result,"ERROR");
 		return -EACCES;
 	}
-	tcflush(serial_port_UL3,TCIOFLUSH);
 	// Wait until acquiring non-blocking BSD exclusive lock
 	while(flock(serial_port_UL3, LOCK_EX | LOCK_NB) == -1) {
 		usleep(5000);
 	}
+	tcflush(serial_port_UL3,TCIOFLUSH);
 
 	setup_serial_port(serial_port_UL3);
 	write(serial_port_UL3, cmd, strlen(cmd));
+	tcdrain(serial_port_UL3);
 	// Try with UL3
 	for(int i = 0 ; i < SERIAL_PORT_RETRIES ;){
 		// Keep reading until timeout (VTIME)
@@ -6309,6 +6312,7 @@ int check_hv_lv_presence(){
 	sem_wait(&sem_hvlv);
 	if(hv_lv_used){
 		serial_port_fd = open(hv_rs485_driver,O_RDWR | O_NONBLOCK);
+		flock(serial_port_fd, LOCK_EX);
 		setup_serial_port(serial_port_fd);
 		tcflush(serial_port_fd,TCIOFLUSH);
 		write(serial_port_fd, "$BD:1,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:1,$CMD:MON,PAR:BDSNUM\r\n"));
@@ -6335,10 +6339,12 @@ int check_hv_lv_presence(){
 			}
 			hv_connected = 0;
 		}
+		flock(serial_port_fd, LOCK_UN);
 		close(serial_port_fd);
 
 
 		serial_port_fd = open(lv_rs485_driver,O_RDWR | O_NONBLOCK);
+		flock(serial_port_fd, LOCK_EX);
 		setup_serial_port(serial_port_fd);
 		tcflush(serial_port_fd,TCIOFLUSH);
 		write(serial_port_fd, "$BD:0,$CMD:MON,PAR:BDSNUM\r\n", strlen("$BD:0,$CMD:MON,PAR:BDSNUM\r\n"));
@@ -6366,6 +6372,7 @@ int check_hv_lv_presence(){
 			lv_connected = 0;
 		}
 		tcflush(serial_port_fd,TCIOFLUSH);
+		flock(serial_port_fd, LOCK_UN);
 		close(serial_port_fd);
 	}
 	sem_post(&sem_hvlv);
@@ -6389,6 +6396,7 @@ int check_digs_presence(){
 		sem_wait(&sem_dig0);
 
 		serial_port_fd = open("/dev/ttyUL1",O_RDWR | O_NONBLOCK);
+		flock(serial_port_fd, LOCK_EX);
 		setup_serial_port(serial_port_fd);
 		tcflush(serial_port_fd,TCIOFLUSH);
 		// Check digitizer with empty command to see if errno is received. If anything else than COPACKET error is received, the digitizer firmware is not compatible
@@ -6397,6 +6405,7 @@ int check_digs_presence(){
 		usleep(100000);
 		n = read(serial_port_fd, buffer, sizeof(buffer));
 		buffer[n] = '\0';
+		flock(serial_port_fd, LOCK_UN);
 		sem_post(&sem_dig0);
 		if(n > 0){
 			if(!dig0_connected){
@@ -6404,13 +6413,15 @@ int check_digs_presence(){
 				int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
 				if(cmd_id == HKDIG_ERRO){
 					pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+					flock(serial_port_fd, LOCK_EX);
 					write(serial_port_fd, buffer, strlen(buffer));
 					usleep(100000);
-					n = read(serial_port_fd, buffer, sizeof(buffer));	
+					n = read(serial_port_fd, buffer, sizeof(buffer));
+					flock(serial_port_fd, LOCK_UN);
 					buffer[n] = '\0';
 					char* gw_ver_str;
 					gw_ver_str = pkt.GetNextField();
-					strcpy(DIG0_SN,gw_ver_str); // Digitizer gateway is in hex format	
+					strcpy(DIG0_SN,gw_ver_str); // Digitizer gateway is in hex format
 					LOG_PRINTF("Hotplug event: Digitizer 0 has been detected GW Ver %s\n",DIG0_SN);
 					status_alarm_json("DIG0","Serial Port", 99,0,"info","ON");
 					dig0_connected = 1;
@@ -6433,6 +6444,7 @@ int check_digs_presence(){
 	if(dig1_used){
 		sem_wait(&sem_dig1);
 		serial_port_fd = open("/dev/ttyUL2",O_RDWR | O_NONBLOCK);
+		flock(serial_port_fd, LOCK_EX);
 		setup_serial_port(serial_port_fd);
 		tcflush(serial_port_fd,TCIOFLUSH);
 
@@ -6441,6 +6453,7 @@ int check_digs_presence(){
 		write(serial_port_fd, buffer, strlen(buffer));
 		usleep(100000);
 		n = read(serial_port_fd, buffer, sizeof(buffer));
+		flock(serial_port_fd, LOCK_UN);
 		sem_post(&sem_dig1);
 		if(n > 0){
 			if(!dig1_connected){
@@ -6448,9 +6461,11 @@ int check_digs_presence(){
 				int16_t cmd_id = pkt.GetNextFiedlAsCOMMAND(HkDigCmdList);
 				if(cmd_id == HKDIG_ERRO){
 					pkt.CreatePacket(buffer, HkDigCmdList.CmdList[HKDIG_GET_GW_VER].CmdString);
+					flock(serial_port_fd, LOCK_EX);
 					write(serial_port_fd, buffer, strlen(buffer));
 					usleep(100000);
 					n = read(serial_port_fd, buffer, sizeof(buffer));
+					flock(serial_port_fd, LOCK_UN);
 					buffer[n] = '\0';
 					char* gw_ver_str;
 					gw_ver_str = pkt.GetNextField();
