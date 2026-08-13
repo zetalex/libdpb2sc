@@ -5395,8 +5395,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_PED_PERIOD:
 		case HKDIG_SET_PED_STAGGER:
 
-		case HKDIG_SET_ADS_PSC:
-
 		case HKDIG_RO_FMON_N:
 		
 		case HKDIG_SET_5V0A:
@@ -5439,6 +5437,9 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_THR_NUM:
 		case HKDIG_SET_IT_NUM:
 		case HKDIG_SET_DT_NUM:
+
+		// Setting OD ADC Speed
+		case HKDIG_SET_ADS_PSC:
 
 		// Setting pedestal type per channel
 		case HKDIG_SET_PED_ENABLE:
