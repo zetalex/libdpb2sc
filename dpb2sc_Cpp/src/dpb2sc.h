@@ -330,7 +330,7 @@ int tdm_locked_val = 0;
 
 /************************** Custom Errors Definitions *****************************/
 /** @defgroup err Custom Error Flags
- *  Shared Memory content
+ *  Custom error flags for the application
  *  @{
  */
 /** @brief Error command not valid */
@@ -1046,8 +1046,8 @@ const char *dig_dpb_words[] = {
     "READ TCH11",
     "READ TCH0R",
     "READ TCH11R",
-    "READ 5V0D",
-    "READ I5V0D",
+    "READ 5VOD",
+    "READ I5VOD",
     "SET 5V0A",
     "SET 5V0E",
     "SET TBREG",
@@ -1150,8 +1150,8 @@ const char *dig_monitor_mag_board_names[] = {
     "tch11",
     "tch0r",
     "tch11r",
-    "5V0D",
-    "I5V0D",
+    "5VOD",
+    "I5VOD",
     "TBREG",
     "odsel",
     "bmedata"
