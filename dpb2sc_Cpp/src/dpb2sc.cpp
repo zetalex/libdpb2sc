@@ -5560,6 +5560,8 @@ int dig_command_response(char *board_response,char *reply,int msg_id, char **cmd
 					case HKDIG_GET_BOARD_TFE:
 					case HKDIG_GET_BOARD_TFPGA:
 					case HKDIG_GET_BOARD_TPWR:
+					case HKDIG_GET_BOARD_TCH0:
+					case HKDIG_GET_BOARD_TCH11:
 						float_value = atof(value);
 						float_value = float_value / 100;  // Convert to degrees
 						command_response_json(msg_id,float_value,reply);
