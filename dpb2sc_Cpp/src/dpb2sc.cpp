@@ -5255,6 +5255,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 
 		case HKDIG_GET_TB_REG:
 
+		case HKDIG_GET_TB_ST:
+
 		// Get TLink lock status
 		case HKDIG_GET_TLNK_LOCK:
 
@@ -5339,10 +5341,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_BOARD_TCH11R:
 		case HKDIG_GET_BOARD_5VOD:
 		case HKDIG_GET_BOARD_I5VOD:
+		case HKDIG_GET_5V0A_EEPROM:
 
-		// Set RMON enable or disable
-		case HKDIG_RUN_RMON_EN:
-		case HKDIG_RUN_RMON_DIS:
 		
 			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString);
 			break;
@@ -5401,6 +5401,10 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_5V0A_EEPROM:
 
 		case HKDIG_SET_TB_REG:
+
+		// Set RMON enable or disable
+		case HKDIG_RUN_RMON_EN:
+		case HKDIG_RUN_RMON_DIS:
 
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);

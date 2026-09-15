@@ -1050,8 +1050,10 @@ const char *dig_dpb_words[] = {
     "READ I5VOD",
     "SET 5V0A",
     "SET 5V0E",
+    "READ 5V0E",
     "SET TBREG",
     "READ TBREG",
+    "READ TBST",
     "READ BME",
     "READ TEMP",
     "READ RELHUM",
@@ -1095,7 +1097,9 @@ const int dig_monitor_mag_board_codes[] = {
     HKDIG_GET_BOARD_TCH11R,
     HKDIG_GET_BOARD_5VOD,
     HKDIG_GET_BOARD_I5VOD,
+    HKDIG_GET_5V0A_EEPROM,
     HKDIG_GET_TB_REG,
+    HKDIG_GET_TB_ST,
     HKDIG_GET_OD_SEL_REG,
 	// BME280 commands
     HKDIG_GET_BME_DATA
@@ -1152,7 +1156,9 @@ const char *dig_monitor_mag_board_names[] = {
     "tch11r",
     "5VOD",
     "I5VOD",
+    "5V0AEEPROM",
     "TBREG",
+    "TBST",
     "odsel",
     "bmedata"
 };
