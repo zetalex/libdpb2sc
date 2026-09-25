@@ -904,7 +904,7 @@ const char *hv_daq_words[] = {
 
 const char *hv_board_words[] = {
 	"BDSNUM",
-    "FWREL",
+    "BDFREL",
 	"BDTEMP",
     "STATUS",
     "VMON",
@@ -983,7 +983,7 @@ const char *dig_dpb_words[] = {
     "READ HG",
     "READ STATUS", 
     "READ CHCONTROL",
-    "SET CHCONTROL", // TODO: Ask Fabrizio
+    "SET CHCONTROL",
     "SET FESTATUS ON",
     "SET FESTATUS OFF",
     "SET DAQSTATUS ON",

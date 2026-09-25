@@ -4265,7 +4265,13 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 						goto end;
 					}
 					else if(strcmp(cmd[3],"TIMEBASE") == 0){
-						rc = write_uio(REG_RMON_CONFIG_TIMEBASE,strtoul(cmd[4], NULL, 0));
+						uint32_t new_time_base = strtoul(cmd[4], NULL, 0);
+						// Avoid Divide by zero
+						if(new_time_base == 0){
+							rc = command_status_response_json (msg_id,-EINVAL,cmd_reply);
+							goto end;
+						}
+						rc = write_uio(REG_RMON_CONFIG_TIMEBASE,new_time_base);
 						if(rc){
 							rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
 							goto end;
@@ -4312,6 +4318,10 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 					rc = read_uio(REG_RMON_CONFIG_TIMEBASE,&time_base);
 					if(rc){
 						rc = command_status_response_json (msg_id,-ERRSET,cmd_reply);
+						goto end;
+					}
+					if(time_base == 0){
+						rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 						goto end;
 					}
 					rmon_val = rmon_val * (100 / time_base);
