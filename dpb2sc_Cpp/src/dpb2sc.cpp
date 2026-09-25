@@ -4475,7 +4475,7 @@ int dpb_command_handling(struct DPB_I2cSensors *data, char **cmd, int msg_id,cha
 				// 	rc = command_status_response_json (msg_id,-ERRREAD,cmd_reply);
 				// 	goto end;
 				// }
-				rc = command_status_response_json (msg_id,pll_locked_val,cmd_reply);
+				rc = command_status_response_json (msg_id,tdm_locked_val,cmd_reply);
 				goto end;
 			}
 			if(!strcmp(cmd[2],"TDMLINK")){
