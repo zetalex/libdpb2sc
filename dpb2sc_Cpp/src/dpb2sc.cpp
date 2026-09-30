@@ -5395,6 +5395,7 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_GET_RMON_FMT_N:			// Get FMT rate monitor value for channel N
 		case HKDIG_GET_CHN_LG_CHG:
     	case HKDIG_GET_CHN_HG_CHG:
+		case HKDIG_GET_CHN_SUM_CHG:
 
 		//Calibration setting paarmeters
 		case HKDIG_SET_CAL_PERIOD:
