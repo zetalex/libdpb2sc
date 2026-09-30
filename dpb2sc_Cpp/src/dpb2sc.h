@@ -979,8 +979,9 @@ const char *dig_dpb_words[] = {
     "SET CALIBSEN",
     "SET CALIBPER",
     "SET CALIBGAIN",
-    "READ LG",
-    "READ HG",
+    "READ LGCHRG",
+    "READ HGCHRG",
+    "READ SUMCHRG",
     "READ STATUS", 
     "READ CHCONTROL",
     "SET CHCONTROL",
@@ -1119,6 +1120,7 @@ const int dig_monitor_mag_chan_codes[] = {
     HKDIG_GET_RMON_FMT_N,
     HKDIG_GET_CHN_LG_CHG,
     HKDIG_GET_CHN_HG_CHG,
+    HKDIG_GET_CHN_SUM_CHG,
 };
 
 const char *dig_monitor_mag_board_names[] = {
@@ -1174,7 +1176,8 @@ const char *dig_monitor_mag_chan_names[] = {
     "rmontdc",
     "rmonfmt",
     "lgchg",
-    "hgchg"
+    "hgchg",
+    "sumchg"
 };
 
 /** @brief Detected Dig0 Serial Number */

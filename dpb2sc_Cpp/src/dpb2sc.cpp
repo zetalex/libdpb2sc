@@ -5464,6 +5464,9 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		// OD Commands
 		case HKDIG_SET_OD_SEL_REG:
 
+		// Sum of charges for channel n
+		case HKDIG_GET_CHN_SUM_CHG:
+
 		value1 = atoi(cmd[3]);
 		value2 = atoi(cmd[4]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1, (uint32_t)value2);
