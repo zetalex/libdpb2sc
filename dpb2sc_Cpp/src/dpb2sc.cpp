@@ -5416,6 +5416,9 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_RUN_RMON_EN:
 		case HKDIG_RUN_RMON_DIS:
 
+		// Setting OD ADC Speed
+		case HKDIG_SET_ADS_PSC:
+
 		value1 = atoi(cmd[3]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
 		break;
@@ -5451,9 +5454,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_THR_NUM:
 		case HKDIG_SET_IT_NUM:
 		case HKDIG_SET_DT_NUM:
-
-		// Setting OD ADC Speed
-		case HKDIG_SET_ADS_PSC:
 
 		// Setting pedestal type per channel
 		case HKDIG_SET_PED_ENABLE:
