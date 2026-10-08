@@ -3501,6 +3501,11 @@ int populate_dig_hash_table(int table_size, const char **keys) {
     	s->dig_cmd_num = i;
 		HASH_ADD_STR(dig_cmd_table, dpb_words, s);  /* id: name of key field */
 	}
+	// Add SET ODSELN that does the same as the SET ODSEL command but with a different name for the DPB command
+	s = (struct dig_uthash *) malloc(sizeof *s);
+	strcpy(s->dpb_words, "SET ODSELN");
+	s->dig_cmd_num = HKDIG_SET_OD_SEL_REG;
+	HASH_ADD_STR(dig_cmd_table, dpb_words, s);  /* id: name of key field */
 	return 0;
 }
 
@@ -5389,6 +5394,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		// Set RMon interval
 		case HKDIG_SET_RMON_PER:
 
+		case HKDIG_GET_OD_SEL_N:
+
 		// Return the rmon for this channel
 		case HKDIG_GET_RMON_ADC_N:			// Get ADC rate monitor value for channel N
 		case HKDIG_GET_RMON_TDC_N:			// Get TDC rate monitor value for channel N
@@ -5465,7 +5472,8 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		case HKDIG_SET_OD_SEL_REG:
 
 		// Sum of charges for channel n
-		case HKDIG_GET_CHN_SUM_CHG:
+		case HKDIG_GET_CHN_LG_SUM:
+		case HKDIG_GET_CHN_HG_SUM:
 
 		value1 = atoi(cmd[3]);
 		value2 = atoi(cmd[4]);
