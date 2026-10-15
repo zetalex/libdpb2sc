@@ -1177,8 +1177,7 @@ const char *dig_monitor_mag_chan_names[] = {
     "rmontdc",
     "rmonfmt",
     "lgchg",
-    "hgchg",
-    "sumchg"
+    "hgchg"
 };
 
 /** @brief Detected Dig0 Serial Number */
