@@ -5468,9 +5468,6 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		// Setting Channel control
 		case HKDIG_SET_CHN_CNTRL:
 
-		// OD Commands
-		case HKDIG_SET_OD_SEL_REG:
-
 		// Sum of charges for channel n
 		case HKDIG_GET_CHN_LG_SUM:
 		case HKDIG_GET_CHN_HG_SUM:
@@ -5479,6 +5476,20 @@ int dig_command_translation(char *digcmd, char **cmd, int words_n){
 		value2 = atoi(cmd[4]);
 		pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1, (uint32_t)value2);
 		break;
+
+		// OD Commands. Special case of SET ODSELN and ODSEL. The first one needs 2 parameters, the second one only 1d
+		case HKDIG_SET_OD_SEL_REG:
+		if(!strcmp(cmd[2],"ODSELN")){
+			value1 = atoi(cmd[3]);
+			value2 = atoi(cmd[4]);
+			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1, (uint32_t)value2);
+		}
+		else {
+			value1 = atoi(cmd[3]);
+			pkt.CreatePacket(digcmd, HkDigCmdList.CmdList[dig_cmd_id].CmdString, (uint32_t)value1);
+		}
+		break;
+
 		// Select clock
 		case HKDIG_SET_CLOCK:
 		if(!strcmp(cmd[3],"DPB"))
