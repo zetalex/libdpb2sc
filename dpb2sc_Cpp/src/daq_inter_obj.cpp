@@ -14,8 +14,8 @@
 
     // HV SC Vars
         {OPTIONS_TYPE, CHAN_PARAM, 24, "SET_HV_STATUS", 0, 0, 0, 0, {"ON", "OFF"}},
-        {OPTIONS_TYPE, CHAN_PARAM, 24, "SET_HV_CPU_MAIN", 0, 0, 0, 0, {"ON", "OFF"}},
-        {OPTIONS_TYPE, CHAN_PARAM, 24, "SET_HV_CPU_BACKUP", 0, 0, 0, 0, {"ON", "OFF"}},
+        {OPTIONS_TYPE, ENV_PARAM, 0, "SET_HV_CPU_MAIN", 0, 0, 0, 0, {"ON", "OFF"}},
+        {OPTIONS_TYPE, ENV_PARAM, 0, "SET_HV_CPU_BACKUP", 0, 0, 0, 0, {"ON", "OFF"}},
         {VARIABLE_TYPE, CHAN_PARAM, 24, "SET_HV_VOLT", 0, 2500, 100, 2500,{}},
         {VARIABLE_TYPE, CHAN_PARAM, 24, "SET_HV_CURR", 0, 500, 50, 500,{}},
         {VARIABLE_TYPE, CHAN_PARAM, 24, "SET_HV_RAMPUP", 0, 100, 10, 100,{}},
