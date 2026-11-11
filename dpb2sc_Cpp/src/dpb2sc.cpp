@@ -56,7 +56,10 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		const char *dev_name_c = dev_name.c_str();
 		LOG_PRINTF("Interface successfully built with device %s \n",dev_name_c);
 		DAQ_Inter->sc_vars["Status"]->SetValue("Initialising"); //setting status message
-		// Suscribe here to the DAQ alarms
+		// Suscribe here to the DAQ alerts
+		DAQ_Inter->AlertSubscribe("LoadConfig",std::bind(config_get,std::placeholders::_1,std::placeholders::_2));
+		DAQ_Inter->AlertSubscribe("ChangeConfig",std::bind(config_parse_ordered,std::placeholders::_1));
+
 		
 	#else
 		rc = zmq_socket_init(); //Initialize ZMQ Sockets
@@ -4826,17 +4829,17 @@ end:
  * corresponding settings to each board by calling the appropriate commands. If there is a configuration
  * field missing, it is skipped, as there can be partial configurations.
  *
- * @param config_json A null-terminated string containing the JSON configuration data to parse.
+ * @param alert_type A string representing the type of alert to be applied during the configuration process.
  *
- * @return 0 on success, -EINVAL if the JSON is invalid or required fields are missing,
+ * @return true on success, false if the JSON is invalid,
  *         or an error code if any configuration command fails.
  */
-int config_parse(char *config_json){
+bool config_parse(const char *alert_type){
 	size_t N = sizeof(config_variables) / sizeof(config_variables[0]);
-	json_object *jobj = json_tokener_parse(config_json);
+	json_object *jobj = json_tokener_parse(config_to_apply);
 	if (jobj == NULL) {
 		DEBUG_PRINTF_1("Error parsing JSON config file\n");
-		return -EINVAL;
+		return false;
 	}
 	// Loop that covers the config_variables struct
 	for(int i = 0; i < N; i++){
@@ -4905,7 +4908,7 @@ int config_parse(char *config_json){
 		}
 	}
 	json_object_put(jobj); // Free the JSON object
-	return 0;
+	return true;
 }
 
 /**
@@ -4916,17 +4919,17 @@ int config_parse(char *config_json){
  * for different boards. It iterates through the predefined config_variables array to find the correct command
  * and applies it to the corresponding board. The whole or just a subset of the parameters can be sent in the JSON
  *
- * @param config_json A null-terminated string containing the JSON configuration data to parse.
+ * @param alert_type A string representing the type of alert to be applied during the configuration process.
  *
- * @return 0 on success, -EINVAL if the JSON is invalid,
+ * @return true on success, false if the JSON is invalid,
  *         or an error code if any configuration command fails.
  */
 
-int config_parse_ordered(char *config_json){
-	json_object *jobj_config_root = json_tokener_parse(config_json);
+bool config_parse_ordered(const char *alert_type){
+	json_object *jobj_config_root = json_tokener_parse(config_to_apply);
 	if (jobj_config_root == NULL) {
 		DEBUG_PRINTF_1("Error parsing JSON config file\n");
-		return -EINVAL;
+		return false;
 	}
 
 	struct json_object_iterator it_root;
@@ -5009,7 +5012,7 @@ int config_parse_ordered(char *config_json){
 	}
 
 	json_object_put(jobj_config_root);
-	return 0;
+	return true;
 }
 
 /**
@@ -5055,16 +5058,40 @@ int config_search_for_cmd(const char* mag_name, const char* board_name, int chan
  * a ZMQ configuration socket (in standalone mode). The retrieved configuration is stored in the
  * global config_to_apply buffer for later use.
  *
- * @return 0 on success, -EIO if there's an error receiving configuration data from the socket.
+ * @return true on success, false if there's an error receiving configuration data from the socket.
  */
-int config_get(){
+bool config_get(const char *alert_type, const char* payload){
 
 	char config_json[MAX_CONFIG_SIZE];
 	#ifdef DAQ_MODE
 		std::string config_json_str;
 		std::string dev_name;
 		dev_name = DAQ_Inter->GetDeviceName();
-		DAQ_Inter->GetDeviceConfig(config_json_str,1,dev_name);
+		json_object *payload_json = json_tokener_parse(payload);
+		json_object *base_json = NULL;
+		if (!json_object_object_get_ex(payload_json, "Base", &base_json)) {
+			LOG_PRINTF("Error parsing JSON payload: 'Base' field not found\n");
+			return false;
+		}
+		int base_id = json_object_get_int(base_json);
+		if(base_id == NULL){
+			LOG_PRINTF("Error parsing JSON payload: 'Base' field is NULL\n");
+			return false;
+		}
+		json_object *run_json = NULL;
+		if (!json_object_object_get_ex(payload_json, "RunMode", &run_json)) {
+			LOG_PRINTF("Error parsing JSON payload: 'RunMode' field not found\n");
+			return false;
+		}
+		int run_id = json_object_get_int(run_json);
+		if(run_id == NULL){
+			LOG_PRINTF("Error parsing JSON payload: 'RunMode' field is NULL\n");
+			return false;
+		}
+
+		LOG_PRINTF("Getting configuration file with base: %d and run mode: %d\n", base_id, run_id);
+
+		DAQ_Inter->GetDeviceConfigFromRunConfig(config_json_str,base_id,run_id,dev_name);
 		strcpy(config_to_apply,config_json_str.c_str());
 	#else
 		// Get the configuration file from config socket
@@ -5072,11 +5099,11 @@ int config_get(){
 		size = zmq_recv(config_router, config_json, MAX_CONFIG_SIZE, 0);
 		if(size < 0){
 			DEBUG_PRINTF_1("Error receiving configuration file from config socket\n");
-			return -EIO;
+			return false;
 		}
 		strcpy(config_to_apply,config_json);
 	#endif
-	return 0;
+	return true;
 }
 /**
  * Takes a COPacket-formatted command and sends it to the indicated digitizer in dig_num
