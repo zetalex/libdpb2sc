@@ -55,6 +55,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 		dev_name = DAQ_Inter->GetDeviceName();
 		const char *dev_name_c = dev_name.c_str();
 		LOG_PRINTF("Interface successfully built with device %s \n",dev_name_c);
+		DAQ_Inter->SetActive(false);
 		DAQ_Inter->sc_vars["Status"]->SetValue("Initialising"); //setting status message
 		// Suscribe here to the DAQ alerts
 		DAQ_Inter->AlertSubscribe("LoadConfig",std::bind(config_get,std::placeholders::_1,std::placeholders::_2));
@@ -207,9 +208,12 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 	// FIXME: Wait for digitizers to be turned on (Very time consuming!)
 	usleep(12000000);
 	check_digs_presence();
+
+	//TODO: Check if the data acquisition app is running
 	#ifdef DAQ_MODE
 		daq_init_sc_vars();
 		DAQ_Inter->sc_vars["Status"]->SetValue("Ready");
+		DAQ_Inter->SetActive(true);
 		daq_flag = 1;
 	#endif
 	debug_flag = 0;
