@@ -3657,11 +3657,11 @@ static std::function<std::string(const char*)> daq_sc_callback(const char *name)
 			return "DAQ not ready";
 		char cmd[DAQ_CMD_MAX_LEN];
 		if(daq_find_struct(sc_name.c_str(), value ? value : "", cmd) < 0){
-			LOG_PRINTF("Slow control variable %s not found\n", sc_name.c_str());
+			DEBUG_PRINTF_1("Slow control variable %s not found\n", sc_name.c_str());
 			throw std::runtime_error("Slow control variable not found: " + sc_name);
 		}
 		std::string reply(command_parse(cmd));
-		LOG_PRINTF("DAQ command %s reply: %s\n", cmd, reply.c_str());
+		DEBUG_PRINTF_1("DAQ command %s reply: %s\n", cmd, reply.c_str());
 		if(reply.compare(0, 5, "ERROR") == 0)
 			throw std::runtime_error(reply);
 		return reply;
@@ -3791,7 +3791,7 @@ int daq_find_struct(const char *key, const char *value, char *cmd){
 			default:
 				return -EINVAL;
 		}
-		LOG_PRINTF("DAQ command: %s\n",cmd);
+		DEBUG_PRINTF_1("DAQ command: %s\n",cmd);
 		return (int) n;
 	}
 	return -EINVAL;
