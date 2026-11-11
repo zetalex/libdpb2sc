@@ -244,7 +244,7 @@ char* command_parse(const char *key);
 bool config_parse(const char *);
 bool config_parse_ordered(const char *);
 int config_search_for_cmd(const char *, const char *, int, const char *, char *);
-bool config_get(const char *, const char*);
+bool config_get();
 int dpb_command_handling(struct DPB_I2cSensors *, char **, int,char *);
 int dig_get_calib_values(int);
 int dig_command_handling(int, char *, char *);
@@ -289,6 +289,9 @@ uint64_t timestamp_ms(void);
 #ifdef DAQ_MODE
 int daq_init_sc_vars();
 int daq_find_struct(const char *, char *);
+bool daq_stop_acquisition();
+bool config_export(std::string &config_json);
+
 #endif
 /************************** Alarms File Descriptors *****************************/
 /** @defgroup alarmsfd Alarms File Descriptors
