@@ -4,6 +4,7 @@
 #include "daq_inter_obj.h"
 #include <functional>
 #include <string>
+#include <stdexcept>
 
 extern _COPacketCmdList HkDigCmdList;
 
@@ -3631,6 +3632,43 @@ int inList(int inp, int* list, int listLen) {
  */
 #ifdef DAQ_MODE
 /**
+ * Builds the change callback for a slow control variable.
+ *
+ * ToolDAQFramework calls the change callback from SlowControlElement::SetValue with the
+ * new value (not the variable name), with the element mutex locked and before storing
+ * the value. Its return value is ignored and the reply sent to the client is the value.
+ * Therefore:
+ *  - the variable name is captured here and the command is built from name + value,
+ *    without accessing sc_vars (see daq_find_struct);
+ *  - errors are reported by throwing: SetValue then returns false, the value is not
+ *    stored and the client receives "Error setting <name> to value: <value>".
+ *
+ * Calls made before the DAQ is ready (e.g. SetValue of the default values during
+ * daq_init_sc_vars) are ignored, so that no command is sent to the hardware.
+ *
+ * @param name Name of the slow control variable
+ *
+ * @return Callback to register in sc_vars
+ */
+static std::function<std::string(const char*)> daq_sc_callback(const char *name){
+	std::string sc_name(name);
+	return [sc_name](const char *value) -> std::string {
+		if(!daq_flag)
+			return "DAQ not ready";
+		char cmd[DAQ_CMD_MAX_LEN];
+		if(daq_find_struct(sc_name.c_str(), value ? value : "", cmd) < 0){
+			LOG_PRINTF("Slow control variable %s not found\n", sc_name.c_str());
+			throw std::runtime_error("Slow control variable not found: " + sc_name);
+		}
+		std::string reply(command_parse(cmd));
+		LOG_PRINTF("DAQ command %s reply: %s\n", cmd, reply.c_str());
+		if(reply.compare(0, 5, "ERROR") == 0)
+			throw std::runtime_error(reply);
+		return reply;
+	};
+}
+
+/**
  * Initializes the Slow Control (SC) variables for DAQ mode.
  *
  * This function adds various SC variables to the DAQ_Inter.sc_vars object based on the DAQ_chan_cmd_list configuration.
@@ -3651,14 +3689,14 @@ int daq_init_sc_vars(){
 			DEBUG_PRINTF_2("cmd_string: %s\n",cmd_string);
 			switch (DAQ_chan_cmd_list[n].type) {
 				case VARIABLE_TYPE:
-					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(command_parse,std::placeholders::_1));
+					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, daq_sc_callback(cmd_string));
 					DAQ_Inter->sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
 					DAQ_Inter->sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
 					DAQ_Inter->sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
 					DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
 					break;
 				case OPTIONS_TYPE:{
-					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(command_parse,std::placeholders::_1));
+					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, daq_sc_callback(cmd_string));
 					std::string option1 = DAQ_chan_cmd_list[n].options[0];
 					std::string option2 = DAQ_chan_cmd_list[n].options[1];
 					DAQ_Inter->sc_vars[cmd_string]->AddOption(option1);
@@ -3667,7 +3705,7 @@ int daq_init_sc_vars(){
 				}
 				break;
 				case BUTTONS_TYPE:
-					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(command_parse,std::placeholders::_1));
+					DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, daq_sc_callback(cmd_string));
 					DAQ_Inter->sc_vars[cmd_string]->SetValue(false);
 				break;
 			}
@@ -3682,14 +3720,14 @@ int daq_init_sc_vars(){
 				DEBUG_PRINTF_2("cmd_string: %s\n",cmd_string);
 				switch (DAQ_chan_cmd_list[n].type) {
 					case VARIABLE_TYPE:
-						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, std::bind(command_parse,std::placeholders::_1));
+						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::VARIABLE, daq_sc_callback(cmd_string));
 						DAQ_Inter->sc_vars[cmd_string]->SetMin(DAQ_chan_cmd_list[n].min);
 						DAQ_Inter->sc_vars[cmd_string]->SetMax(DAQ_chan_cmd_list[n].max);
 						DAQ_Inter->sc_vars[cmd_string]->SetStep(DAQ_chan_cmd_list[n].step);
 						DAQ_Inter->sc_vars[cmd_string]->SetValue(DAQ_chan_cmd_list[n].default_value);
 						break;
 					case OPTIONS_TYPE:{
-						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, std::bind(command_parse,std::placeholders::_1));
+						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::OPTIONS, daq_sc_callback(cmd_string));
 						std::string option1 = DAQ_chan_cmd_list[n].options[0];
 						std::string option2 = DAQ_chan_cmd_list[n].options[1];
 						DAQ_Inter->sc_vars[cmd_string]->AddOption(option1);
@@ -3698,7 +3736,7 @@ int daq_init_sc_vars(){
 						break;
 					}
 					case BUTTONS_TYPE:
-						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, std::bind(command_parse,std::placeholders::_1));
+						DAQ_Inter->sc_vars.Add(cmd_string,ToolFramework::BUTTON, daq_sc_callback(cmd_string));
 						DAQ_Inter->sc_vars[cmd_string]->SetValue(false);
 					break;
 				}
@@ -3709,74 +3747,59 @@ int daq_init_sc_vars(){
 }
 
 /**
- * Initializes the DAQ mode.
+ * Builds the DPB command associated to a slow control variable.
  *
- * This function initializes the DAQ mode by creating the DAQ_Inter object and initializing the SC variables.
+ * It does not access DAQ_Inter->sc_vars: since the ToolDAQFramework update, the change
+ * callback is called from inside SlowControlElement::SetValue, with the element mutex
+ * locked and before the new value is stored. Reading or writing the variable from here
+ * would deadlock or return the previous value, so the new value is passed explicitly.
  *
- * @return 0 on success, or an error code on failure.
+ * @param key Name of the slow control variable (e.g. SET_DIG0_AURORARST or SET_DIG0_X_3)
+ * @param value New value of the variable as received by the change callback
+ * @param cmd Stores the built command (e.g. SET_DIG0_AURORARST or SET_DIG0_X_3_1500)
+ *
+ * @return Index in DAQ_chan_cmd_list if found, -EINVAL otherwise
  */
-int daq_find_struct(const char *key, char *cmd){
-	int n;
-	int value_set;
-	std::string string_set;
+int daq_find_struct(const char *key, const char *value, char *cmd){
 	size_t var_N = sizeof(DAQ_chan_cmd_list) / sizeof(DAQ_chan_cmd_list[0]);
-	for (n = 0 ; n < var_N ; n++){
-			if(DAQ_chan_cmd_list[n].chan_or_env == CHAN_PARAM){
-				for(int i= 0; i < DAQ_chan_cmd_list[n].chan_n; i++){
-					char cmd_string[64];
-					strcpy(cmd_string,DAQ_chan_cmd_list[n].name);
-					char chan[4];
-					sprintf(chan, "_%d",i);
-					strcat(cmd_string,chan);
-					if(!strcmp(key,cmd_string)){
-						switch(DAQ_chan_cmd_list[n].type){
-						case VARIABLE_TYPE:
-							value_set = DAQ_Inter->sc_vars[key]->GetValue<int>();
-							sprintf(cmd,"%s_%d",cmd_string,value_set);
-							DAQ_Inter->sc_vars[key]->SetValue<int>(value_set);
-							break;
-						case OPTIONS_TYPE:
-							string_set = DAQ_Inter->sc_vars[key]->GetValue<std::string>();
-							sprintf(cmd,"%s_%s",cmd_string,string_set.c_str());
-							DAQ_Inter->sc_vars[key]->SetValue<std::string>(string_set);
-							break;
-						case BUTTONS_TYPE:
-							sprintf(cmd,"%s",cmd_string);
-							break;
-						}
-						LOG_PRINTF("DAQ command: %s\n",cmd);
-						return n;
-					}
-				}
-			}
-			else{
-				if(!strcmp(DAQ_chan_cmd_list[n].name,key)){
-					switch(DAQ_chan_cmd_list[n].type){
-						case VARIABLE_TYPE:
-							value_set = DAQ_Inter->sc_vars[key]->GetValue<int>();
-							sprintf(cmd,"%s_%d",key,value_set);
-							DAQ_Inter->sc_vars[key]->SetValue<int>(value_set);
-							break;
-						case OPTIONS_TYPE:
-							string_set = DAQ_Inter->sc_vars[key]->GetValue<std::string>();
-							sprintf(cmd,"%s_%s",key,string_set.c_str());
-							DAQ_Inter->sc_vars[key]->SetValue<std::string>(string_set);
-							break;
-						case BUTTONS_TYPE:
-							sprintf(cmd,"%s",key);
-							break;
-					}
-					LOG_PRINTF("DAQ command: %s\n",cmd);
-					return n;
-				}
+	for (size_t n = 0 ; n < var_N ; n++){
+		bool found = false;
+		if(DAQ_chan_cmd_list[n].chan_or_env == CHAN_PARAM){
+			for(int i= 0; i < DAQ_chan_cmd_list[n].chan_n && !found; i++){
+				char cmd_string[64];
+				snprintf(cmd_string, sizeof(cmd_string), "%s_%d", DAQ_chan_cmd_list[n].name, i);
+				found = !strcmp(key,cmd_string);
 			}
 		}
+		else{
+			found = !strcmp(DAQ_chan_cmd_list[n].name,key);
+		}
+		if(!found)
+			continue;
+
+		switch(DAQ_chan_cmd_list[n].type){
+			case VARIABLE_TYPE:
+				// Variables are handled as integers by the DPB commands
+				snprintf(cmd, DAQ_CMD_MAX_LEN, "%s_%d", key, (int) atof(value));
+				break;
+			case OPTIONS_TYPE:
+				snprintf(cmd, DAQ_CMD_MAX_LEN, "%s_%s", key, value);
+				break;
+			case BUTTONS_TYPE:
+				snprintf(cmd, DAQ_CMD_MAX_LEN, "%s", key);
+				break;
+			default:
+				return -EINVAL;
+		}
+		LOG_PRINTF("DAQ command: %s\n",cmd);
+		return (int) n;
+	}
 	return -EINVAL;
 }
 
 bool daq_stop_acquisition(){
 	char *response;
-	response = command_parse("SET DPB STATUS DMA OFF");
+	response = command_parse("SET_DPB_STATUS_DMA_OFF");
 	if(strcmp(response,"OK") == 0){
 		return true;
 	}
@@ -3809,20 +3832,15 @@ char* command_parse(const char *key){
 
 	// Copy const char key to variable
 	#ifdef DAQ_MODE
-		LOG_PRINTF("[TMP DEBUG] command_parse called with key=%s daq_flag=%d\n", key, daq_flag);
 		// Check Status of the App, if it is not ready, just return without doing nothing
 		if(!daq_flag){
 			msg_cmd = std::string("DAQ not ready");
 			return const_cast<char*>(msg_cmd.c_str());
 		}
-		// Set the value in the data base
-		char command[64];
-		strcpy(command,key);
-		// Get the value of the slow control variable
-		int pos = daq_find_struct(command,buffer);
-	#else
-		strcpy(buffer,key);
 	#endif
+	// key is always a full command (e.g. SET_DIG0_AURORARST). In DAQ_MODE the slow control
+	// callbacks build it from the variable name and value (see daq_sc_callback)
+	snprintf(buffer, sizeof(buffer), "%s", key);
 	// Split the command into words
 	cmd[0] = strtok(buffer,separator);
 	words_n = 0;
@@ -4129,7 +4147,6 @@ char* command_parse(const char *key){
 		json_object_object_get_ex(jmsg, "msg_value", &jcmd);
 		msg_cmd = std::string(json_object_get_string(jcmd));
 		json_object_put(jmsg);
-		LOG_PRINTF("[TMP DEBUG] command_parse key=%s cmd=%s reply=%s\n", key, command, msg_cmd.c_str());
 		return const_cast<char*>(msg_cmd.c_str());
 	#else
 		msg_cmd = std::string(reply);

@@ -288,7 +288,8 @@ uint64_t timestamp_ms(void);
 
 #ifdef DAQ_MODE
 int daq_init_sc_vars();
-int daq_find_struct(const char *, char *);
+#define DAQ_CMD_MAX_LEN 256
+int daq_find_struct(const char *, const char *, char *);
 bool daq_stop_acquisition();
 bool config_export(std::string &config_json);
 
