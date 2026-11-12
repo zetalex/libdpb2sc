@@ -102,7 +102,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 			LOG_PRINTF("Cannot lock file ttyUL1. Already in use by other process \n");
 			return errno;
 		}
-		write(var_lock, "%4d\n", getpid());
+		dprintf(var_lock, "%d\n", getpid());
 		close(var_lock);
 	}
 
@@ -112,7 +112,7 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 			LOG_PRINTF("Cannot lock file ttyUL2. Already in use by other process \n");
 			return errno;
 		}
-		write(var_lock, "%4d\n", getpid());
+		dprintf(var_lock, "%d\n", getpid());
 		close(var_lock);
 	}
 
@@ -123,14 +123,14 @@ int dpbsc_lib_init(struct DPB_I2cSensors *data) {
 			LOG_PRINTF("Cannot lock file ttyUL3. Already in use by other process \n");
 			return errno;
 		}
-		write(var_lock, "%4d\n", getpid());
+		dprintf(var_lock, "%d\n", getpid());
 		close(var_lock);
 		var_lock = open("/var/lock/LCK..ttyUL4", O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0644);
 		if(var_lock < 0){
 			LOG_PRINTF("Cannot lock file ttyUL4. Already in use by other process \n");
 			return errno;
 		}
-		write(var_lock, "%4d\n", getpid());
+		dprintf(var_lock, "%d\n", getpid());
 		close(var_lock);
 	}
 	// Populate all electronics hash tables
@@ -345,6 +345,20 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
 	   unlink("/var/lock/LCK..ttyUL3");
 	   unlink("/var/lock/LCK..ttyUL4");
    }
+   //Stop I2C Sensors (before destroying the semaphores it may use)
+   stop_I2cSensors(data);
+
+   // Clear DAQ interface if in DAQ mode. Done before destroying sem_zmq_logging,
+   // since LOG_PRINTF/DEBUG_PRINTF use it and send through DAQ_Inter
+   #ifdef DAQ_MODE
+   daq_flag = 0;
+   DAQ_Inter->sc_vars["Status"]->SetValue("Terminated");
+   DAQ_Inter->SetActive(false);
+   DAQ_Inter->ClearState();
+   delete DAQ_Inter;
+   DAQ_Inter = nullptr;
+   #endif
+
    //Destroy all semaphores
    sem_destroy(&i2c_sync);
    sem_destroy(&file_sync);
@@ -355,16 +369,6 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    sem_destroy(&sem_dig1);
    sem_destroy(&sem_sfp_switch);
    sem_destroy(&sem_zmq_logging);
-   //Stop I2C Sensors
-   stop_I2cSensors(data);
-
-   // Clear DAQ interface if in DAQ mode
-   #ifdef DAQ_MODE
-   DAQ_Inter->sc_vars["Status"]->SetValue("Terminated");
-   DAQ_Inter->SetActive(false);
-   DAQ_Inter->ClearState();
-   #endif
-
    return;
 }
 /**
