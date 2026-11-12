@@ -4969,9 +4969,10 @@ bool config_parse(const char *config_json){
  */
 
 bool config_parse_ordered(const char *config_json){
+	LOG_PRINTF("Parsing configuration file in the order specified in the JSON\n");
 	json_object *jobj_config_root = json_tokener_parse(config_json);
 	if (jobj_config_root == NULL) {
-		DEBUG_PRINTF_1("Error parsing JSON config file\n");
+		LOG_PRINTF("Error parsing JSON config file\n");
 		return false;
 	}
 
