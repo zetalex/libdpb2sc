@@ -357,6 +357,14 @@ void dpbsc_lib_close(struct DPB_I2cSensors *data) {
    sem_destroy(&sem_zmq_logging);
    //Stop I2C Sensors
    stop_I2cSensors(data);
+
+   // Clear DAQ interface if in DAQ mode
+   #ifdef DAQ_MODE
+   DAQ_Inter->sc_vars["Status"]->SetValue("Terminated");
+   DAQ_Inter->SetActive(false);
+   DAQ_Inter->ClearState();
+   #endif
+
    return;
 }
 /**
